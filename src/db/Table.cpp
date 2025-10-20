@@ -40,8 +40,9 @@ void Table::deleteByIndex(const KeyType &key)
     // the key doesn't exist
     if (it == this->keyMap.end())
     {
-        return;
-        // throw TableKeyNotFound(R"(Key "?" doesn't exists.)"_f % (key));
+        std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key +
+                          "\" doesn't exist!";
+        throw NotFoundKey(err);
     }
 
     // the index of the key to delete

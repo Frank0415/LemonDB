@@ -22,6 +22,11 @@ QueryResult::Ptr DeleteQuery::execute()
         table.deleteByIndex(key);
         return std::make_unique<SuccessMsgResult>(qname, targetTable);
     }
+    catch (const NotFoundKey &e)
+    {
+        return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                           "Key not found."s);
+    }
     catch (const TableNameNotFound &e)
     {
         return make_unique<ErrorMsgResult>(qname, this->targetTable,
