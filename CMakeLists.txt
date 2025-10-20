@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)#3.12 needed for CONFIGURE_DEPENDS
 project(lemondb VERSION 1.0.0 LANGUAGES CXX)
 
 # Set C++ standard
@@ -10,16 +10,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-# Comprehensive compiler flags (based on Makefile)
-# -O2: Optimization level
-# -Wall -Wextra -Werror -pedantic: Strict warnings
-# -Wno-unused-result: Suppress unused result warnings
-# -Wconversion: Warn on implicit conversions
-# -Wvla: Warn on variable length arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
-
-add_compile_options(
+# Common compile options
+set(LEMONDB_COMMON_COMPILE_OPTIONS
     -Wall
     -Wextra
     -Werror
@@ -30,9 +22,28 @@ add_compile_options(
     -O2
 )
 
+# Comprehensive compiler flags (based on Makefile)
+# -O2: Optimization level
+# -Wall -Wextra -Werror -pedantic: Strict warnings
+# -Wno-unused-result: Suppress unused result warnings
+# -Wconversion: Warn on implicit conversions
+# -Wvla: Warn on variable length arrays
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
+
+# add_compile_options(
+#     -Wall
+#     -Wextra
+#     -Werror
+#     -pedantic
+#     -Wno-unused-result
+#     -Wconversion
+#     -Wvla
+#     -O2
+# )
+
 
 # Define source files for the main application using glob patterns
-file(GLOB MAIN_SOURCES
+file(GLOB MAIN_SOURCES CONFIGURE_DEPENDS
     src/main.cpp
     # src/db/*.cpp
     # src/db/*.h
@@ -46,7 +57,7 @@ file(GLOB MAIN_SOURCES
 )
 
 # Define library sources (excluding main.cpp)
-file(GLOB LIB_SOURCES_TEMP
+file(GLOB LIB_SOURCES_TEMP CONFIGURE_DEPENDS
     src/db/*.cpp
     # src/db/*.h
     src/query/*.cpp
@@ -59,13 +70,22 @@ file(GLOB LIB_SOURCES_TEMP
 )
 set(LIB_SOURCES ${LIB_SOURCES_TEMP})
 
-# Create the main executable
-add_executable(lemondb ${MAIN_SOURCES})
-target_link_libraries(lemondb PRIVATE lemondb_lib)
 
 # Create a library for testing
 add_library(lemondb_lib STATIC ${LIB_SOURCES})
 target_include_directories(lemondb_lib PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+# Create the main executable
+add_executable(lemondb ${MAIN_SOURCES})
+target_link_libraries(lemondb PRIVATE lemondb_lib)
+
+# Set compiler options for the library and executable
+target_compile_options(lemondb PRIVATE
+    ${LEMONDB_COMMON_COMPILE_OPTIONS}
+)
+target_compile_options(lemondb_lib PRIVATE
+    ${LEMONDB_COMMON_COMPILE_OPTIONS}
+)
 
 # Google Test Setup
 include(FetchContent)
