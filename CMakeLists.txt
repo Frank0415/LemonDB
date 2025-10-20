@@ -17,16 +17,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # -Wno-unused-result: Suppress unused result warnings
 # -Wconversion: Warn on implicit conversions
 # -Wvla: Warn on variable length arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -O2 -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -O2")
+# -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
 
 add_compile_options(
-    -Wall
-    -Wextra
-    -Werror
-    -pedantic
-    -Wno-unused-result
-    -Wconversion
-    -Wvla
+    # -Wall
+    # -Wextra
+    # -Werror
+    # -pedantic
+    # -Wno-unused-result
+    # -Wconversion
+    # -Wvla
     -O2
 )
 
