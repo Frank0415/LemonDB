@@ -17,18 +17,18 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # -Wno-unused-result: Suppress unused result warnings
 # -Wconversion: Warn on implicit conversions
 # -Wvla: Warn on variable length arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++20 -Wall -Wextra -Werror -pedantic -Wno-unused-result -Wconversion -Wvla")
 
-add_compile_options(
-    -Wall
-    -Wextra
-    -Werror
-    -pedantic
-    -Wno-unused-result
-    -Wconversion
-    -Wvla
-    -O2
-)
+# add_compile_options(
+#     -Wall
+#     -Wextra
+#     -Werror
+#     -pedantic
+#     -Wno-unused-result
+#     -Wconversion
+#     -Wvla
+#     -O2
+# )
 
 
 # Define source files for the main application using glob patterns
@@ -66,6 +66,28 @@ target_link_libraries(lemondb PRIVATE lemondb_lib)
 # Create a library for testing
 add_library(lemondb_lib STATIC ${LIB_SOURCES})
 target_include_directories(lemondb_lib PUBLIC ${CMAKE_SOURCE_DIR}/src)
+
+# Set compiler options for the library and executable
+target_compile_options(lemondb PRIVATE
+    -Wall
+    -Wextra
+    -Werror
+    -pedantic
+    -Wno-unused-result
+    -Wconversion
+    -Wvla
+    -O2
+)
+target_compile_options(lemondb_lib PUBLIC
+    -Wall
+    -Wextra
+    -Werror
+    -pedantic
+    -Wno-unused-result
+    -Wconversion
+    -Wvla
+    -O2
+)
 
 # Google Test Setup
 include(FetchContent)
