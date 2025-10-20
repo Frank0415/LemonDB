@@ -36,19 +36,18 @@ QueryResult::Ptr DeleteQuery::execute()
             //         ++i;
             //     }
             // }
-            std::vector<const Table::KeyType *> keysToDelete;
+            std::vector<Table::KeyType> keysToDelete;
             for (auto it = table.begin(); it != table.end(); it++)
             {
                 if (this->evalCondition(*it))
                 {
-                    Table::KeyType toDeleteKey = it->key();
-                    keysToDelete.push_back(&toDeleteKey);
+                    keysToDelete.push_back(it->key());
                     ++counter;
                 }
             }
-            for (const auto &keyPtr : keysToDelete)
+            for (const auto &key : keysToDelete)
             {
-                table.deleteByIndex(*keyPtr);
+                table.deleteByIndex(key);
             }
         }
         return std::make_unique<SuccessMsgResult>(counter);
