@@ -122,3 +122,55 @@ TEST(DeleteQueryTest, DeleteAllRows)
     EXPECT_EQ(table.size(), 0u);
 }
 
+TEST(DeleteQueryTest, DeleteNonContiguousAndMultipleConditions)
+{
+    // Complex scenario: multiple conditions and non-contiguous deletions
+    using TableV = Table::ValueType;
+    auto t = std::make_unique<Table>("del_complex", std::vector<std::string>{"age", "score"});
+    Table &table = Database::getInstance().registerTable(std::move(t));
+    // keys k0..k6 with varying ages and scores
+    table.insertByIndex("k0", std::vector<TableV>{18, 10});
+    table.insertByIndex("k1", std::vector<TableV>{19, 20});
+    table.insertByIndex("k2", std::vector<TableV>{20, 30});
+    table.insertByIndex("k3", std::vector<TableV>{21, 40});
+    table.insertByIndex("k4", std::vector<TableV>{22, 50});
+    table.insertByIndex("k5", std::vector<TableV>{23, 60});
+    table.insertByIndex("k6", std::vector<TableV>{24, 70});
+
+    // Delete where (age >= 20 AND score < 60) OR age < 19
+    // Note: current parser/condition supports only ANDed conditions; to simulate
+    // an OR we run two deletes sequentially: first delete age < 19, then delete
+    // age >=20 AND score < 60.
+
+    // first delete age < 19 -> removes k0
+    QueryCondition cond1;
+    cond1.field = "age";
+    cond1.op = "<";
+    cond1.value = "19";
+    auto q1 = std::make_unique<DeleteQuery>("del_complex", std::vector<std::string>{}, std::vector<QueryCondition>{cond1});
+    auto r1 = q1->execute();
+    EXPECT_TRUE(r1->success());
+    EXPECT_EQ(table.size(), 6u);
+    EXPECT_EQ(nullptr, table["k0"]);
+
+    // then delete age >= 20 AND score < 60 -> should remove k2 (score30), k3(score40), k4(score50)
+    QueryCondition cA;
+    cA.field = "age";
+    cA.op = ">=";
+    cA.value = "20";
+    QueryCondition cB;
+    cB.field = "score";
+    cB.op = "<";
+    cB.value = "60";
+    auto q2 = std::make_unique<DeleteQuery>("del_complex", std::vector<std::string>{}, std::vector<QueryCondition>{cA, cB});
+    auto r2 = q2->execute();
+    EXPECT_TRUE(r2->success());
+    // removed k2,k3,k4 => remaining should be k1,k5,k6
+    EXPECT_EQ(table.size(), 3u);
+    EXPECT_EQ(nullptr, table["k2"]);
+    EXPECT_EQ(nullptr, table["k3"]);
+    EXPECT_EQ(nullptr, table["k4"]);
+    EXPECT_NE(nullptr, table["k1"]);
+    EXPECT_NE(nullptr, table["k5"]);
+    EXPECT_NE(nullptr, table["k6"]);
+}
