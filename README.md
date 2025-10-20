@@ -1,5 +1,17 @@
 # LemonDB
 
+## Build
+
+Currently the project uses `CMake` for building and `GoogleTest` for testing. Run the following commands to build:
+
+```bash
+CXX=clang++ CMake .
+make
+```
+
+The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
+
+
 ## Contributing
 
 This project uses [conventional commits](https://www.conventionalcommits.org) and adheres to [semantic versioning](https://semver.org).
