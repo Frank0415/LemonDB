@@ -15,4 +15,4 @@ public:
     std::string toString() override;
 };
 
-#endif // PROJECT_INSERTQUERY_H
+#endif // PROJECT_DELETEQUERY_H
