@@ -79,7 +79,7 @@ target_compile_options(lemondb PRIVATE
     -Wvla
     -O2
 )
-target_compile_options(lemondb_lib PUBLIC
+target_compile_options(lemondb_lib PRIVATE
     -Wall
     -Wextra
     -Werror
