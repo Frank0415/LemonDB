@@ -287,6 +287,12 @@ public:
    */
   void insertByIndex(const KeyType &key, std::vector<ValueType> &&data);
 
+    /**
+    * Delete a row of data by its key
+    * @param key
+    */
+  void deleteByIndex(const KeyType &key);
+
   /**
    * Access the value according to the key
    * @param key
