@@ -10,7 +10,7 @@ cmake -S . -B build
 #-j4 means you assign 4 cpu cores to the compiler. 
 #Change the number as you want 
 #Or use -j$(nproc) to use as many as cores.
-#(-j0 if you use ninja instead of cmake) 
+#(-j0 if you use ninja instead of make) 
 cmake --build build -j4
 ```
 or
