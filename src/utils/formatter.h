@@ -41,6 +41,7 @@ template <> inline std::string operator%(std::string format, const char *s) {
 }
 
 inline std::string operator""_f(const char *str, size_t size) {
+  (void)size; // Avoid unused parameter warning
   return std::string(str);
 }
 
