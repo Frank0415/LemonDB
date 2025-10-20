@@ -35,27 +35,27 @@ add_compile_options(
 file(GLOB MAIN_SOURCES
     src/main.cpp
     src/db/*.cpp
-    src/db/*.h
+    # src/db/*.h
     src/query/*.cpp
-    src/query/*.h
+    # src/query/*.h
     src/query/data/*.cpp
-    src/query/data/*.h
+    # src/query/data/*.h
     src/query/management/*.cpp
-    src/query/management/*.h
-    src/utils/*.h
+    # src/query/management/*.h
+    # src/utils/*.h
 )
 
 # Define library sources (excluding main.cpp)
 file(GLOB LIB_SOURCES_TEMP
     src/db/*.cpp
-    src/db/*.h
+    # src/db/*.h
     src/query/*.cpp
-    src/query/*.h
+    # src/query/*.h
     src/query/data/*.cpp
-    src/query/data/*.h
+    # src/query/data/*.h
     src/query/management/*.cpp
-    src/query/management/*.h
-    src/utils/*.h
+    # src/query/management/*.h
+    # src/utils/*.h
 )
 set(LIB_SOURCES ${LIB_SOURCES_TEMP})
 
