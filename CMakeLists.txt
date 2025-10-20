@@ -34,13 +34,13 @@ add_compile_options(
 # Define source files for the main application using glob patterns
 file(GLOB MAIN_SOURCES
     src/main.cpp
-    src/db/*.cpp
+    # src/db/*.cpp
     # src/db/*.h
-    src/query/*.cpp
+    # src/query/*.cpp
     # src/query/*.h
-    src/query/data/*.cpp
+    # src/query/data/*.cpp
     # src/query/data/*.h
-    src/query/management/*.cpp
+    # src/query/management/*.cpp
     # src/query/management/*.h
     # src/utils/*.h
 )
@@ -61,7 +61,7 @@ set(LIB_SOURCES ${LIB_SOURCES_TEMP})
 
 # Create the main executable
 add_executable(lemondb ${MAIN_SOURCES})
-target_include_directories(lemondb PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(lemondb PRIVATE lemondb_lib)
 
 # Create a library for testing
 add_library(lemondb_lib STATIC ${LIB_SOURCES})
