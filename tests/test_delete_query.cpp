@@ -68,3 +68,57 @@ TEST(DeleteQueryTest, DeleteByKeyNotFound)
     EXPECT_TRUE(res->success());
     EXPECT_EQ(table.size(), 3u);
 }
+
+TEST(DeleteQueryTest, DeleteAdjacentRows)
+{
+    // Create a table where two adjacent rows should be deleted
+    using TableV = Table::ValueType;
+    auto t = std::make_unique<Table>("del_adjacent", std::vector<std::string>{"age", "score"});
+    Table &table = Database::getInstance().registerTable(std::move(t));
+    table.insertByIndex("a1", std::vector<TableV>{10, 5});
+    table.insertByIndex("a2", std::vector<TableV>{11, 6});
+    table.insertByIndex("a3", std::vector<TableV>{12, 7});
+    table.insertByIndex("a4", std::vector<TableV>{13, 8});
+
+    // delete where age >= 11 and age <= 12 -> should remove a2 and a3 (adjacent)
+    QueryCondition c1;
+    c1.field = "age";
+    c1.op = ">=";
+    c1.value = "11";
+    QueryCondition c2;
+    c2.field = "age";
+    c2.op = "<=";
+    c2.value = "12";
+    std::vector<QueryCondition> conds{c1, c2};
+    auto q = std::make_unique<DeleteQuery>("del_adjacent", std::vector<std::string>{}, conds);
+    auto res = q->execute();
+    EXPECT_TRUE(res->success());
+    // only a1 and a4 remain
+    EXPECT_EQ(table.size(), 2u);
+    EXPECT_NE(nullptr, table["a1"]);
+    EXPECT_EQ(nullptr, table["a2"]);
+    EXPECT_EQ(nullptr, table["a3"]);
+    EXPECT_NE(nullptr, table["a4"]);
+}
+
+TEST(DeleteQueryTest, DeleteAllRows)
+{
+    // Create a table and delete all rows with a broad condition
+    using TableV = Table::ValueType;
+    auto t = std::make_unique<Table>("del_all", std::vector<std::string>{"age", "score"});
+    Table &table = Database::getInstance().registerTable(std::move(t));
+    for (int i = 0; i < 5; ++i)
+    {
+        table.insertByIndex("k" + std::to_string(i), std::vector<TableV>{20 + i, 100 + i});
+    }
+    // delete where age >= 20 -> deletes all
+    QueryCondition cond;
+    cond.field = "age";
+    cond.op = ">=";
+    cond.value = "20";
+    auto q = std::make_unique<DeleteQuery>("del_all", std::vector<std::string>{}, std::vector<QueryCondition>{cond});
+    auto res = q->execute();
+    EXPECT_TRUE(res->success());
+    EXPECT_EQ(table.size(), 0u);
+}
+
