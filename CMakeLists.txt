@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)#3.12 needed for CONFIGURE_DEPENDS
 project(lemondb VERSION 1.0.0 LANGUAGES CXX)
 
 # Set C++ standard
@@ -32,7 +32,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 
 # Define source files for the main application using glob patterns
-file(GLOB MAIN_SOURCES
+file(GLOB MAIN_SOURCES CONFIGURE_DEPENDS
     src/main.cpp
     # src/db/*.cpp
     # src/db/*.h
@@ -46,7 +46,7 @@ file(GLOB MAIN_SOURCES
 )
 
 # Define library sources (excluding main.cpp)
-file(GLOB LIB_SOURCES_TEMP
+file(GLOB LIB_SOURCES_TEMP CONFIGURE_DEPENDS
     src/db/*.cpp
     # src/db/*.h
     src/query/*.cpp
