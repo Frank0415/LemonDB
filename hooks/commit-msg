@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Regex to validate the type pattern
+# Allows: Merge branches, Revert, or Conventional Commits with REQUIRED (p2m*) scope
+REGEX="^((Merge[ a-z-]* branch.*)|(Revert.*)|(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(p2m[^\)]*\))!?: .*)"
+
+FILE=`cat $1` # File containing the commit message
+
+echo "Commit Message: ${FILE}"
+
+# Check for non-ASCII characters in commit message
+if grep --color='auto' -P "[\x80-\xFF]" "$1" > /dev/null 2>&1; then
+	echo >&2 ""
+	echo >&2 "ERROR: Non-ASCII characters detected in commit message!"
+	echo >&2 "Please use only ASCII characters in commit messages."
+	exit 1
+fi
+
+if ! [[ $FILE =~ $REGEX ]]; then
+	echo >&2 "ERROR: Commit aborted for not following the Conventional Commit standard."
+	echo >&2 "Expected format: <type>(p2m*): <description>"
+	echo >&2 "Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
+	echo >&2 "Example: feat(p2m1-1): add new feature"
+	exit 1
+else
+	echo >&2 "Valid commit message."
+fi
