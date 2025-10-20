@@ -37,3 +37,7 @@
 !.gitattributes
 !.gitea/
 !.gitea/**
+
+# Allow git hooks
+!hooks
+!hooks/*
