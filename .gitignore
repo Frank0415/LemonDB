@@ -1,0 +1,39 @@
+# Ignore everything
+*
+
+# Allow Makefile
+!Makefile
+
+# Allow main.cpp
+!src
+!src/main.cpp
+
+# Allow src/db
+!src/db
+!src/db/*.cpp
+!src/db/*.h
+
+# Allow src/query and data/management
+!src/query
+!src/query/data
+!src/query/management
+!src/query/data/*.cpp
+!src/query/data/*.h
+!src/query/management/*.cpp
+!src/query/management/*.h
+!src/query/*.cpp
+!src/query/*.h
+
+# Allow src/utils
+!src/utils
+!src/utils/*.cpp
+!src/utils/*.h
+
+# Allow README.md
+!README.md
+!CHANGELOG.md
+
+!.gitignore
+!.gitattributes
+!.gitea/
+!.gitea/**
