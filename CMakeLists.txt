@@ -10,6 +10,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+# Common compile options
+set(LEMONDB_COMMON_COMPILE_OPTIONS
+    -Wall
+    -Wextra
+    -Werror
+    -pedantic
+    -Wno-unused-result
+    -Wconversion
+    -Wvla
+    -O2
+)
 
 # Comprehensive compiler flags (based on Makefile)
 # -O2: Optimization level
@@ -70,24 +81,10 @@ target_link_libraries(lemondb PRIVATE lemondb_lib)
 
 # Set compiler options for the library and executable
 target_compile_options(lemondb PRIVATE
-    -Wall
-    -Wextra
-    -Werror
-    -pedantic
-    -Wno-unused-result
-    -Wconversion
-    -Wvla
-    -O2
+    ${LEMONDB_COMMON_COMPILE_OPTIONS}
 )
 target_compile_options(lemondb_lib PRIVATE
-    -Wall
-    -Wextra
-    -Werror
-    -pedantic
-    -Wno-unused-result
-    -Wconversion
-    -Wvla
-    -O2
+    ${LEMONDB_COMMON_COMPILE_OPTIONS}
 )
 
 # Google Test Setup
