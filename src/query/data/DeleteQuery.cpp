@@ -22,15 +22,33 @@ QueryResult::Ptr DeleteQuery::execute()
         auto result = initCondition(table);
         if (result.second)
         {
+            // for (Table::SizeType i = 0; i < table.size();)
+            // {
+            //     auto it = table.begin() + static_cast<int>(i); // avoid iterator invalidation
+            //     if (this->evalCondition(*it))
+            //     {
+            //         auto toDeleteKey = it->key();
+            //         table.deleteByIndex(toDeleteKey);
+            //         ++counter;
+            //     }
+            //     else
+            //     {
+            //         ++i;
+            //     }
+            // }
+            std::vector<const Table::KeyType *> keysToDelete;
             for (auto it = table.begin(); it != table.end(); it++)
             {
                 if (this->evalCondition(*it))
                 {
-                    auto toDeleteKey = it->key();
-                    ++it;
-                    table.deleteByIndex(toDeleteKey);
+                    Table::KeyType toDeleteKey = it->key();
+                    keysToDelete.push_back(&toDeleteKey);
                     ++counter;
                 }
+            }
+            for (const auto &keyPtr : keysToDelete)
+            {
+                table.deleteByIndex(*keyPtr);
             }
         }
         return std::make_unique<SuccessMsgResult>(counter);
@@ -60,4 +78,9 @@ QueryResult::Ptr DeleteQuery::execute()
         return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                            "Unkonwn error '?'."_f % e.what());
     }
+}
+
+std::string DeleteQuery::toString()
+{
+    return "QUERY = DELETE " + this->targetTable + "\"";
 }
