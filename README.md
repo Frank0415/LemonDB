@@ -7,7 +7,7 @@ Currently the project uses `CMake` for building and `GoogleTest` for testing. Ru
 ```bash
 # configure then build in separate 
 cmake -S . -B build
-cmake --build build j4
+cmake --build build -j4
 ```
 
 The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
