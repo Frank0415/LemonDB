@@ -48,7 +48,11 @@ QueryResult::Ptr DeleteQuery::execute()
                 table.deleteByIndex(key);
             }
         }
-        return std::make_unique<SuccessMsgResult>(counter);
+        else
+        {
+            throw IllFormedQueryCondition("Error conditions in WHERE clause.");
+        }
+        return std::make_unique<RecordCountResult>(counter);
     }
     catch (const NotFoundKey &e)
     {
