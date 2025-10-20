@@ -35,7 +35,7 @@ public:
     throw QueryBuilderMatchFailed(q.rawQeuryString);
   }
 
-  void setNext(QueryBuilder::Ptr &&builder) final {}
+  void setNext(QueryBuilder::Ptr &&builder) final {(void)builder;}
 
   void clear() override {}
 
