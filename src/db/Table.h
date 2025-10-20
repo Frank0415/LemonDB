@@ -48,7 +48,7 @@ public:
   typedef size_t SizeType;
 
 private:
-  /** A row in the table */
+/** A row in the table */
   struct Datum {
     /** Unique key of this datum */
     KeyType key;
@@ -57,7 +57,11 @@ private:
 
     Datum() = default;
 
+    // By declaring all 5 special member functions, we adhere to the Rule of Five.
     Datum(const Datum &) = default;
+    Datum& operator=(const Datum &) = default; // Fix: Explicitly default the copy assignment operator.
+    Datum(Datum &&) noexcept = default;
+    Datum& operator=(Datum &&) noexcept = default;
 
     explicit Datum(const SizeType &size) {
       datum = std::vector<ValueType>(size, ValueType());
