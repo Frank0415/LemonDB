@@ -45,8 +45,6 @@ set(LEMONDB_COMMON_COMPILE_OPTIONS
 # Define source files for the main application using glob patterns
 file(GLOB MAIN_SOURCES CONFIGURE_DEPENDS
     src/main.cpp
-    # tests/swap_tests.cpp
-    # tests/select_tests.cpp
     # src/db/*.cpp
     # src/db/*.h
     # src/query/*.cpp
@@ -110,6 +108,8 @@ add_executable(lemondb_tests
     tests/test_example.cpp
     tests/test_delete_query.cpp
     tests/test_limits_query.cpp
+    #tests/swap_tests.cpp
+    #tests/select_tests.cpp
 )
 
 target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)

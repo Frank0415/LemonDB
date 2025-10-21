@@ -68,3 +68,7 @@ QueryResult::Ptr SelectQuery::execute() {
                                        "Unknown error '?'."_f % e.what());
   }
 }
+
+std::string SelectQuery::toString() {
+  return "QUERY = SELECT \"" + this->targetTable + "\"";
+}
