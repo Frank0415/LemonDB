@@ -27,6 +27,11 @@ struct ConflictingKey : public std::invalid_argument {
       : std::invalid_argument(str) {}
 };
 
+struct NotFoundKey : public std::invalid_argument {
+  explicit NotFoundKey(const std::string &str)
+      : std::invalid_argument(str) {}
+};
+
 struct MultipleKey : public std::invalid_argument {
   explicit MultipleKey(const std::string &str) : std::invalid_argument(str) {}
 };
