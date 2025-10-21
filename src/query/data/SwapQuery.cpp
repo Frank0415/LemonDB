@@ -57,9 +57,9 @@ QueryResult::Ptr SwapQuery::execute() {
                                        "Unknown error '?'"_f % e.what());
   } catch (const exception& e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Unknown error '?'."_f % e.what());
+                                       "Unkonwn error '?'."_f % e.what());
   }
 }
-std::string SwapQuery::toString(){
+std::string SwapQuery::toString() {
   return "QUERY = SWAP \"" + this->targetTable + "\"";
 }
