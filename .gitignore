@@ -42,6 +42,9 @@
 !hooks
 !hooks/*
 
+# Allow pre-commit config
+!.pre-commit-config.yaml
+
 # Allow CMake and tests
 !CMakeLists.txt
 !tests
