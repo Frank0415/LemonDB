@@ -108,6 +108,8 @@ enable_testing()
 # Create test executable
 add_executable(lemondb_tests
     tests/test_example.cpp
+    tests/test_delete_query.cpp
+    tests/test_limits_query.cpp
 )
 
 target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)

@@ -32,6 +32,33 @@ void Table::insertByIndex(const KeyType &key, std::vector<ValueType> &&data) {
   this->data.emplace_back(key, data);
 }
 
+void Table::deleteByIndex(const KeyType &key)
+{
+    // the key to delete
+    auto it = this->keyMap.find(key);
+
+    // the key doesn't exist
+    if (it == this->keyMap.end())
+    {
+        std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key +
+                          "\" doesn't exist!";
+        throw NotFoundKey(err);
+    }
+
+    // the index of the key to delete
+    SizeType index = it->second;
+    keyMap.erase(it);
+
+    // swap the current data to the last one and pop back
+    if (index != this->data.size() - 1)
+    {
+        Datum &lastDatum = this->data.back();
+        this->data[index] = std::move(lastDatum);
+        this->keyMap[lastDatum.key] = index;
+    }
+    data.pop_back();
+}
+
 Table::Object::Ptr Table::operator[](const Table::KeyType &key) {
   auto it = keyMap.find(key);
   if (it == keyMap.end()) {
