@@ -7,9 +7,7 @@ class SelectQuery : public ComplexQuery {
 public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;
-  std::string toString() override {
-    return "QUERY = SELECT \"" + this->targetTable + "\"";
-  }
+  std::string toString() override;
 };
 
 #endif // PROJECT_SELECT_QUERY_H

@@ -60,3 +60,7 @@ QueryResult::Ptr SwapQuery::execute() {
                                        "Unkonwn error '?'."_f % e.what());
   }
 }
+
+std::string SwapQuery::toString() {
+    return "QUERY = SWAP \"" + this->targetTable + "\"";
+  }
