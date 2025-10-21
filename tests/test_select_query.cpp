@@ -66,20 +66,18 @@ struct QuerySelectSwapTest : ::testing::Test {
 // ---------- SELECT tests ----------
 
 TEST_F(QuerySelectSwapTest, Select_All_NoWhere_PrintsInKeyOrder) {
-  // Expect all rows, order not guaranteed.
+  // Expect alphabetical order by KEY: Bill_Gates, Jack_Ma, Steve_Jobs
   SelectQuery q("Student", {"KEY", "class", "studentID"}, {});
   auto res = q.execute();
   ASSERT_TRUE(res->success());
   const std::string out = asString(res);
   // If out is empty, your SelectQuery likely prints to cout instead of returning a displayable result.
   ASSERT_FALSE(out.empty()) << "SelectQuery should return a displayable QueryResult (e.g., TextRowsResult).";
-  const std::string line1 = "( Bill_Gates 2014 400812312 )\n";
-  const std::string line2 = "( Jack_Ma 2015 400882382 )\n";
-  const std::string line3 = "( Steve_Jobs 2014 400851751 )\n";
-  EXPECT_EQ(out.length(), line1.length() + line2.length() + line3.length());
-  EXPECT_NE(out.find(line1), std::string::npos);
-  EXPECT_NE(out.find(line2), std::string::npos);
-  EXPECT_NE(out.find(line3), std::string::npos);
+  const std::string expect =
+      "( Bill_Gates 2014 400812312 )\n"
+      "( Jack_Ma 2015 400882382 )\n"
+      "( Steve_Jobs 2014 400851751 )\n";
+  EXPECT_EQ(out, expect);
 }
 
 TEST_F(QuerySelectSwapTest, Select_KeyEquals_FastPath) {
