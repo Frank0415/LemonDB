@@ -4,6 +4,8 @@
 # Allows: Merge branches, Revert, or Conventional Commits with REQUIRED (p2m*) scope
 REGEX="^((Merge[ a-z-]* branch.*)|(Revert.*)|(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(p2m[^\)]*\))!?: .*)"
 
+REGEX="^((Merge[ a-z-]* branch.*)|(Revert.*)|(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(p2m[^\)]-1\))!?: .*)"
+
 FILE=`cat $1` # File containing the commit message
 
 echo "Commit Message: ${FILE}"
