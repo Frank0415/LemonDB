@@ -9,7 +9,9 @@
 
 #include "../db/Database.h"
 #include "data/InsertQuery.h"
+#include "data/SelectQuery.h"
 #include "data/UpdateQuery.h"
+#include "data/SwapQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
 #include "management/ListTableQuery.h"
@@ -149,9 +151,8 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
     return std::make_unique<UpdateQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   if (operation == "SELECT")
-    return std::make_unique<NopQuery>(); // Not implemented
-  /*return std::make_unique<SelectQuery>(
-          this->targetTable, this->operandToken, this->conditionToken);*/
+    return std::make_unique<SelectQuery>(
+          this->targetTable, this->operandToken, this->conditionToken);
   if (operation == "DELETE")
     return std::make_unique<NopQuery>(); // Not implemented
   /*return std::make_unique<DeleteQuery>(
@@ -185,9 +186,8 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
                                          /*return std::make_unique<SubQuery>(
                                                  this->targetTable, this->operandToken, this->conditionToken);*/
   if (operation == "SWAP")
-    return std::make_unique<NopQuery>(); // Not implemented
-                                         /*return std::make_unique<SwapQuery>(
-                                                 this->targetTable, this->operandToken, this->conditionToken);*/
+    return std::make_unique<SwapQuery>(
+      this->targetTable, this->operandToken, this->conditionToken);
   std::cerr << "Complicated query found!" << std::endl;
   std::cerr << "Operation = " << query.token.front() << std::endl;
   std::cerr << "    Operands : ";
