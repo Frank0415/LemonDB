@@ -199,6 +199,10 @@ public:
 
     reference operator*() { return *createProxy(it, table); }
 
+    pointer   operator->() const { return createProxy(it, table); }
+    
+    reference operator*()  const { return *createProxy(it, table); }
+
     IteratorImpl operator+(int n) { return IteratorImpl(it + n, table); }
 
     IteratorImpl operator-(int n) { return IteratorImpl(it - n, table); }
