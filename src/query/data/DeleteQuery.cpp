@@ -20,20 +20,6 @@ QueryResult::Ptr DeleteQuery::execute()
         auto result = initCondition(table);
         if (result.second)
         {
-            // for (Table::SizeType i = 0; i < table.size();)
-            // {
-            //     auto it = table.begin() + static_cast<int>(i); // avoid iterator invalidation
-            //     if (this->evalCondition(*it))
-            //     {
-            //         auto toDeleteKey = it->key();
-            //         table.deleteByIndex(toDeleteKey);
-            //         ++counter;
-            //     }
-            //     else
-            //     {
-            //         ++i;
-            //     }
-            // }
             std::vector<Table::KeyType> keysToDelete;
             for (auto it = table.begin(); it != table.end(); it++)
             {
