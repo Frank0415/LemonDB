@@ -45,6 +45,7 @@ set(LEMONDB_COMMON_COMPILE_OPTIONS
 # Define source files for the main application using glob patterns
 file(GLOB MAIN_SOURCES CONFIGURE_DEPENDS
     src/main.cpp
+    # tests/select_tests.cpp
     # src/db/*.cpp
     # src/db/*.h
     # src/query/*.cpp
