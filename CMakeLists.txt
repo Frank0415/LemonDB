@@ -109,6 +109,7 @@ add_executable(lemondb_tests
     tests/test_delete_query.cpp
     tests/test_limits_query.cpp
     tests/test_select_query.cpp
+    tests/test_duplicate_query.cpp
     tests/test_swap_query.cpp
     tests/test_sum_query.cpp
 )

@@ -3,16 +3,15 @@
 
 #include "../Query.h"
 
-class MinQuery : public ComplexQuery
-{
-    static constexpr const char *qname = "MIN";
+class MinQuery : public ComplexQuery {
+  static constexpr const char *qname = "MIN";
 
 public:
-    using ComplexQuery::ComplexQuery;
+  using ComplexQuery::ComplexQuery;
 
-    QueryResult::Ptr execute() override;
+  QueryResult::Ptr execute() override;
 
-    std::string toString() override;
+  std::string toString() override;
 };
 
 #endif // PROJECT_MINQUERY_H
