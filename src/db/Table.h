@@ -290,6 +290,12 @@ public:
   bool evalDuplicateCopy(KeyType key);
 
   /**
+   * Duplicate a row of data by its key
+   * @param key
+   */
+  void duplicateKeyData(KeyType *key);
+
+  /**
    * Find the index of a field in the fieldMap
    * @param field
    * @return fieldIndex
