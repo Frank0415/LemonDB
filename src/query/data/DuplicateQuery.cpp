@@ -22,24 +22,26 @@ QueryResult::Ptr DuplicateQuery::execute() {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
-    std::vector<const Table::KeyType *> keysToDuplicate;
+    // Collect keys to duplicate (store by value to avoid dangling pointers)
+    std::vector<Table::KeyType> keysToDuplicate;
 
     for (auto it = table.begin(); it != table.end(); ++it) {
-      if (this->evalCondition(*it)) {
-        auto originalKey = it->key();
-
-        if (!table.evalDuplicateCopy(originalKey)) {
-          continue;
-        }
-
-        keysToDuplicate.push_back(&originalKey);
+      if (!this->evalCondition(*it)) {
+        continue;
       }
+      auto originalKey = it->key();
+      // if a "_copy" already exists, skip this key
+      if (table.evalDuplicateCopy(originalKey)) {
+        continue;
+      }
+
+      keysToDuplicate.push_back(originalKey);
     }
 
-    for (const auto *key : keysToDuplicate) {
-      auto originalObject = table[*key];
+    for (const Table::KeyType &key : keysToDuplicate) {
+      table.duplicateKeyData(key);
     }
-
+    return make_unique<RecordCountResult>(keysToDuplicate.size());
   } catch (const NotFoundKey &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                        "Key not found."s);

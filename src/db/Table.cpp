@@ -27,10 +27,10 @@ bool Table::evalDuplicateCopy(Table::KeyType key) {
   return this->keyMap.find(key) != this->keyMap.end();
 }
 
-void Table::duplicateKeyData(Table::KeyType *key) {
-  Table::KeyType copyKey(*key);
+void Table::duplicateKeyData(const Table::KeyType key) {
+  Table::KeyType copyKey(key);
   copyKey.append("_copy");
-  std::vector<ValueType> copyData = ((*this)[*key])->it->datum;
+  std::vector<ValueType> copyData = ((*this)[key])->it->datum;
   this->insertByIndex(copyKey, std::move(copyData));
 }
 

@@ -293,7 +293,7 @@ public:
    * Duplicate a row of data by its key
    * @param key
    */
-  void duplicateKeyData(KeyType *key);
+  void duplicateKeyData(const KeyType key);
 
   /**
    * Find the index of a field in the fieldMap
