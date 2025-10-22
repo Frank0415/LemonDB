@@ -17,6 +17,27 @@ QueryResult::Ptr SubQuery::execute() {
     auto &db = Database::getInstance();
     auto &table = db[this->targetTable];
 
+    auto result = initCondition(table);
+    if (!result.second) {
+      throw IllFormedQueryCondition("Error conditions in WHERE clause.");
+    }
+    // Lookup
+    int count = 0;
+
+    for (auto it = table.begin(); it != table.end(); ++it) {
+      if (!this->evalCondition(*it)) {
+        continue;
+      }
+      // perform SUB operation
+      int diff = (*it)[table.getFieldIndex(this->operands[0])];
+      for (size_t i = 1; i < this->operands.size() - 1; ++i) {
+        auto fieldIndex = table.getFieldIndex(this->operands[i]);
+        diff -= (*it)[fieldIndex];
+      }
+      (*it)[table.getFieldIndex(this->operands.back())] = diff;
+      count++;
+    }
+
   } catch (const NotFoundKey &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                        "Key not found."s);
