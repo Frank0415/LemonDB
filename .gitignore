@@ -50,3 +50,5 @@
 !tests
 !tests/*.cpp
 !tests/*.h
+
+!.clang-format
