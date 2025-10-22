@@ -142,3 +142,55 @@ TEST(SubQueryTest, SubWithCondition) {
   // clean up
   Database::getInstance().dropTable("sub_cond_test");
 }
+
+TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID) {
+  using TableV = Table::ValueType;
+  // create table like Student: fields studentID, class, totalCredit
+  auto t = std::make_unique<Table>(
+      "student_like",
+      std::vector<std::string>{"studentID", "class", "totalCredit"});
+  Table &table = Database::getInstance().registerTable(std::move(t));
+
+  // insert rows similar to student.tbl
+  table.insertByIndex("s1", std::vector<TableV>{123123, 2014, 112});
+  table.insertByIndex("s2", std::vector<TableV>{517517, 2014, 115});
+  table.insertByIndex("s3", std::vector<TableV>{823823, 2015, 123});
+  table.insertByIndex("s4", std::vector<TableV>{66666, 2015, 120});
+  table.insertByIndex("s5", std::vector<TableV>{777777, 2016, 130});
+
+  // prepare operands: ADD ( totalCredit studentID ) - copy totalCredit to
+  // studentID
+  std::vector<std::string> operands = {"totalCredit", "studentID"};
+
+  // conditions: totalCredit > 100 AND class < 2015
+  QueryCondition cond1;
+  cond1.field = "totalCredit";
+  cond1.op = ">";
+  cond1.value = "100";
+
+  QueryCondition cond2;
+  cond2.field = "class";
+  cond2.op = "<";
+  cond2.value = "2015";
+
+  std::vector<QueryCondition> conds{cond1, cond2};
+
+  auto q = std::make_unique<AddQuery>("student_like", operands, conds);
+  auto r = q->execute();
+  EXPECT_TRUE(r->success());
+  std::ostringstream oss;
+  oss << *r;
+  EXPECT_EQ(oss.str(), "Affected 2 rows.\n"); // s1 and s2 match
+
+  // verify results: for s1 and s2, studentID field should be set to totalCredit
+  EXPECT_EQ((*table["s1"])[0], 112); // studentID set to totalCredit
+  EXPECT_EQ((*table["s2"])[0], 115); // studentID set to totalCredit
+
+  // others unchanged
+  EXPECT_EQ((*table["s3"])[0], 823823); // original
+  EXPECT_EQ((*table["s4"])[0], 66666);
+  EXPECT_EQ((*table["s5"])[0], 777777);
+
+  // clean up
+  Database::getInstance().dropTable("student_like");
+}
