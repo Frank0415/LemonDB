@@ -48,7 +48,7 @@ public:
   typedef size_t SizeType;
 
 private:
-/** A row in the table */
+  /** A row in the table */
   struct Datum {
     /** Unique key of this datum */
     KeyType key;
@@ -57,11 +57,13 @@ private:
 
     Datum() = default;
 
-    // By declaring all 5 special member functions, we adhere to the Rule of Five.
+    // By declaring all 5 special member functions, we adhere to the Rule of
+    // Five.
     Datum(const Datum &) = default;
-    Datum& operator=(const Datum &) = default; // Fix: Explicitly default the copy assignment operator.
+    Datum &operator=(const Datum &) =
+        default; // Fix: Explicitly default the copy assignment operator.
     Datum(Datum &&) noexcept = default;
-    Datum& operator=(Datum &&) noexcept = default;
+    Datum &operator=(Datum &&) noexcept = default;
 
     explicit Datum(const SizeType &size) {
       datum = std::vector<ValueType>(size, ValueType());
@@ -203,9 +205,9 @@ public:
 
     reference operator*() { return *createProxy(it, table); }
 
-    pointer   operator->() const { return createProxy(it, table); }
-    
-    reference operator*()  const { return *createProxy(it, table); }
+    pointer operator->() const { return createProxy(it, table); }
+
+    reference operator*() const { return *createProxy(it, table); }
 
     IteratorImpl operator+(int n) { return IteratorImpl(it + n, table); }
 
@@ -281,6 +283,19 @@ public:
         keyMap(origin.keyMap), tableName(std::move(name)) {}
 
   /**
+   * Check whether a key already exists in the table
+   * @param key
+   * @return
+   */
+  bool evalDuplicateCopy(KeyType key);
+
+  /**
+   * Duplicate a row of data by its key
+   * @param key
+   */
+  void duplicateKeyData(const KeyType key);
+
+  /**
    * Find the index of a field in the fieldMap
    * @param field
    * @return fieldIndex
@@ -295,10 +310,10 @@ public:
    */
   void insertByIndex(const KeyType &key, std::vector<ValueType> &&data);
 
-    /**
-    * Delete a row of data by its key
-    * @param key
-    */
+  /**
+   * Delete a row of data by its key
+   * @param key
+   */
   void deleteByIndex(const KeyType &key);
 
   /**
