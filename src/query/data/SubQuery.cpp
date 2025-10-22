@@ -1,0 +1,61 @@
+#include "SubQuery.h"
+#include "../../db/Database.h"
+#include "../QueryResult.h"
+#include <algorithm>
+#include <sstream>
+
+constexpr const char *SubQuery::qname;
+
+QueryResult::Ptr SubQuery::execute() {
+  using namespace std;
+  try {
+    if (this->operands.size() < 2) {
+      return make_unique<ErrorMsgResult>(
+          qname, this->targetTable,
+          "Invalid number of operands (? operands)."_f % operands.size());
+    }
+    auto &db = Database::getInstance();
+    auto &table = db[this->targetTable];
+
+    auto result = initCondition(table);
+    if (!result.second) {
+      throw IllFormedQueryCondition("Error conditions in WHERE clause.");
+    }
+    // Lookup
+    int count = 0;
+
+    for (auto it = table.begin(); it != table.end(); ++it) {
+      if (!this->evalCondition(*it)) {
+        continue;
+      }
+      // perform SUB operation
+      int diff = (*it)[table.getFieldIndex(this->operands[0])];
+      for (size_t i = 1; i < this->operands.size() - 1; ++i) {
+        auto fieldIndex = table.getFieldIndex(this->operands[i]);
+        diff -= (*it)[fieldIndex];
+      }
+      (*it)[table.getFieldIndex(this->operands.back())] = diff;
+      count++;
+    }
+    return make_unique<RecordCountResult>(count);
+  } catch (const NotFoundKey &e) {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                       "Key not found."s);
+  } catch (const TableNameNotFound &e) {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                       "No such table."s);
+  } catch (const IllFormedQueryCondition &e) {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+  } catch (const invalid_argument &e) {
+    // Cannot convert operand to string
+    return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                       "Unknown error '?'"_f % e.what());
+  } catch (const exception &e) {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                       "Unkonwn error '?'."_f % e.what());
+  }
+}
+
+std::string SubQuery::toString() {
+  return "QUERY = SUB TABLE \"" + this->targetTable + "\"";
+}
