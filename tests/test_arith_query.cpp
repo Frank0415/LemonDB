@@ -190,6 +190,25 @@ TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID) {
   EXPECT_EQ((*table["s3"])[0], 823823); // original
   EXPECT_EQ((*table["s4"])[0], 66666);
   EXPECT_EQ((*table["s5"])[0], 777777);
+  // prepare operands: SUB ( class class ) - subtract class from class, result 0
+  std::vector<std::string> operands2 = {"class", "class"};
+
+  std::vector<QueryCondition> conds2{cond1, cond2};
+
+  auto qq = std::make_unique<SubQuery>("student_like", operands2, conds2);
+  r = qq->execute();
+  EXPECT_TRUE(r->success());
+  std::ostringstream oss2;
+  oss2 << *r;
+  EXPECT_EQ(oss.str(), "Affected 2 rows.\n"); // s1 and s2 match
+
+  EXPECT_EQ((*table["s1"])[1], 2014);
+  EXPECT_EQ((*table["s2"])[1], 2014);
+
+  // others unchanged
+  EXPECT_EQ((*table["s3"])[1], 2015); // original
+  EXPECT_EQ((*table["s4"])[1], 2015);
+  EXPECT_EQ((*table["s5"])[1], 2016);
 
   // clean up
   Database::getInstance().dropTable("student_like");

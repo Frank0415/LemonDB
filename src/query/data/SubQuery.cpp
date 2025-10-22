@@ -9,7 +9,7 @@ constexpr const char *SubQuery::qname;
 QueryResult::Ptr SubQuery::execute() {
   using namespace std;
   try {
-    if (this->operands.size() < 3) {
+    if (this->operands.size() < 2) {
       return make_unique<ErrorMsgResult>(
           qname, this->targetTable,
           "Invalid number of operands (? operands)."_f % operands.size());
@@ -57,5 +57,5 @@ QueryResult::Ptr SubQuery::execute() {
 }
 
 std::string SubQuery::toString() {
-  return "QUERY = Duplicate TABLE \"" + this->targetTable + "\"";
+  return "QUERY = SUB TABLE \"" + this->targetTable + "\"";
 }
