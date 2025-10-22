@@ -99,3 +99,170 @@ TEST_F(SumTest, EmptyOperand_IsError) {
   auto res = q.execute();
   EXPECT_FALSE(res->success());
 }
+
+// Single field sum across whole table.
+TEST_F(SumTest, SingleField_WholeTable) {
+  // Expected: totalCredit = 112+115+123 = 350
+  SumQuery q("Student", {"totalCredit"}, {});
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 350 )\n");
+}
+
+// Sum with single WHERE condition (equality).
+TEST_F(SumTest, SingleCondition_Equality) {
+  // Only class=2014: Bill_Gates(112) + Steve_Jobs(115) = 227
+  SumQuery q("Student", {"totalCredit"}, { C("class","=","2014") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 227 )\n");
+}
+
+// Sum with single WHERE condition (greater than).
+TEST_F(SumTest, SingleCondition_GreaterThan) {
+  // totalCredit > 112: Steve_Jobs(115) + Jack_Ma(123) = 238
+  SumQuery q("Student", {"totalCredit"}, { C("totalCredit",">","112") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 238 )\n");
+}
+
+// Sum with single WHERE condition (less than).
+TEST_F(SumTest, SingleCondition_LessThan) {
+  // totalCredit < 120: Bill_Gates(112) + Steve_Jobs(115) = 227
+  SumQuery q("Student", {"totalCredit"}, { C("totalCredit","<","120") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 227 )\n");
+}
+
+// Sum with single WHERE condition (greater than or equal).
+TEST_F(SumTest, SingleCondition_GreaterEqual) {
+  // totalCredit >= 115: Steve_Jobs(115) + Jack_Ma(123) = 238
+  SumQuery q("Student", {"totalCredit"}, { C("totalCredit",">=","115") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 238 )\n");
+}
+
+// Sum with single WHERE condition (less than or equal).
+TEST_F(SumTest, SingleCondition_LessEqual) {
+  // totalCredit <= 115: Bill_Gates(112) + Steve_Jobs(115) = 227
+  SumQuery q("Student", {"totalCredit"}, { C("totalCredit","<=","115") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 227 )\n");
+}
+
+// Sum with multiple WHERE conditions (AND logic).
+TEST_F(SumTest, MultipleConditions_AND) {
+  // class=2014 AND totalCredit>112: only Steve_Jobs(115)
+  SumQuery q("Student", {"totalCredit"}, { 
+    C("class","=","2014"), 
+    C("totalCredit",">","112") 
+  });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 115 )\n");
+}
+
+// Sum with multiple WHERE conditions (no match).
+TEST_F(SumTest, MultipleConditions_NoMatch) {
+  // class=2014 AND totalCredit>120: no match
+  SumQuery q("Student", {"totalCredit"}, { 
+    C("class","=","2014"), 
+    C("totalCredit",">","120") 
+  });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 0 )\n");
+}
+
+// Sum all three fields.
+TEST_F(SumTest, AllFields) {
+  // studentID sum, class sum, totalCredit sum
+  // studentID: 400812312 + 400851751 + 400882382 = 1202546445
+  // class: 2014 + 2014 + 2015 = 6043
+  // totalCredit: 112 + 115 + 123 = 350
+  SumQuery q("Student", {"studentID", "class", "totalCredit"}, {});
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 1202546445 6043 350 )\n");
+}
+
+// Sum with KEY condition that matches exactly one row.
+TEST_F(SumTest, KeyCondition_SingleMatch) {
+  // Jack_Ma: totalCredit=123, class=2015
+  SumQuery q("Student", {"totalCredit", "class"}, { C("KEY","=","Jack_Ma") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 123 2015 )\n");
+}
+
+// Sum with KEY condition that doesn't match.
+TEST_F(SumTest, KeyCondition_NoMatch) {
+  // Non-existent key
+  SumQuery q("Student", {"totalCredit"}, { C("KEY","=","NonExistent") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 0 )\n");
+}
+
+// Sum with condition on different field than summed field.
+TEST_F(SumTest, ConditionOnDifferentField) {
+  // Sum studentID where class=2014
+  // Bill_Gates(400812312) + Steve_Jobs(400851751) = 801664063
+  SumQuery q("Student", {"studentID"}, { C("class","=","2014") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 801664063 )\n");
+}
+
+// Sum on non-existent table should fail.
+TEST_F(SumTest, NonExistentTable_IsError) {
+  SumQuery q("NonExistentTable", {"totalCredit"}, {});
+  auto res = q.execute();
+  EXPECT_FALSE(res->success());
+}
+
+// Sum with boundary value condition (exact match on boundary).
+TEST_F(SumTest, BoundaryValue_ExactMatch) {
+  // totalCredit = 115: only Steve_Jobs
+  SumQuery q("Student", {"totalCredit", "class"}, { C("totalCredit","=","115") });
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 115 2014 )\n");
+}
+
+// Sum with fields in reverse order.
+TEST_F(SumTest, ReverseFieldOrder) {
+  // Verify order matters: class first, then totalCredit
+  SumQuery q("Student", {"class", "totalCredit"}, {});
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 6043 350 )\n");
+}
+
+// Sum same field multiple times (if allowed).
+TEST_F(SumTest, SameFieldMultipleTimes) {
+  // Sum totalCredit twice: should give same result twice
+  SumQuery q("Student", {"totalCredit", "totalCredit"}, {});
+  auto res = q.execute();
+  ASSERT_TRUE(res->success());
+  const std::string out = asString(res);
+  EXPECT_EQ(out, "ANSWER = ( 350 350 )\n");
+}
