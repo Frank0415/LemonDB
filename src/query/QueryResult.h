@@ -124,4 +124,20 @@ protected:
   }
 };
 
+
+class TextRowsResult : public SucceededQueryResult {
+  std::string payload;
+
+public:
+  bool display() override { return true; }
+
+  explicit TextRowsResult(std::string s) : payload(std::move(s)) {}
+
+protected:
+  std::ostream &output(std::ostream &os) const override {
+    return os << payload; 
+  }
+};
+
+
 #endif // PROJECT_QUERYRESULT_H

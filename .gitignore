@@ -1,8 +1,8 @@
 # Ignore everything
 *
 
-# Allow Makefile
-!Makefile
+# # Allow Makefile
+# !Makefile
 
 # Allow main.cpp
 !src
@@ -41,3 +41,14 @@
 # Allow git hooks
 !hooks
 !hooks/*
+
+# Allow pre-commit config
+!.pre-commit-config.yaml
+
+# Allow CMake and tests
+!CMakeLists.txt
+!tests
+!tests/*.cpp
+!tests/*.h
+
+!.clang-format
