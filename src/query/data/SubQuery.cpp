@@ -37,7 +37,7 @@ QueryResult::Ptr SubQuery::execute() {
       (*it)[table.getFieldIndex(this->operands.back())] = diff;
       count++;
     }
-
+    return make_unique<RecordCountResult>(count);
   } catch (const NotFoundKey &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                        "Key not found."s);

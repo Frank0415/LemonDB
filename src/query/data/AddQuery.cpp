@@ -61,5 +61,5 @@ QueryResult::Ptr AddQuery::execute() {
 }
 
 std::string AddQuery::toString() {
-  return "QUERY = Duplicate TABLE \"" + this->targetTable + "\"";
+  return "QUERY = ADD TABLE \"" + this->targetTable + "\"";
 }

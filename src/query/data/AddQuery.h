@@ -4,7 +4,7 @@
 #include "../Query.h"
 
 class AddQuery : public ComplexQuery {
-  static constexpr const char *qname = "DUPLICATE";
+  static constexpr const char *qname = "ADD";
 
 public:
   using ComplexQuery::ComplexQuery;
