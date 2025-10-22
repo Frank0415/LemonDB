@@ -3,16 +3,15 @@
 
 #include "../Query.h"
 
-class DeleteQuery : public ComplexQuery
-{
-    static constexpr const char *qname = "DELETE";
+class DeleteQuery : public ComplexQuery {
+  static constexpr const char *qname = "DELETE";
 
 public:
-    using ComplexQuery::ComplexQuery;
+  using ComplexQuery::ComplexQuery;
 
-    QueryResult::Ptr execute() override;
+  QueryResult::Ptr execute() override;
 
-    std::string toString() override;
+  std::string toString() override;
 };
 
 #endif // PROJECT_DELETEQUERY_H
