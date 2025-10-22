@@ -111,6 +111,7 @@ add_executable(lemondb_tests
     tests/test_select_query.cpp
     tests/test_duplicate_query.cpp
     tests/test_swap_query.cpp
+    tests/test_sum_query.cpp
 )
 
 target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
