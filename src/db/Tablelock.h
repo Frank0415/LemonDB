@@ -18,9 +18,38 @@ private:
   TableLockManager(const TableLockManager &) = delete;
   TableLockManager &operator=(const TableLockManager &) = delete;
 
-  std::shared_mutex &getOrCreateLock(const std::string &table_name) {}
+  std::shared_mutex &getOrCreateLock(const std::string &table_name) {
+    {
+      std::shared_lock<std::shared_mutex> read(map_mutex_);
+      auto it = lock_map_.find(table_name);
+      if (it != lock_map_.end()) {
+        return *it->second;
+      }
+    }
+
+    std::unique_lock<std::shared_mutex> write(map_mutex_);
+    auto &ptr = lock_map_[table_name];
+    if (!ptr) {
+      ptr = std::make_unique<std::shared_mutex>();
+    }
+    return *ptr;
+  }
 
 public:
+  std::shared_lock<std::shared_mutex>
+  acquireRead(const std::string &table_name) {
+    return std::shared_lock<std::shared_mutex>(getOrCreateLock(table_name));
+  }
+
+  std::unique_lock<std::shared_mutex>
+  acquireWrite(const std::string &table_name) {
+    return std::unique_lock<std::shared_mutex>(getOrCreateLock(table_name));
+  }
+
+  static TableLockManager &getInstance() {
+    static TableLockManager instance;
+    return instance;
+  }
 };
 
 #endif // PROJECT_TABLELOCKMANAGER_H
