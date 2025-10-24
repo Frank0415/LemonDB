@@ -177,7 +177,8 @@ Table &Database::loadTableFromStream(std::istream &is,
 }
 
 void Database::exit() {
-  // We are being lazy here ...
-  // Might cause problem ...
-  std::exit(0);
+  // Set the flag to stop reading new queries
+  endInput = true;
+  // Note: Don't call std::exit(0) here!
+  // Let main() handle waiting for queries and output
 }

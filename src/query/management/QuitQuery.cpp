@@ -12,7 +12,7 @@ std::string QuitQuery::toString() { return "QUERY = Quit"; }
 
 QueryResult::Ptr QuitQuery::execute() {
   auto &db = Database::getInstance();
-  db.exit();
-  // might not reach here, but we want to keep the consistency of queries
+  db.exit(); // Set endInput flag
+  // Return success message, main() will handle waiting and output
   return std::make_unique<SuccessMsgResult>(qname);
 }

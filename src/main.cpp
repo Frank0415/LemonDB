@@ -12,11 +12,11 @@
 #include <string>
 #include <vector>
 
+#include "db/Database.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
 #include "threading/Collector.h"
 #include "threading/Threadpool.h"
-
 struct {
   std::string listen;
   long threads = 0;
@@ -118,8 +118,9 @@ int main(int argc, char *argv[]) {
 
   // Main loop: async query submission
   std::vector<std::future<void>> pending_queries;
+  Database &db = Database::getInstance();
 
-  while (is) {
+  while (is && !db.isEnd()) {
     try {
       std::string queryStr = extractQueryString(is);
       Query::Ptr query = p.parseQuery(queryStr);
