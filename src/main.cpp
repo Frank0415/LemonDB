@@ -113,6 +113,7 @@ int main(int argc, char *argv[]) {
       std::cout << ++counter << "\n";
       if (result->success()) {
         if (result->display()) {
+          std::cout.flush();
           std::cout << *result;
         } else {
 #ifndef NDEBUG
