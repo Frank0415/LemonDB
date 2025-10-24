@@ -92,6 +92,6 @@ BasicQueryBuilderClass(ManageTable);
 // ComplexQueryBuilderClass(UpdateTable);
 // ComplexQueryBuilderClass(Insert);
 // ComplexQueryBuilderClass(Delete);
-ComplexQueryBuilderClass(Count);
+// ComplexQueryBuilderClass(Count);
 
 #endif // PROJECT_QUERYBUILDERS_H
