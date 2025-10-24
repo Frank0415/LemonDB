@@ -10,6 +10,7 @@
 
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
+#include "threading/Threadpool.h"
 
 struct {
   std::string listen;
@@ -64,6 +65,10 @@ int main(int argc, char *argv[]) {
     }
   }
   std::istream is(fin.rdbuf());
+
+  ThreadPool::initialize(
+      parsedArgs.threads > 0 ? static_cast<size_t>(parsedArgs.threads)
+                             : std::thread::hardware_concurrency());
 
 #ifdef NDEBUG
   // In production mode, listen argument must be defined

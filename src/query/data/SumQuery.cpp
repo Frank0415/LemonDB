@@ -36,36 +36,46 @@ QueryResult::Ptr SumQuery::execute() {
 
     // NEW: READ LOCK PROTECTED MODE
     static ThreadPool &pool = ThreadPool::getInstance();
-    // const size_t chunk_size = getChunkSize();
     const size_t chunk_size = 2000;
     const size_t num_fields = fids.size();
 
     std::vector<std::future<std::vector<int>>> futures;
+    futures.reserve((table.size() + chunk_size - 1) / chunk_size);
 
-    futures.push_back(pool.submit());
+    // NEEDS ANOTHER SET OF LOGIC FOR TABLE < 2000
 
-    vector<int> sums(fids.size(), 0);
-    bool handled =
-        this->testKeyCondition(table, [&](bool ok, Table::Object::Ptr &&obj) {
-          if (!ok)
-            return;
-          if (obj) {
-            for (size_t i = 0; i < fids.size(); ++i) {
-              sums[i] += (*obj)[fids[i]];
+    auto it = table.begin();
+    while (it != table.end()) {
+      auto chunk_begin = it;
+      size_t count = 0;
+      while (it != table.end() && count < chunk_size) {
+        ++it;
+        ++count;
+      }
+      auto chunk_end = it;
+
+      futures.push_back(
+          pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
+            std::vector<int> local_sums(num_fields, 0);
+            for (auto it = chunk_begin; it != chunk_end; ++it) {
+              if (this->evalCondition(*it)) {
+                for (size_t i = 0; i < num_fields; ++i) {
+                  local_sums[i] += (*it)[fids[i]];
+                }
+              }
             }
-          }
-        });
-    if (!handled) {
-      for (auto it = table.begin(); it != table.end(); ++it) {
-        if (this->evalCondition(*it)) {
-          for (size_t i = 0; i < fids.size(); ++i) {
-            sums[i] += (*it)[fids[i]];
-          }
-        }
+            return local_sums;
+          }));
+    }
+
+    vector<int> sums(num_fields, 0);
+    for (auto &fut : futures) {
+      auto local_sums = fut.get();
+      for (size_t i = 0; i < num_fields; ++i) {
+        sums[i] += local_sums[i];
       }
     }
     return make_unique<SuccessMsgResult>(sums);
-
   } catch (const TableNameNotFound &) {
     return make_unique<ErrorMsgResult>("SUM", this->targetTable,
                                        "No such table.");
