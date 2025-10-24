@@ -29,6 +29,11 @@
 !src/utils/*.cpp
 !src/utils/*.h
 
+# Allow threading
+!src/threading
+!src/threading/*.cpp
+!src/threading/*.h
+
 # Allow README.md
 !README.md
 !CHANGELOG.md
