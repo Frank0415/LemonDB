@@ -106,6 +106,7 @@ enable_testing()
 # Create test executable
 add_executable(lemondb_tests
     tests/test_example.cpp
+    tests/test_count_query.cpp
     tests/test_delete_query.cpp
     tests/test_limits_query.cpp
     tests/test_select_query.cpp
