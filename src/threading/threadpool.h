@@ -13,6 +13,8 @@
 class ThreadPool {
 private:
   static std::unique_ptr<ThreadPool> global_instance;
+  static std::mutex instance_mutex;
+  static bool initialized;
 
   std::mutex lockx;
   std::queue<std::function<void()>> Task_assemble;
@@ -42,13 +44,17 @@ private:
     }
   }
 
-  ThreadPool(size_t num_threads = std::thread::hardware_concurrency())
-      : done(false), idleThreadNum(0) {
+  // Private constructor for singleton
+  explicit ThreadPool(size_t num_threads) : done(false), idleThreadNum(0) {
     for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
     }
   }
+
+  // Deleted copy constructor and assignment operator
+  ThreadPool(const ThreadPool &) = delete;
+  ThreadPool &operator=(const ThreadPool &) = delete;
 
 public:
   static void
@@ -57,8 +63,22 @@ public:
     if (initialized) {
       throw std::runtime_error("ThreadPool already initialized");
     }
-    global_instance = std::make_unique<ThreadPool>(num_threads);
+    global_instance = std::unique_ptr<ThreadPool>(new ThreadPool(num_threads));
     initialized = true;
+  }
+
+  static ThreadPool &getInstance() {
+    std::lock_guard<std::mutex> lock(instance_mutex);
+    if (!initialized) {
+      throw std::runtime_error(
+          "ThreadPool not initialized. Call initialize() first.");
+    }
+    return *global_instance;
+  }
+
+  static bool isInitialized() {
+    std::lock_guard<std::mutex> lock(instance_mutex);
+    return initialized;
   }
 
   ~ThreadPool() {
