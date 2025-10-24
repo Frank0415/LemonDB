@@ -18,8 +18,36 @@ private:
   std::condition_variable cv;
   std::atomic<bool> done;
   std::atomic<int> idleThreadNum;
+
+  // a manager for threads to constantly work until the ThreadPool is destructed
+  void thread_manager() {
+    while (!done.load()) {
+      std::function<void()> task;
+      {
+        std::unique_lock<std::mutex> ul(lockx);
+        cv.wait(ul, [this]() { return !Task_assemble.empty() || done.load(); });
+
+        if (done.load() && Task_assemble.empty())
+          return;
+
+        task = std::move(Task_assemble.front());
+        Task_assemble.pop();
+      }
+
+      idleThreadNum--;
+      task();
+      idleThreadNum++;
+    }
+  }
+
 public:
-  ThreadPool();
+  ThreadPool(size_t num_threads = std::thread::hardware_concurrency())
+      : done(false), idleThreadNum(0) {
+    for (size_t i = 0; i < num_threads; ++i) {
+      pool_vector.emplace_back(&ThreadPool::thread_manager, this);
+      idleThreadNum++;
+    }
+  }
   ~ThreadPool();
 };
 
