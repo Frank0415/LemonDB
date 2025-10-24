@@ -12,6 +12,8 @@
 
 class ThreadPool {
 private:
+  static std::unique_ptr<ThreadPool> global_instance;
+
   std::mutex lockx;
   std::queue<std::function<void()>> Task_assemble;
   std::vector<std::thread> pool_vector;
@@ -40,13 +42,23 @@ private:
     }
   }
 
-public:
   ThreadPool(size_t num_threads = std::thread::hardware_concurrency())
       : done(false), idleThreadNum(0) {
     for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
     }
+  }
+
+public:
+  static void
+  initialize(size_t num_threads = std::thread::hardware_concurrency()) {
+    std::lock_guard<std::mutex> lock(instance_mutex);
+    if (initialized) {
+      throw std::runtime_error("ThreadPool already initialized");
+    }
+    global_instance = std::make_unique<ThreadPool>(num_threads);
+    initialized = true;
   }
 
   ~ThreadPool() {
@@ -59,8 +71,7 @@ public:
   }
 
   template <typename F, typename... Args>
-  auto submit(F &&f, Args &&...args)
-      -> std::future<decltype(f(args...))> {
+  auto submit(F &&f, Args &&...args) -> std::future<decltype(f(args...))> {
     using return_type = decltype(f(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
@@ -74,6 +85,8 @@ public:
     cv.notify_one();
     return ret;
   }
+
+  int getIdleThreadNum() const { return idleThreadNum.load(); }
 };
 
 #endif
