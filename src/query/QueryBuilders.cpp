@@ -9,6 +9,7 @@
 
 #include "../db/Database.h"
 #include "data/AddQuery.h"
+#include "data/CountQuery.h"
 #include "data/DeleteQuery.h"
 #include "data/DuplicateQuery.h"
 #include "data/InsertQuery.h"
@@ -167,9 +168,11 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
     return std::make_unique<DuplicateQuery>(
         this->targetTable, this->operandToken, this->conditionToken);
   if (operation == "COUNT")
-    return std::make_unique<NopQuery>(); // Not implemented
-                                         /*return std::make_unique<CountQuery>(
-                                                 this->targetTable, this->operandToken, this->conditionToken);*/
+    // return std::make_unique<NopQuery>(); // Not implemented
+    // FIX: Enable CountQuery by creating an instance of it.
+    // The empty operand list and the condition list are correctly handled.
+    return std::make_unique<CountQuery>(
+      this->targetTable, this->operandToken, this->conditionToken);
   if (operation == "SUM")
     return std::make_unique<SumQuery>(this->targetTable, this->operandToken,
                                       this->conditionToken);
