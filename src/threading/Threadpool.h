@@ -60,7 +60,9 @@ public:
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
 
-  static void initialize(size_t num_threads) {
+public:
+  static void
+  initialize(size_t num_threads = std::thread::hardware_concurrency()) {
     std::lock_guard<std::mutex> lock(instance_mutex);
     if (initialized) {
       throw std::runtime_error("ThreadPool already initialized");
