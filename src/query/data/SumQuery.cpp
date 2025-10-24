@@ -10,7 +10,7 @@ QueryResult::Ptr SumQuery::execute() {
   try {
     Database &db = Database::getInstance();
     auto &table = db[this->targetTable];
-    
+
     if (this->operands.empty()) {
       return make_unique<ErrorMsgResult>("SUM", this->targetTable,
                                          "Invalid number of fields");
@@ -42,8 +42,8 @@ QueryResult::Ptr SumQuery::execute() {
 
     if (pool.getThreadCount() <= 1) {
       std::vector<int> sums(num_fields, 0);
-      bool handled = this->testKeyCondition(
-          table, [&](bool ok, Table::Object::Ptr &&obj) {
+      bool handled =
+          this->testKeyCondition(table, [&](bool ok, Table::Object::Ptr &&obj) {
             if (!ok || !obj)
               return;
             for (size_t i = 0; i < num_fields; ++i) {
@@ -100,7 +100,7 @@ QueryResult::Ptr SumQuery::execute() {
         sums[j] += local_sums[j];
       }
     }
-    
+
     return make_unique<SuccessMsgResult>(sums);
   } catch (const TableNameNotFound &) {
     return make_unique<ErrorMsgResult>("SUM", this->targetTable,

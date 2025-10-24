@@ -4,7 +4,8 @@
 #include "../Query.h"
 
 class SwapQuery : public ComplexQuery {
-  static constexpr const char* qname = "SWAP";
+  static constexpr const char *qname = "SWAP";
+
 public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;
@@ -12,4 +13,4 @@ public:
   bool isWriter() const override { return true; }
 };
 
-#endif //PROJECT_SWAPQUERY_H
+#endif // PROJECT_SWAPQUERY_H

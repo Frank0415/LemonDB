@@ -22,6 +22,7 @@ private:
   std::condition_variable cv;
   std::atomic<bool> done;
   std::atomic<int> idleThreadNum;
+  size_t total_threads;
 
   // a manager for threads to constantly work until the ThreadPool is destructed
   void thread_manager() {
@@ -31,8 +32,9 @@ private:
         std::unique_lock<std::mutex> ul(lockx);
         cv.wait(ul, [this]() { return !Task_assemble.empty() || done.load(); });
 
-        if (done.load() && Task_assemble.empty())
+        if (done.load() && Task_assemble.empty()) {
           return;
+        }
 
         task = std::move(Task_assemble.front());
         Task_assemble.pop();
@@ -45,7 +47,8 @@ private:
   }
 
   // Private constructor for singleton
-  explicit ThreadPool(size_t num_threads) : done(false), idleThreadNum(0) {
+  explicit ThreadPool(size_t num_threads)
+      : done(false), idleThreadNum(0), total_threads(num_threads) {
     for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
@@ -57,8 +60,7 @@ private:
   ThreadPool &operator=(const ThreadPool &) = delete;
 
 public:
-  static void
-  initialize(size_t num_threads) {
+  static void initialize(size_t num_threads) {
     std::lock_guard<std::mutex> lock(instance_mutex);
     if (initialized) {
       throw std::runtime_error("ThreadPool already initialized");
@@ -107,6 +109,7 @@ public:
   }
 
   int getIdleThreadNum() const { return idleThreadNum.load(); }
+  size_t getThreadCount() const { return total_threads; }
 };
 
 #endif // PROJECT_THREADPOOL_H
