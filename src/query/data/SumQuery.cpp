@@ -10,6 +10,7 @@ QueryResult::Ptr SumQuery::execute() {
   try {
     Database &db = Database::getInstance();
     auto &table = db[this->targetTable];
+    
     if (this->operands.empty()) {
       return make_unique<ErrorMsgResult>("SUM", this->targetTable,
                                          "Invalid number of fields");
@@ -36,8 +37,32 @@ QueryResult::Ptr SumQuery::execute() {
 
     // NEW: READ LOCK PROTECTED MODE
     static ThreadPool &pool = ThreadPool::getInstance();
-    const size_t chunk_size = 2000;
+    const size_t chunk_size = 20000;
     const size_t num_fields = fids.size();
+
+    if (pool.getThreadCount() <= 1) {
+      std::vector<int> sums(num_fields, 0);
+      bool handled = this->testKeyCondition(
+          table, [&](bool ok, Table::Object::Ptr &&obj) {
+            if (!ok || !obj)
+              return;
+            for (size_t i = 0; i < num_fields; ++i) {
+              sums[i] += (*obj)[fids[i]];
+            }
+          });
+
+      if (!handled) {
+        for (auto it = table.begin(); it != table.end(); ++it) {
+          if (this->evalCondition(*it)) {
+            for (size_t i = 0; i < num_fields; ++i) {
+              sums[i] += (*it)[fids[i]];
+            }
+          }
+        }
+      }
+
+      return make_unique<SuccessMsgResult>(sums);
+    }
 
     std::vector<std::future<std::vector<int>>> futures;
     futures.reserve((table.size() + chunk_size - 1) / chunk_size);
@@ -69,12 +94,13 @@ QueryResult::Ptr SumQuery::execute() {
     }
 
     vector<int> sums(num_fields, 0);
-    for (auto &fut : futures) {
-      auto local_sums = fut.get();
-      for (size_t i = 0; i < num_fields; ++i) {
-        sums[i] += local_sums[i];
+    for (size_t i = 0; i < futures.size(); ++i) {
+      auto local_sums = futures[i].get();
+      for (size_t j = 0; j < num_fields; ++j) {
+        sums[j] += local_sums[j];
       }
     }
+    
     return make_unique<SuccessMsgResult>(sums);
   } catch (const TableNameNotFound &) {
     return make_unique<ErrorMsgResult>("SUM", this->targetTable,
