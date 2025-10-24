@@ -48,7 +48,32 @@ public:
       idleThreadNum++;
     }
   }
-  ~ThreadPool();
+
+  ~ThreadPool() {
+    done.store(true);
+    cv.notify_all();
+    for (auto &thread : pool_vector) {
+      if (thread.joinable())
+        thread.join();
+    }
+  }
+
+  template <typename F, typename... Args>
+  auto submit(F &&f, Args &&...args)
+      -> std::future<decltype(f(args...))> {
+    using return_type = decltype(f(args...));
+
+    auto task = std::make_shared<std::packaged_task<return_type()>>(
+        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+
+    std::future<return_type> ret = task->get_future();
+    {
+      std::lock_guard<std::mutex> lock(lockx);
+      Task_assemble.emplace([task]() { (*task)(); });
+    }
+    cv.notify_one();
+    return ret;
+  }
 };
 
 #endif
