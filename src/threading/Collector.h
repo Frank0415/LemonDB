@@ -5,11 +5,14 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include "query/Query.h"
 
-struct QueryResultCollector {
+class QueryResultCollector {
+private:
   std::map<size_t, std::string> results;
   std::mutex results_mutex;
 
+public:
   void addResult(size_t query_id, const std::string &result) {
     std::lock_guard<std::mutex> lock(results_mutex);
     results[query_id] = result;
