@@ -12,6 +12,8 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  bool isWriter() const override { return true; }
 };
 
 #endif

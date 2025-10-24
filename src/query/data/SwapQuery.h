@@ -9,6 +9,7 @@ public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;
   std::string toString() override;
+  bool isWriter() const override { return true; }
 };
 
 #endif //PROJECT_SWAPQUERY_H

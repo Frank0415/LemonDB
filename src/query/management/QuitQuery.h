@@ -16,6 +16,12 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  // QUIT is not a writer (doesn't modify data)
+  bool isWriter() const override { return false; }
+
+  // QUIT must execute immediately and serially (not parallel)
+  bool isInstant() const override { return true; }
 };
 
 #endif // PROJECT_QUITQUERY_H
