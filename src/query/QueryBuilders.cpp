@@ -27,6 +27,7 @@
 #include "management/LoadTableQuery.h"
 #include "management/PrintTableQuery.h"
 #include "management/QuitQuery.h"
+#include "management/TruncateTableQuery.h"
 
 // Prints out debugging information.
 // Does no real work
@@ -56,8 +57,7 @@ ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
     if (query.token.front() == "DROP")
       return std::make_unique<DropTableQuery>(query.token[1]);
     if (query.token.front() == "TRUNCATE")
-      return std::make_unique<NopQuery>(); // Not implemented
-    // return std::make_unique<TruncateTableQuery>(query.token[1]);
+      return std::make_unique<TruncateTableQuery>(query.token[1]);
   }
   if (query.token.size() == 3) {
     if (query.token.front() == "DUMP") {
