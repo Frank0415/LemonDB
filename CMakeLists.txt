@@ -115,6 +115,7 @@ add_executable(lemondb_tests
     tests/test_arith_query.cpp
     tests/test_sum_query.cpp
     tests/test_copytable_query.cpp
+    tests/test_truncate_query.cpp
 )
 
 target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
