@@ -12,7 +12,7 @@ on :
     types: [created]
 jobs:
   build-test:
-    if: github.event_name != 'issue_comment' || (github.event.issue.pull_request && contains(github.event.comment.body, '/run-scheduler-ci'))
+    if: github.event_name != 'issue_comment' || (github.event.issue.pull_request && contains(github.event.comment.body, '/run-build-ci'))
     runs-on: focs-latest-slim
     steps:
       - name: Check out repository code
