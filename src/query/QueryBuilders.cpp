@@ -20,6 +20,7 @@
 #include "data/SumQuery.h"
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
+#include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
 #include "management/ListTableQuery.h"
@@ -65,8 +66,7 @@ ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
       return std::make_unique<DumpTableQuery>(query.token[1], query.token[2]);
     }
     if (query.token.front() == "COPYTABLE")
-      return std::make_unique<NopQuery>(); // Not implemented
-    // return std::make_unique<CopyTableQuery>(query.token[1], query.token[2]);
+      return std::make_unique<CopyTableQuery>(query.token[1], query.token[2]);
   }
   return this->nextBuilder->tryExtractQuery(query);
 }
