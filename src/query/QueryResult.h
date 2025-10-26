@@ -99,7 +99,8 @@ public:
     this->msg = R"(Query "?" success.)"_f % qname;
   }
 
-  SuccessMsgResult(const char *qname, const std::string &msg, bool debug = false)
+  SuccessMsgResult(const char *qname, const std::string &msg,
+                   bool debug = false)
       : debug_(debug) {
     this->msg = R"(Query "?" success : ?)"_f % qname % msg;
   }
@@ -130,7 +131,6 @@ protected:
   }
 };
 
-
 class TextRowsResult : public SucceededQueryResult {
   std::string payload;
 
@@ -141,9 +141,8 @@ public:
 
 protected:
   std::ostream &output(std::ostream &os) const override {
-    return os << payload; 
+    return os << payload;
   }
 };
-
 
 #endif // PROJECT_QUERYRESULT_H
