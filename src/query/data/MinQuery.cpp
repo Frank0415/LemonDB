@@ -1,90 +1,122 @@
 #include "MinQuery.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "../../db/Database.h"
 #include "../QueryResult.h"
 
-constexpr const char *MinQuery::qname;
+constexpr const char* MinQuery::qname;
 
-QueryResult::Ptr MinQuery::execute() {
+QueryResult::Ptr MinQuery::execute()
+{
   using namespace std;
-  if (this->operands.empty()) {
+  if (this->operands.empty())
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                       "No operand (? operands)."_f %
-                                           operands.size());
+                                       "No operand (? operands)."_f % operands.size());
   }
-  Database &db = Database::getInstance();
-  try {
-    auto &table = db[this->targetTable];
+  Database& db = Database::getInstance();
+  try
+  {
+    auto& table = db[this->targetTable];
 
-    vector<Table::FieldIndex>
-        fieldId; // transform into its own Id, avoid lookups in map everytime
+    vector<Table::FieldIndex> fieldId; // transform into its own Id, avoid lookups in map everytime
 
-    try {
-      for (const auto &operand : this->operands) {
-        if (operand == "KEY") {
-          throw IllFormedQueryCondition(
-              "MIN operation not supported on KEY field.");
+    try
+    {
+      for (const auto& operand : this->operands)
+      {
+        if (operand == "KEY")
+        {
+          throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
         }
         fieldId.push_back(table.getFieldIndex(operand));
       }
-    } catch (const TableFieldNotFound &e) {
+    }
+    catch (const TableFieldNotFound& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-    } catch (const exception &e) {
+    }
+    catch (const exception& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unkonwn error '?'."_f % e.what());
     }
 
-    try {
+    try
+    {
       auto result = initCondition(table);
-      if (result.second) {
+      if (result.second)
+      {
         bool found = false;
-        vector<Table::ValueType> minValue(
-            fieldId.size(), Table::ValueTypeMax); // each has its own min value
+        vector<Table::ValueType> minValue(fieldId.size(),
+                                          Table::ValueTypeMax); // each has its own min value
 
-        for (auto it = table.begin(); it != table.end(); ++it) {
-          if (this->evalCondition(*it)) {
+        for (auto it = table.begin(); it != table.end(); ++it)
+        {
+          if (this->evalCondition(*it))
+          {
             found = true;
 
-            for (size_t i = 0; i < fieldId.size(); ++i) {
-              if ((*it)[fieldId[i]] < minValue[i]) {
+            for (size_t i = 0; i < fieldId.size(); ++i)
+            {
+              if ((*it)[fieldId[i]] < minValue[i])
+              {
                 minValue[i] = (*it)[fieldId[i]];
               }
             }
           }
         }
 
-        if (found == false) {
+        if (found == false)
+        {
           return make_unique<NullQueryResult>();
         }
         return make_unique<SuccessMsgResult>(minValue);
-      } else {
+      }
+      else
+      {
         return make_unique<NullQueryResult>();
       }
-    } catch (const IllFormedQueryCondition &e) {
+    }
+    catch (const IllFormedQueryCondition& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-    } catch (const invalid_argument &e) {
+    }
+    catch (const invalid_argument& e)
+    {
       // Cannot convert operand to string
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unknown error '?'"_f % e.what());
-    } catch (const exception &e) {
+    }
+    catch (const exception& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unkonwn error '?'."_f % e.what());
     }
-  } catch (const TableNameNotFound &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "No such table."s);
-  } catch (const IllFormedQueryCondition &e) {
+  }
+  catch (const TableNameNotFound& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+  }
+  catch (const IllFormedQueryCondition& e)
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-  } catch (const invalid_argument &e) {
+  }
+  catch (const invalid_argument& e)
+  {
     // Cannot convert operand to string
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Unknown error '?'"_f % e.what());
-  } catch (const exception &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Unkonwn error '?'."_f % e.what());
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+  }
+  catch (const exception& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
   }
 }
 
-std::string MinQuery::toString() {
+std::string MinQuery::toString()
+{
   return "QUERY = MIN " + this->targetTable + "\"";
 }
