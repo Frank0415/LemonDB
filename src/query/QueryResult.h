@@ -73,15 +73,18 @@ protected:
 
 class SuccessMsgResult : public SucceededQueryResult {
   std::string msg;
+  bool debug_ = true;
 
 public:
-  bool display() override { return false; }
+  bool display() override { return debug_; }
 
-  explicit SuccessMsgResult(const int number) {
+  explicit SuccessMsgResult(const int number, bool debug = true)
+      : debug_(debug) {
     this->msg = R"(ANSWER = "?".)"_f % number;
   }
 
-  explicit SuccessMsgResult(std::vector<int> results) {
+  explicit SuccessMsgResult(std::vector<int> results, bool debug = true)
+      : debug_(debug) {
     std::stringstream ss;
     ss << "ANSWER = ( ";
     for (auto result : results) {
@@ -91,16 +94,19 @@ public:
     this->msg = ss.str();
   }
 
-  explicit SuccessMsgResult(const char *qname) {
+  explicit SuccessMsgResult(const char *qname, bool debug = false)
+      : debug_(debug) {
     this->msg = R"(Query "?" success.)"_f % qname;
   }
 
-  SuccessMsgResult(const char *qname, const std::string &msg) {
+  SuccessMsgResult(const char *qname, const std::string &msg, bool debug = false)
+      : debug_(debug) {
     this->msg = R"(Query "?" success : ?)"_f % qname % msg;
   }
 
   SuccessMsgResult(const char *qname, const std::string &table,
-                   const std::string &msg) {
+                   const std::string &msg, bool debug = false)
+      : debug_(debug) {
     this->msg = R"(Query "?" success in Table "?" : ?)"_f % qname % table % msg;
   }
 
