@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "../../db/Database.h"
 #include "../QueryResult.h"
@@ -29,8 +30,11 @@ QueryResult::Ptr DuplicateQuery::execute()
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
-    // Collect keys to duplicate (store by value to avoid dangling pointers)
-    std::vector<Table::KeyType> keysToDuplicate;
+    Table::SizeType counter = 0;
+    auto row_size = table.field().size();
+
+    // Collect records to duplicate
+    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> recordsToDuplicate;
 
     for (auto it = table.begin(); it != table.end(); ++it)
     {
@@ -39,20 +43,39 @@ QueryResult::Ptr DuplicateQuery::execute()
         continue;
       }
       auto originalKey = it->key();
+      auto newKey = originalKey + "_copy";
+
       // if a "_copy" already exists, skip this key
-      if (table.evalDuplicateCopy(originalKey))
+      if (table[newKey] != nullptr)
       {
         continue;
       }
 
-      keysToDuplicate.push_back(originalKey);
+      // Copy the values from the original record
+      std::vector<Table::ValueType> values(row_size);
+      for (size_t i = 0; i < row_size; ++i)
+      {
+        values[i] = (*it)[i];
+      }
+
+      recordsToDuplicate.emplace_back(newKey, std::move(values));
     }
 
-    for (const Table::KeyType& key : keysToDuplicate)
+    // Insert all duplicated records
+    for (auto& record : recordsToDuplicate)
     {
-      table.duplicateKeyData(key);
+      try
+      {
+        table.insertByIndex(record.first, std::move(record.second));
+        ++counter;
+      }
+      catch (const ConflictingKey& e)
+      {
+        // if key conflict exists, skip
+      }
     }
-    return make_unique<RecordCountResult>(keysToDuplicate.size());
+
+    return make_unique<RecordCountResult>(counter);
   }
   catch (const NotFoundKey& e)
   {
