@@ -19,7 +19,8 @@ QueryResult::Ptr SubQuery::execute() {
 
     auto result = initCondition(table);
     if (!result.second) {
-      throw IllFormedQueryCondition("Error conditions in WHERE clause.");
+      // No valid conditions, return 0
+      return make_unique<RecordCountResult>(0);
     }
     // Lookup
     int count = 0;

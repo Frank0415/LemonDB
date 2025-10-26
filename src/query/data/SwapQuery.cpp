@@ -21,9 +21,7 @@ QueryResult::Ptr SwapQuery::execute() {
     }
     const auto f1 = table.getFieldIndex(operands[0]);
     const auto f2 = table.getFieldIndex(operands[1]);
-    if (f1 == f2){
-      return make_unique<RecordCountResult>(0);
-    }
+    // Even if f1 == f2, we still need to count affected rows
     Table::SizeType counter = 0;
     bool handled = this->testKeyCondition(
         table,
