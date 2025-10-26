@@ -74,7 +74,9 @@ public:
     return nextBuilder->tryExtractQuery(query);
   }
 
-  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault()) {}
+  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault())
+  {
+  }
 
   void clear() override
   {

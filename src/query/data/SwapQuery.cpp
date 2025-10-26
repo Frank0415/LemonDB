@@ -5,7 +5,7 @@
 
 #include "../../db/Database.h"
 
-constexpr const char *SwapQuery::qname;
+constexpr const char* SwapQuery::qname;
 
 QueryResult::Ptr SwapQuery::execute()
 {
@@ -59,20 +59,19 @@ QueryResult::Ptr SwapQuery::execute()
     }
     return make_unique<RecordCountResult>(static_cast<int>(counter));
   }
-  catch (const TableNameNotFound &)
+  catch (const TableNameNotFound&)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "No such table.");
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
   }
-  catch (const IllFormedQueryCondition &e)
+  catch (const IllFormedQueryCondition& e)
   {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
-  catch (const invalid_argument &e)
+  catch (const invalid_argument& e)
   {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
   }
-  catch (const exception &e)
+  catch (const exception& e)
   {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
   }

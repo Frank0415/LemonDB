@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "../../db/Database.h"
 #include "../QueryResult.h"
@@ -33,8 +34,7 @@ QueryResult::Ptr DuplicateQuery::execute()
     auto row_size = table.field().size();
 
     // Collect records to duplicate
-    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>>
-        recordsToDuplicate;
+    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> recordsToDuplicate;
 
     for (auto it = table.begin(); it != table.end(); ++it)
     {
@@ -53,7 +53,8 @@ QueryResult::Ptr DuplicateQuery::execute()
 
       // Copy the values from the original record
       std::vector<Table::ValueType> values(row_size);
-      for (size_t i = 0; i < row_size; ++i) {
+      for (size_t i = 0; i < row_size; ++i)
+      {
         values[i] = (*it)[i];
       }
 
@@ -61,24 +62,31 @@ QueryResult::Ptr DuplicateQuery::execute()
     }
 
     // Insert all duplicated records
-    for (auto &record : recordsToDuplicate) 
+    for (auto& record : recordsToDuplicate)
     {
-      try {
+      try
+      {
         table.insertByIndex(record.first, std::move(record.second));
         ++counter;
-      } catch (const ConflictingKey &e) {
+      }
+      catch (const ConflictingKey& e)
+      {
         // if key conflict exists, skip
       }
     }
 
     return make_unique<RecordCountResult>(counter);
-  } catch (const NotFoundKey &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Key not found."s);
-  } catch (const TableNameNotFound &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "No such table."s);
-  } catch (const IllFormedQueryCondition &e) {
+  }
+  catch (const NotFoundKey& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+  }
+  catch (const TableNameNotFound& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+  }
+  catch (const IllFormedQueryCondition& e)
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
   catch (const invalid_argument& e)

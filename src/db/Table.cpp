@@ -70,8 +70,9 @@ void Table::deleteByIndex(const KeyType& key)
   keyMap.erase(it);
 
   // swap the current data to the last one and pop back
-  if (index != this->data.size() - 1) {
-    Datum &lastDatum = this->data.back();
+  if (index != this->data.size() - 1)
+  {
+    Datum& lastDatum = this->data.back();
     // Save the key before moving
     KeyType lastKey = lastDatum.key;
     this->data[index] = std::move(lastDatum);
