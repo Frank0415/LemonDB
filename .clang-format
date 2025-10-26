@@ -27,7 +27,7 @@ ColumnLimit: 100
 BinPackParameters: false
 
 # --- C++ Standard ---
-Standard: Cpp20
+Standard: Auto
 
 # --- Includes ---
 SortIncludes: true
