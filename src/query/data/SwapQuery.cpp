@@ -1,7 +1,7 @@
 #include "SwapQuery.h"
 #include "../../db/Database.h"
 
-constexpr const char* SwapQuery::qname;
+constexpr const char *SwapQuery::qname;
 
 QueryResult::Ptr SwapQuery::execute() {
   using namespace std;
@@ -12,21 +12,20 @@ QueryResult::Ptr SwapQuery::execute() {
   }
 
   try {
-    Database& db = Database::getInstance();
-    auto& table = db[this->targetTable];
-    if (operands[0] == "KEY" || operands[1] == "KEY"){
+    Database &db = Database::getInstance();
+    auto &table = db[this->targetTable];
+    if (operands[0] == "KEY" || operands[1] == "KEY") {
       return make_unique<ErrorMsgResult>(
-          qname, this->targetTable,
-          "Ill-formed query: KEY cannot be swapped.");
+          qname, this->targetTable, "Ill-formed query: KEY cannot be swapped.");
     }
     const auto f1 = table.getFieldIndex(operands[0]);
     const auto f2 = table.getFieldIndex(operands[1]);
     // Even if f1 == f2, we still need to count affected rows
     Table::SizeType counter = 0;
-    bool handled = this->testKeyCondition(
-        table,
-        [&](bool ok, Table::Object::Ptr&& obj){
-          if (!ok) return;
+    bool handled =
+        this->testKeyCondition(table, [&](bool ok, Table::Object::Ptr &&obj) {
+          if (!ok)
+            return;
           if (obj) {
             auto tmp = (*obj)[f1];
             (*obj)[f1] = (*obj)[f2];
@@ -36,8 +35,8 @@ QueryResult::Ptr SwapQuery::execute() {
         });
 
     if (!handled) {
-      for (auto it = table.begin(); it != table.end(); ++it){
-        if (this->evalCondition(*it)){
+      for (auto it = table.begin(); it != table.end(); ++it) {
+        if (this->evalCondition(*it)) {
           auto tmp = (*it)[f1];
           (*it)[f1] = (*it)[f2];
           (*it)[f2] = tmp;
@@ -46,14 +45,15 @@ QueryResult::Ptr SwapQuery::execute() {
       }
     }
     return make_unique<RecordCountResult>(static_cast<int>(counter));
-  } catch (const TableNameNotFound&) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
-  } catch (const IllFormedQueryCondition& e) {
+  } catch (const TableNameNotFound &) {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                       "No such table.");
+  } catch (const IllFormedQueryCondition &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-  } catch (const invalid_argument& e) {
+  } catch (const invalid_argument &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                        "Unknown error '?'"_f % e.what());
-  } catch (const exception& e) {
+  } catch (const exception &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                        "Unkonwn error '?'."_f % e.what());
   }

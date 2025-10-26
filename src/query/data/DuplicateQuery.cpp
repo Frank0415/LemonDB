@@ -24,9 +24,10 @@ QueryResult::Ptr DuplicateQuery::execute() {
 
     Table::SizeType counter = 0;
     auto row_size = table.field().size();
-    
+
     // Collect records to duplicate
-    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> recordsToDuplicate;
+    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>>
+        recordsToDuplicate;
 
     for (auto it = table.begin(); it != table.end(); ++it) {
       if (!this->evalCondition(*it)) {
@@ -34,7 +35,7 @@ QueryResult::Ptr DuplicateQuery::execute() {
       }
       auto originalKey = it->key();
       auto newKey = originalKey + "_copy";
-      
+
       // if a "_copy" already exists, skip this key
       if (table[newKey] != nullptr) {
         continue;
@@ -45,7 +46,7 @@ QueryResult::Ptr DuplicateQuery::execute() {
       for (size_t i = 0; i < row_size; ++i) {
         values[i] = (*it)[i];
       }
-      
+
       recordsToDuplicate.emplace_back(newKey, std::move(values));
     }
 
@@ -58,7 +59,7 @@ QueryResult::Ptr DuplicateQuery::execute() {
         // if key conflict exists, skip
       }
     }
-    
+
     return make_unique<RecordCountResult>(counter);
   } catch (const NotFoundKey &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable,
