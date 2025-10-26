@@ -1,24 +1,31 @@
+#include "DuplicateQuery.h"
+
 #include <algorithm>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../QueryResult.h"
-#include "DuplicateQuery.h"
 
-constexpr const char *DuplicateQuery::qname;
+constexpr const char* DuplicateQuery::qname;
 
-QueryResult::Ptr DuplicateQuery::execute() {
+QueryResult::Ptr DuplicateQuery::execute()
+{
   using namespace std;
-  try {
-    if (!this->operands.empty()) {
+  try
+  {
+    if (!this->operands.empty())
+    {
       return make_unique<ErrorMsgResult>(
-          qname, this->targetTable,
-          "Invalid number of operands (? operands)."_f % operands.size());
+          qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
     }
-    auto &db = Database::getInstance();
-    auto &table = db[this->targetTable];
+    auto& db = Database::getInstance();
+    auto& table = db[this->targetTable];
     auto result = initCondition(table);
-    if (!result.second) {
+    if (!result.second)
+    {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
@@ -29,15 +36,18 @@ QueryResult::Ptr DuplicateQuery::execute() {
     std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>>
         recordsToDuplicate;
 
-    for (auto it = table.begin(); it != table.end(); ++it) {
-      if (!this->evalCondition(*it)) {
+    for (auto it = table.begin(); it != table.end(); ++it)
+    {
+      if (!this->evalCondition(*it))
+      {
         continue;
       }
       auto originalKey = it->key();
       auto newKey = originalKey + "_copy";
 
       // if a "_copy" already exists, skip this key
-      if (table[newKey] != nullptr) {
+      if (table[newKey] != nullptr)
+      {
         continue;
       }
 
@@ -51,7 +61,8 @@ QueryResult::Ptr DuplicateQuery::execute() {
     }
 
     // Insert all duplicated records
-    for (auto &record : recordsToDuplicate) {
+    for (auto &record : recordsToDuplicate) 
+    {
       try {
         table.insertByIndex(record.first, std::move(record.second));
         ++counter;
@@ -69,16 +80,19 @@ QueryResult::Ptr DuplicateQuery::execute() {
                                        "No such table."s);
   } catch (const IllFormedQueryCondition &e) {
     return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-  } catch (const invalid_argument &e) {
+  }
+  catch (const invalid_argument& e)
+  {
     // Cannot convert operand to string
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Unknown error '?'"_f % e.what());
-  } catch (const exception &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "Unkonwn error '?'."_f % e.what());
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+  }
+  catch (const exception& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
   }
 }
 
-std::string DuplicateQuery::toString() {
+std::string DuplicateQuery::toString()
+{
   return "QUERY = DUPLICATE " + this->targetTable + "\"";
 }

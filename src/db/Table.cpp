@@ -7,51 +7,61 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "Database.h"
 
 constexpr const Table::ValueType Table::ValueTypeMax;
 constexpr const Table::ValueType Table::ValueTypeMin;
 
-Table::FieldIndex
-Table::getFieldIndex(const Table::FieldNameType &field) const {
-  try {
+Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
+{
+  try
+  {
     return this->fieldMap.at(field);
-  } catch (const std::out_of_range &e) {
+  }
+  catch (const std::out_of_range& e)
+  {
     throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));
   }
 }
 
-bool Table::evalDuplicateCopy(Table::KeyType key) {
+bool Table::evalDuplicateCopy(Table::KeyType key)
+{
   key = key.append("_copy");
   return this->keyMap.find(key) != this->keyMap.end();
 }
 
-void Table::duplicateKeyData(const Table::KeyType key) {
+void Table::duplicateKeyData(const Table::KeyType key)
+{
   Table::KeyType copyKey(key);
   copyKey.append("_copy");
   std::vector<ValueType> copyData = ((*this)[key])->it->datum;
   this->insertByIndex(copyKey, std::move(copyData));
 }
 
-void Table::insertByIndex(const KeyType &key, std::vector<ValueType> &&data) {
-  if (this->keyMap.find(key) != this->keyMap.end()) {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key +
-                      "\" already exists!";
+void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
+{
+  if (this->keyMap.find(key) != this->keyMap.end())
+  {
+    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
     throw ConflictingKey(err);
   }
   this->keyMap.emplace(key, this->data.size());
   this->data.emplace_back(key, data);
 }
 
-void Table::deleteByIndex(const KeyType &key) {
+void Table::deleteByIndex(const KeyType& key)
+{
   // the key to delete
   auto it = this->keyMap.find(key);
 
   // the key doesn't exist
-  if (it == this->keyMap.end()) {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key +
-                      "\" doesn't exist!";
+  if (it == this->keyMap.end())
+  {
+    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
     throw NotFoundKey(err);
   }
 
@@ -70,32 +80,38 @@ void Table::deleteByIndex(const KeyType &key) {
   data.pop_back();
 }
 
-Table::Object::Ptr Table::operator[](const Table::KeyType &key) {
+Table::Object::Ptr Table::operator[](const Table::KeyType& key)
+{
   auto it = keyMap.find(key);
-  if (it == keyMap.end()) {
+  if (it == keyMap.end())
+  {
     // not found
     return nullptr;
-  } else {
+  }
+  else
+  {
     return createProxy(
-        data.begin() +
-            static_cast<std::vector<Table::Datum>::difference_type>(it->second),
-        this);
+        data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
   }
 }
 
-std::ostream &operator<<(std::ostream &os, const Table &table) {
+std::ostream& operator<<(std::ostream& os, const Table& table)
+{
   const int width = 10;
   std::stringstream buffer;
   buffer << table.tableName << "\t" << (table.fields.size() + 1) << "\n";
   buffer << std::setw(width) << "KEY";
-  for (const auto &field : table.fields) {
+  for (const auto& field : table.fields)
+  {
     buffer << std::setw(width) << field;
   }
   buffer << "\n";
   auto numFields = table.fields.size();
-  for (const auto &datum : table.data) {
+  for (const auto& datum : table.data)
+  {
     buffer << std::setw(width) << datum.key;
-    for (decltype(numFields) i = 0; i < numFields; ++i) {
+    for (decltype(numFields) i = 0; i < numFields; ++i)
+    {
       buffer << std::setw(width) << datum.datum[i];
     }
     buffer << "\n";

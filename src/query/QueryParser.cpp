@@ -1,13 +1,18 @@
 #include "QueryParser.h"
 
 #include <sstream>
+#include <string>
+#include <utility>
 
 #include "Query.h"
 #include "QueryBuilders.h"
 
-QueryParser::QueryParser() : first(nullptr), last(nullptr) {}
+QueryParser::QueryParser() : first(nullptr), last(nullptr)
+{
+}
 
-Query::Ptr QueryParser::parseQuery(const std::string &queryString) {
+Query::Ptr QueryParser::parseQuery(const std::string& queryString)
+{
   if (first == nullptr)
     throw QueryBuilderMatchFailed(queryString);
   auto t = tokenizeQueryString(queryString);
@@ -17,21 +22,25 @@ Query::Ptr QueryParser::parseQuery(const std::string &queryString) {
   return first->tryExtractQuery(t);
 }
 
-void QueryParser::registerQueryBuilder(QueryBuilder::Ptr &&qBuilder) {
-  if (first == nullptr) {
+void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
+{
+  if (first == nullptr)
+  {
     first = std::move(qBuilder);
     last = first.get();
     last->setNext(FailedQueryBuilder::getDefault());
-  } else {
-    QueryBuilder *temp = last;
+  }
+  else
+  {
+    QueryBuilder* temp = last;
     last = qBuilder.get();
     temp->setNext(std::move(qBuilder));
     last->setNext(FailedQueryBuilder::getDefault());
   }
 }
 
-TokenizedQueryString
-QueryParser::tokenizeQueryString(const std::string &queryString) {
+TokenizedQueryString QueryParser::tokenizeQueryString(const std::string& queryString)
+{
   TokenizedQueryString t;
   t.rawQeuryString = queryString;
   std::stringstream s;

@@ -18,7 +18,7 @@ or
 # configure and build together 
 cmake -S . -B build && cmake --build build -j4
 ```
-> “Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.”
+> 'Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.'
 
 The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
 

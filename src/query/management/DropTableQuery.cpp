@@ -4,23 +4,33 @@
 
 #include "DropTableQuery.h"
 
+#include <memory>
+#include <string>
+
 #include "../../db/Database.h"
 
-constexpr const char *DropTableQuery::qname;
+constexpr const char* DropTableQuery::qname;
 
-QueryResult::Ptr DropTableQuery::execute() {
+QueryResult::Ptr DropTableQuery::execute()
+{
   using namespace std;
-  Database &db = Database::getInstance();
-  try {
+  Database& db = Database::getInstance();
+  try
+  {
     db.dropTable(this->targetTable);
     return make_unique<SuccessMsgResult>(qname);
-  } catch (const TableNameNotFound &e) {
+  }
+  catch (const TableNameNotFound& e)
+  {
     return make_unique<ErrorMsgResult>(qname, targetTable, "No such table."s);
-  } catch (const exception &e) {
+  }
+  catch (const exception& e)
+  {
     return make_unique<ErrorMsgResult>(qname, e.what());
   }
 }
 
-std::string DropTableQuery::toString() {
+std::string DropTableQuery::toString()
+{
   return "QUERY = DROP, Table = \"" + targetTable + "\"";
 }
