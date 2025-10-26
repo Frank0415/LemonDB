@@ -52,3 +52,4 @@
 !tests/*.h
 
 !.clang-format
+!CPPLINT.cfg

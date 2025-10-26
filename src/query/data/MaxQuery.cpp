@@ -1,83 +1,110 @@
 #include "MaxQuery.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "../../db/Database.h"
 #include "../QueryResult.h"
 
-constexpr const char *MaxQuery::qname;
+constexpr const char* MaxQuery::qname;
 
-QueryResult::Ptr MaxQuery::execute() {
+QueryResult::Ptr MaxQuery::execute()
+{
   using namespace std;
-  if (this->operands.empty()) {
+  if (this->operands.empty())
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                       "No operand (? operands)."_f %
-                                           operands.size());
+                                       "No operand (? operands)."_f % operands.size());
   }
 
-  try {
-    Database &db = Database::getInstance();
-    auto &table = db[this->targetTable];
+  try
+  {
+    Database& db = Database::getInstance();
+    auto& table = db[this->targetTable];
 
-    vector<Table::FieldIndex>
-        fieldId; // transform into its own Id, avoid lookups in map everytime
+    vector<Table::FieldIndex> fieldId; // transform into its own Id, avoid lookups in map everytime
 
-    try {
-      for (const auto &operand : this->operands) {
-        if (operand == "KEY") {
-          throw IllFormedQueryCondition(
-              "MAX operation not supported on KEY field.");
+    try
+    {
+      for (const auto& operand : this->operands)
+      {
+        if (operand == "KEY")
+        {
+          throw IllFormedQueryCondition("MAX operation not supported on KEY field.");
         }
         fieldId.push_back(table.getFieldIndex(operand));
       }
-    } catch (const TableFieldNotFound &e) {
+    }
+    catch (const TableFieldNotFound& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-    } catch (const exception &e) {
+    }
+    catch (const exception& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unkonwn error '?'."_f % e.what());
     }
 
-    try {
+    try
+    {
       auto result = initCondition(table);
-      if (result.second) {
+      if (result.second)
+      {
         bool found = false;
-        vector<Table::ValueType> maxValue(
-            fieldId.size(),
-            Table::ValueTypeMin); // each has its own max value
+        vector<Table::ValueType> maxValue(fieldId.size(),
+                                          Table::ValueTypeMin); // each has its own max value
 
-        for (auto it = table.begin(); it != table.end(); ++it) {
-          if (this->evalCondition(*it)) {
+        for (auto it = table.begin(); it != table.end(); ++it)
+        {
+          if (this->evalCondition(*it))
+          {
             found = true;
 
-            for (size_t i = 0; i < fieldId.size(); ++i) {
-              if ((*it)[fieldId[i]] > maxValue[i]) {
+            for (size_t i = 0; i < fieldId.size(); ++i)
+            {
+              if ((*it)[fieldId[i]] > maxValue[i])
+              {
                 maxValue[i] = (*it)[fieldId[i]];
               }
             }
           }
         }
 
-        if (found == false) {
+        if (found == false)
+        {
           return make_unique<NullQueryResult>();
         }
         return make_unique<SuccessMsgResult>(maxValue);
-      } else {
+      }
+      else
+      {
         return make_unique<NullQueryResult>();
       }
-    } catch (const IllFormedQueryCondition &e) {
+    }
+    catch (const IllFormedQueryCondition& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-    } catch (const invalid_argument &e) {
+    }
+    catch (const invalid_argument& e)
+    {
       // Cannot convert operand to string
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unknown error '?'"_f % e.what());
-    } catch (const exception &e) {
+    }
+    catch (const exception& e)
+    {
       return make_unique<ErrorMsgResult>(qname, this->targetTable,
                                          "Unkonwn error '?'."_f % e.what());
     }
-  } catch (const TableNameNotFound &e) {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                       "No such table."s);
+  }
+  catch (const TableNameNotFound& e)
+  {
+    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
 }
 
-std::string MaxQuery::toString() {
+std::string MaxQuery::toString()
+{
   return "QUERY = MAX " + this->targetTable + "\"";
 }
