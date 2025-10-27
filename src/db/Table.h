@@ -504,11 +504,11 @@ Table::Table(const std::string& name, const FieldIDContainer& fields)
     : fields(fields.cbegin(), fields.cend()), tableName(name)
 {
   SizeType i = 0;
-  for (const auto& field : fields)
+  for (const auto& fieldName : fields)
   {
-    if (field == "KEY")
+    if (fieldName == "KEY")
       throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
-    fieldMap.emplace(field, i++);
+    fieldMap.emplace(fieldName, i++);
   }
 }
 
