@@ -4,8 +4,8 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../QueryResult.h"

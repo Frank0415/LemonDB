@@ -29,7 +29,6 @@ QueryResult::Ptr SwapQuery::execute()
     const auto f1 = table.getFieldIndex(operands[0]);
     const auto f2 = table.getFieldIndex(operands[1]);
 
-    
     Table::SizeType counter = 0;
     bool handled = this->testKeyCondition(table,
                                           [&](bool ok, Table::Object::Ptr&& obj)
