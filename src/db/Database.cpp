@@ -124,8 +124,8 @@ std::string Database::getFileTableName(const std::string& fileName)
 Table& Database::loadTableFromStream(std::istream& is, const std::string& source)
 {
   auto& db = Database::getInstance();
-  std::string errString = !source.empty() ? R"(Invalid table (from "?") format: )"_f % source
-                                          : "Invalid table format: ";
+  const std::string errString = !source.empty() ? R"(Invalid table (from "?") format: )"_f % source
+                                                 : "Invalid table format: ";
 
   std::string tableName;
   Table::SizeType fieldCount = 0;
@@ -196,7 +196,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
       if (!(sstream >> value))
       {
         throw LoadFromStreamException(errString + "Invalid row on LINE " +
-                                       std::to_string(lineCount));
+                                      std::to_string(lineCount));
       }
       tuple.emplace_back(value);
     }

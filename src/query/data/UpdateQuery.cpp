@@ -15,8 +15,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* UpdateQuery::qname;
-
 QueryResult::Ptr UpdateQuery::execute()
 {
   using namespace std;

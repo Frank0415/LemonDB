@@ -12,8 +12,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* PrintTableQuery::qname;
-
 QueryResult::Ptr PrintTableQuery::execute()
 {
   using namespace std;

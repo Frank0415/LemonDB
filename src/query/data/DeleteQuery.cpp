@@ -12,8 +12,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* DeleteQuery::qname;
-
 QueryResult::Ptr DeleteQuery::execute()
 {
   using namespace std;

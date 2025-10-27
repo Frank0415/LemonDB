@@ -11,8 +11,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* SubQuery::qname;
-
 QueryResult::Ptr SubQuery::execute()
 {
   using namespace std;

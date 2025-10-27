@@ -45,7 +45,7 @@ void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
 {
   if (this->keyMap.find(key) != this->keyMap.end())
   {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
+    const std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
     throw ConflictingKey(err);
   }
   this->keyMap.emplace(key, this->data.size());
@@ -60,12 +60,12 @@ void Table::deleteByIndex(const KeyType& key)
   // the key doesn't exist
   if (it == this->keyMap.end())
   {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
+    const std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
     throw NotFoundKey(err);
   }
 
   // the index of the key to delete
-  SizeType index = it->second;
+  const SizeType index = it->second;
   keyMap.erase(it);
 
   // swap the current data to the last one and pop back
@@ -73,7 +73,7 @@ void Table::deleteByIndex(const KeyType& key)
   {
     Datum& lastDatum = this->data.back();
     // Save the key before moving
-    KeyType lastKey = lastDatum.key;
+    const KeyType lastKey = lastDatum.key;
     this->data[index] = std::move(lastDatum);
     this->keyMap[lastKey] = index;
   }

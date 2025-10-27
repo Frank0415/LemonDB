@@ -13,8 +13,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* MinQuery::qname;
-
 QueryResult::Ptr MinQuery::execute()
 {
   using namespace std;

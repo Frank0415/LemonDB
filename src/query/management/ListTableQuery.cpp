@@ -10,8 +10,6 @@
 #include "../../db/Database.h"
 #include "../QueryResult.h"
 
-constexpr const char* ListTableQuery::qname;
-
 QueryResult::Ptr ListTableQuery::execute()
 {
   Database& db = Database::getInstance();

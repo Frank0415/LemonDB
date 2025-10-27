@@ -18,8 +18,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* InsertQuery::qname;
-
 QueryResult::Ptr InsertQuery::execute()
 {
   using namespace std;

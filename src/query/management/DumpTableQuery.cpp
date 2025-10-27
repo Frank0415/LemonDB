@@ -10,10 +10,8 @@
 #include <string>
 
 #include "../../db/Database.h"
-#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
-
-constexpr const char* DumpTableQuery::qname;
 
 QueryResult::Ptr DumpTableQuery::execute()
 {

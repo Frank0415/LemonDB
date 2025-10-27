@@ -61,7 +61,7 @@ std::string extractQueryString(std::istream& is)
   std::string buf;
   do
   {
-    int ch = is.get();
+    const int ch = is.get();
     if (ch == ';')
     {
       return buf;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
     {
       // A very standard REPL
       // REPL: Read-Evaluate-Print-Loop
-      std::string queryStr = extractQueryString(is);
+      const std::string queryStr = extractQueryString(is);
       Query::Ptr query = p.parseQuery(queryStr);
       QueryResult::Ptr result = query->execute();
       std::cout << ++counter << "\n";

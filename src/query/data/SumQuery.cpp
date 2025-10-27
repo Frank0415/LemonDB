@@ -9,11 +9,11 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../query/QueryResult.h"
+#include "../../query/data/SumQuery.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "../../query/QueryResult.h"
-#include "../../query/data/SumQuery.h"
 
 QueryResult::Ptr SumQuery::execute()
 {
@@ -41,13 +41,13 @@ QueryResult::Ptr SumQuery::execute()
     }
 
     vector<Table::ValueType> sums(fids.size(), 0);
-    bool handled = this->testKeyCondition(table,
-                                          [&](bool ok, Table::Object::Ptr&& obj)
-                                          {
-                                            if (!ok)
-                                            {
-                                              return;
-                                            }
+    const bool handled = this->testKeyCondition(table,
+                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                {
+                                                  if (!ok)
+                                                  {
+                                                    return;
+                                                  }
                                             if (obj)
                                             {
                                               for (size_t i = 0; i < fids.size(); ++i)

@@ -64,9 +64,9 @@ else
   echo "Build directory ${BUILD_DIR} missing; skipping tests" >>"${TEST_OUT}"
 fi
 
-# Find source files tracked by git (excluding tests/)
-SRC_FILES=$(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' | grep -v '^tests/' || true)
-TUS=$(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' | grep -v '^tests/' || true)
+# Find source files tracked by git (excluding tests/ and gtests/)
+SRC_FILES=$(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' | grep -v -E '^(tests|gtests|test)/' || true)
+TUS=$(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' | grep -v -E '^(tests|gtests|test)/' || true)
 
 ########################################
 # cpplint
@@ -77,7 +77,7 @@ if tool_exists python3 && python3 -m pip show cpplint >/dev/null 2>&1; then
   if [[ -n "${SRC_FILES}" ]]; then
     echo "Running cpplint..." >>"${CPPLINT_OUT}"
     git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' | \
-      grep -v '^tests/' | \
+      grep -v -E '^(tests|gtests|test)/' | \
       tr '\n' '\0' | \
       xargs -0 -r python3 -m cpplint >>"${CPPLINT_OUT}" 2>&1 || true
   else
@@ -124,7 +124,7 @@ if tool_exists clang-tidy; then
     while IFS= read -r -d '' tu; do
       echo "clang-tidy: ${tu}" >>"${CLANG_TIDY_OUT}"
       clang-tidy "${CLANG_TIDY_ARGS[@]}" "${tu}" >>"${CLANG_TIDY_OUT}" 2>&1 || true
-    done < <(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' | grep -v '^tests/' | tr '\n' '\0' || true)
+    done < <(git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' | grep -v -E '^(tests|gtests|test)/' | tr '\n' '\0' || true)
   else
     echo "clang-tidy skipped: compile_commands.json or translation units missing" >>"${CLANG_TIDY_OUT}"
   fi
@@ -142,13 +142,13 @@ if tool_exists clang-format; then
   # Prefer --dry-run --Werror if available
   if clang-format --help 2>&1 | grep -q -- "--dry-run"; then
     git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' | \
-      grep -v '^tests/' | \
+      grep -v -E '^(tests|gtests|test)/' | \
       tr '\n' '\0' | \
       xargs -0 -r -n1 sh -c 'clang-format --dry-run --Werror "$0" 2>&1 || echo "FORMAT_ISSUE: $0"' >>"${CLANG_FORMAT_OUT}" 2>&1 || true
   else
     # Fallback: diff formatted output
     git -C "${REPO_ROOT}" ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' | \
-      grep -v '^tests/' | \
+      grep -v -E '^(tests|gtests|test)/' | \
       tr '\n' '\0' | \
       xargs -0 -r -n1 sh -c 'f="$0"; clang-format "$f" | diff -u "$f" - 2>/dev/null || echo "FORMAT_ISSUE: $f"' >>"${CLANG_FORMAT_OUT}" 2>&1 || true
   fi

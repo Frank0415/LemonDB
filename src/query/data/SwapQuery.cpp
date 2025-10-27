@@ -10,8 +10,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* SwapQuery::qname;
-
 QueryResult::Ptr SwapQuery::execute()
 {
   using namespace std;
@@ -35,13 +33,13 @@ QueryResult::Ptr SwapQuery::execute()
     const auto f2 = table.getFieldIndex(operands[1]);
 
     Table::SizeType counter = 0;
-    bool handled = this->testKeyCondition(table,
-                                          [&](bool ok, Table::Object::Ptr&& obj)
-                                          {
-                                            if (!ok)
-                                            {
-                                              return;
-                                            }
+    const bool handled = this->testKeyCondition(table,
+                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                {
+                                                  if (!ok)
+                                                  {
+                                                    return;
+                                                  }
                                             if (obj)
                                             {
                                               auto tmp = (*obj)[f1];

@@ -12,8 +12,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* DropTableQuery::qname;
-
 QueryResult::Ptr DropTableQuery::execute()
 {
   using namespace std;

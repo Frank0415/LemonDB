@@ -11,8 +11,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* CopyTableQuery::qname;
-
 QueryResult::Ptr CopyTableQuery::execute()
 {
   try
@@ -35,7 +33,7 @@ QueryResult::Ptr CopyTableQuery::execute()
       return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Target table name exists");
     }
 
-    std::vector<std::string> fields = src.field();
+    const std::vector<std::string> fields = src.field();
     auto dup = std::make_unique<Table>(this->newTableName, fields);
     for (auto it = src.begin(); it != src.end(); ++it)
     {

@@ -13,8 +13,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* MaxQuery::qname;
-
 QueryResult::Ptr MaxQuery::execute()
 {
   using namespace std;

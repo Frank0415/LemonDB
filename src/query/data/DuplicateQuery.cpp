@@ -14,8 +14,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* DuplicateQuery::qname;
-
 QueryResult::Ptr DuplicateQuery::execute()
 {
   using namespace std;

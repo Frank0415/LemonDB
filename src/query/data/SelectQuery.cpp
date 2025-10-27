@@ -14,8 +14,6 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-constexpr const char* SelectQuery::qname;
-
 QueryResult::Ptr SelectQuery::execute()
 {
   using namespace std;
@@ -45,13 +43,13 @@ QueryResult::Ptr SelectQuery::execute()
     }
 
     ostringstream buffer;
-    bool handled = this->testKeyCondition(table,
-                                          [&](bool ok, Table::Object::Ptr&& obj)
-                                          {
-                                            if (!ok)
-                                            {
-                                              return;
-                                            }
+    const bool handled = this->testKeyCondition(table,
+                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                {
+                                                  if (!ok)
+                                                  {
+                                                    return;
+                                                  }
                                             if (obj)
                                             {
                                               buffer << "( " << obj->key();
