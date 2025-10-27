@@ -29,27 +29,31 @@ FAILED=0
 echo "Running tests..."
 echo "================"
 
+cd test/data
+
+cp ../../build/bin/lemondb ./lemondb
+
 for test in "${TESTS[@]}"; do
-    if [ ! -f "test/data/queries/${test}.query" ]; then
-        echo "SKIP: test/data/queries/${test}.query not found"
+    if [ ! -f "queries/${test}.query" ]; then
+        echo "SKIP: queries/${test}.query not found"
         continue
     fi
     
-    if [ ! -f "test/data/stdout/${test}.out" ]; then
-        echo "SKIP: test/data/stdout/${test}.out not found"
+    if [ ! -f "stdout/${test}.out" ]; then
+        echo "SKIP: stdout/${test}.out not found"
         continue
     fi
     
     # Run test
-    ./build/bin/lemondb < "test/data/queries/${test}.query" > 1.out 2>/dev/null
+    ./lemondb < "queries/${test}.query" > 1.out 2>/dev/null
     # Compare output
-    if diff -q 1.out "test/data/stdout/${test}.out" >/dev/null 2>&1; then
+    if diff -q 1.out "stdout/${test}.out" >/dev/null 2>&1; then
         echo "PASS: ${test}"
         ((PASSED++))
     else
         echo "FAIL: ${test}"
         ((FAILED++))
-        diff 1.out "test/data/stdout/${test}.out"
+        # diff 1.out "test/data/stdout/${test}.out"
     fi
 done
 
@@ -57,8 +61,8 @@ echo "================="
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"
 
-ls test/data/tmp
+ls data/tmp
 
-for file in test/data/tmp/*; do
+for file in data/tmp/*; do
     cat $file
 done
