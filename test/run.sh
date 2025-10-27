@@ -8,7 +8,7 @@ echo "2"
 
 ls /usr/bin/
 
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++
+cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_C_COMPILER=clang-18
 cmake --build build -j2
 echo "4"
 ls test/data/queries
