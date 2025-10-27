@@ -11,6 +11,15 @@
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
 
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define LEMONDB_WITH_MSAN 1
+#endif
+#endif
+#if defined(__SANITIZE_MEMORY__)
+#define LEMONDB_WITH_MSAN 1
+#endif
+
 struct
 {
   std::string listen;
@@ -58,12 +67,18 @@ std::string extractQueryString(std::istream& is)
 int main(int argc, char* argv[])
 {
   // Assume only C++ style I/O is used in lemondb
-  // Do not use printf/fprintf in <cstdio> with this line
+#ifdef LEMONDB_WITH_MSAN
+  // Keep stdio synchronized to avoid MemorySanitizer false positives from unsynchronized buffers
+  std::ios_base::sync_with_stdio(true);
+#else
+  // Disable sync for better throughput when sanitizers are not involved
   std::ios_base::sync_with_stdio(false);
+#endif
 
   parseArgs(argc, argv);
 
   std::ifstream fin;
+  std::istream* input = &std::cin;
   if (!parsedArgs.listen.empty())
   {
     fin.open(parsedArgs.listen);
@@ -73,8 +88,8 @@ int main(int argc, char* argv[])
                 << std::endl;
       exit(-1);
     }
+    input = &fin;
   }
-  std::istream is(fin.rdbuf());
 
 #ifdef NDEBUG
   // In production mode, listen argument must be defined
@@ -92,9 +107,11 @@ int main(int argc, char* argv[])
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode"
               << std::endl;
-    is.rdbuf(std::cin.rdbuf());
+    input = &std::cin;
   }
 #endif
+
+  std::istream& is = *input;
 
   if (parsedArgs.threads < 0)
   {
@@ -164,3 +181,7 @@ int main(int argc, char* argv[])
 
   return 0;
 }
+
+#ifdef LEMONDB_WITH_MSAN
+#undef LEMONDB_WITH_MSAN
+#endif
