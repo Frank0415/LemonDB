@@ -5,10 +5,12 @@ echo "1"
 mkdir data/tmp
 
 cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18
-cmake --build build -j2
+cmake --build build -j$(nproc)
 # echo "4"
 # ls test/data/queries
 # echo "5"
+
+echo $(nproc)
 
 cp ./build/bin/lemondb ./lemondb
 
@@ -67,8 +69,8 @@ echo "================="
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"
 
-ls tmp
+# ls tmp
 
-for file in tmp/*; do
-    cat $file
-done
+# for file in tmp/*; do
+#     cat $file
+# done
