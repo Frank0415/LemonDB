@@ -5,6 +5,12 @@ echo "1"
 cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++
 cmake --build build -j8
 echo "2"
+which clang
+which clang++
+which gcc
+which g++
+which clang-tidy
+echo "2.1"
 ls -la
 echo "3"
 echo "void"
