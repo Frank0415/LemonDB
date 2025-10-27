@@ -10,6 +10,8 @@ cmake --build build -j2
 # ls test/data/queries
 # echo "5"
 
+cp ./build/bin/lemondb ./lemondb
+
 TESTS=(
   "single_read"
   "single_read_dup"
@@ -58,6 +60,8 @@ for test in "${TESTS[@]}"; do
         # diff 1.out "test/data/stdout/${test}.out"
     fi
 done
+
+rm 1.out
 
 echo "================="
 echo "Tests passed: ${PASSED}"
