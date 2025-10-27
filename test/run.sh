@@ -2,7 +2,7 @@
 
 echo "1"
 
-mkdir /data/tmp
+mkdir data/tmp
 
 cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18
 cmake --build build -j2
@@ -67,8 +67,8 @@ echo "================="
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"
 
-ls data/tmp
+ls tmp
 
-for file in data/tmp/*; do
+for file in tmp/*; do
     cat $file
 done
