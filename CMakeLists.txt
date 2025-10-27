@@ -87,6 +87,61 @@ target_compile_options(lemondb_lib PRIVATE
     ${LEMONDB_COMMON_COMPILE_OPTIONS}
 )
 
+# Options to build sanitizer variants (ASAN/MSAN/UBSAN)
+option(ENABLE_ASAN "Build AddressSanitizer instrumented binaries" OFF)
+option(ENABLE_MSAN "Build MemorySanitizer instrumented binaries" OFF)
+option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF)
+
+if(ENABLE_ASAN)
+    message(STATUS "Configuring ASAN build targets")
+    set(LEMONDB_ASAN_FLAGS -fsanitize=address -fno-omit-frame-pointer -fno-sanitize-recover=all)
+    add_library(lemondb_lib_asan STATIC ${LIB_SOURCES})
+    target_include_directories(lemondb_lib_asan PUBLIC ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(lemondb_lib_asan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_ASAN_FLAGS})
+    # Ensure sanitizer flags are passed at link time as well
+    target_link_options(lemondb_lib_asan PRIVATE ${LEMONDB_ASAN_FLAGS})
+
+    add_executable(lemondb_asan ${MAIN_SOURCES})
+    target_link_libraries(lemondb_asan PRIVATE lemondb_lib_asan)
+    target_compile_options(lemondb_asan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_ASAN_FLAGS})
+    target_link_options(lemondb_asan PRIVATE ${LEMONDB_ASAN_FLAGS})
+endif()
+
+if(ENABLE_MSAN)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "MemorySanitizer (MSAN) requires Clang/LLVM. Re-run CMake with -DCMAKE_CXX_COMPILER=clang++ or disable ENABLE_MSAN.")
+    endif()
+    message(STATUS "Configuring MSAN build targets")
+    set(LEMONDB_MSAN_FLAGS -fsanitize=memory -fno-omit-frame-pointer)
+    add_library(lemondb_lib_msan STATIC ${LIB_SOURCES})
+    target_include_directories(lemondb_lib_msan PUBLIC ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(lemondb_lib_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_FLAGS})
+    # Pass MSAN flags to the linker too (required to link MSAN runtime)
+    target_link_options(lemondb_lib_msan PRIVATE ${LEMONDB_MSAN_FLAGS})
+
+    add_executable(lemondb_msan ${MAIN_SOURCES})
+    target_link_libraries(lemondb_msan PRIVATE lemondb_lib_msan)
+    target_compile_options(lemondb_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_FLAGS})
+    target_link_options(lemondb_msan PRIVATE ${LEMONDB_MSAN_FLAGS})
+endif()
+
+if(ENABLE_UBSAN)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "UndefinedBehaviorSanitizer subsanitizers used here require Clang/LLVM. Re-run CMake with -DCMAKE_CXX_COMPILER=clang++ or disable ENABLE_UBSAN.")
+    endif()
+    message(STATUS "Configuring UBSAN build targets")
+    set(LEMONDB_UBSAN_FLAGS -fsanitize=undefined,integer,bounds,float-divide-by-zero,implicit-conversion,float-cast-overflow,nullability -fno-omit-frame-pointer -fno-sanitize-recover=all)
+    add_library(lemondb_lib_ubsan STATIC ${LIB_SOURCES})
+    target_include_directories(lemondb_lib_ubsan PUBLIC ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(lemondb_lib_ubsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_UBSAN_FLAGS})
+    target_link_options(lemondb_lib_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
+
+    add_executable(lemondb_ubsan ${MAIN_SOURCES})
+    target_link_libraries(lemondb_ubsan PRIVATE lemondb_lib_ubsan)
+    target_compile_options(lemondb_ubsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_UBSAN_FLAGS})
+    target_link_options(lemondb_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
+endif()
+
 # Google Test Setup
 include(FetchContent)
 FetchContent_Declare(
