@@ -34,7 +34,7 @@ bool Table::evalDuplicateCopy(Table::KeyType key)
   return this->keyMap.find(key) != this->keyMap.end();
 }
 
-void Table::duplicateKeyData(const Table::KeyType key)
+void Table::duplicateKeyData(const Table::KeyType& key)
 {
   Table::KeyType copyKey(key);
   copyKey.append("_copy");

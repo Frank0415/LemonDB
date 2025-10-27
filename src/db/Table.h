@@ -72,10 +72,7 @@ private:
     Datum(Datum&&) noexcept = default;
     Datum& operator=(Datum&&) noexcept = default;
 
-    explicit Datum(const SizeType& size)
-    {
-      datum = std::vector<ValueType>(size, ValueType());
-    }
+    explicit Datum(const SizeType& size) : datum(size, ValueType()) {}
 
     template <class ValueTypeContainer>
     explicit Datum(const KeyType& key, const ValueTypeContainer& datum)
@@ -142,7 +139,7 @@ public:
 
     ~ObjectImpl() = default;
 
-    KeyType key() const
+    const KeyType& key() const
     {
       return it->key;
     }
@@ -368,7 +365,7 @@ public:
    * Duplicate a row of data by its key
    * @param key
    */
-  void duplicateKeyData(const KeyType key);
+  void duplicateKeyData(const KeyType& key);
 
   /**
    * Find the index of a field in the fieldMap

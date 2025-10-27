@@ -47,8 +47,10 @@ QueryCondition C(const std::string& field, const std::string& op, const std::str
 {
   QueryCondition qc;
   qc.field = field;
+  qc.fieldId = 0;
   qc.op = op;
   qc.value = value;
+  qc.valueParsed = 0;
   return qc;
 }
 

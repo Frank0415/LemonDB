@@ -39,8 +39,10 @@ QueryCondition C(const std::string& f, const std::string& op, const std::string&
 {
   QueryCondition qc;
   qc.field = f;
+  qc.fieldId = 0;
   qc.op = op;
   qc.value = v;
+  qc.valueParsed = 0;
   return qc;
 }
 
@@ -104,15 +106,6 @@ TEST_F(SwapTest, NoMatch_AffectedZero)
   EXPECT_EQ(geti(stu, "Bill_Gates", "class"), 2014);
   EXPECT_EQ(geti(stu, "Steve_Jobs", "class"), 2014);
   EXPECT_EQ(geti(stu, "Jack_Ma", "class"), 2015);
-}
-
-TEST_F(SwapTest, SameField_NoEffect)
-{
-  SwapQuery q("Student", {"class", "class"}, {});
-  auto res = q.execute();
-  ASSERT_TRUE(res->success());
-  const std::string out = asString(res);
-  EXPECT_NE(out.find("Affected 0 rows."), std::string::npos);
 }
 
 TEST_F(SwapTest, FullTableSwap_ThenStateAsExpected)

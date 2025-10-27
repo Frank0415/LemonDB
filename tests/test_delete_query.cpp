@@ -28,8 +28,10 @@ TEST(DeleteQueryTest, DeleteByKeyExists)
   // build condition: (KEY = k2)
   QueryCondition cond;
   cond.field = "KEY";
+  cond.fieldId = 0;
   cond.op = "=";
   cond.value = "k2";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
   // operands vector unused for DELETE in current implementation
   auto q = std::make_unique<DeleteQuery>("del_by_key_exists", std::vector<std::string>{}, conds);
@@ -46,8 +48,10 @@ TEST(DeleteQueryTest, DeleteByFieldCondition)
   // delete where (age < 20) => should delete k2
   QueryCondition cond;
   cond.field = "age";
+  cond.fieldId = 0;
   cond.op = "<";
   cond.value = "20";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
   auto q = std::make_unique<DeleteQuery>("del_by_field", std::vector<std::string>{}, conds);
   auto res = q->execute();
@@ -63,8 +67,10 @@ TEST(DeleteQueryTest, DeleteByKeyNotFound)
   // delete where KEY = not_exist
   QueryCondition cond;
   cond.field = "KEY";
+  cond.fieldId = 0;
   cond.op = "=";
   cond.value = "nope";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
   auto q = std::make_unique<DeleteQuery>("del_key_not_found", std::vector<std::string>{}, conds);
   auto res = q->execute();
@@ -88,12 +94,16 @@ TEST(DeleteQueryTest, DeleteAdjacentRows)
   // delete where age >= 11 and age <= 12 -> should remove a2 and a3 (adjacent)
   QueryCondition c1;
   c1.field = "age";
+  c1.fieldId = 0;
   c1.op = ">=";
   c1.value = "11";
+  c1.valueParsed = 0;
   QueryCondition c2;
   c2.field = "age";
+  c2.fieldId = 0;
   c2.op = "<=";
   c2.value = "12";
+  c2.valueParsed = 0;
   std::vector<QueryCondition> conds{c1, c2};
   auto q = std::make_unique<DeleteQuery>("del_adjacent", std::vector<std::string>{}, conds);
   auto res = q->execute();
