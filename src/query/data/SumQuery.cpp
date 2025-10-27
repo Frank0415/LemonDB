@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -19,12 +20,11 @@ QueryResult::Ptr SumQuery::execute()
     {
       return make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
     }
-    for (const auto& f : this->operands)
+    // Check if any operand is "KEY" using std::any_of
+    if (std::any_of(this->operands.begin(), this->operands.end(),
+                    [](const auto& f) { return f == "KEY"; }))
     {
-      if (f == "KEY")
-      {
-        return make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
-      }
+      return make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
     }
     vector<Table::FieldIndex> fids;
     fids.reserve(this->operands.size());
