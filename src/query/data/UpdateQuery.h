@@ -22,9 +22,7 @@ public:
   UpdateQuery(std::string table,
               std::vector<std::string> operands,
               std::vector<QueryCondition> conditions)
-      : ComplexQuery(std::move(table), std::move(operands),
-                     std::move(conditions)),
-        fieldValue(0),
+      : ComplexQuery(std::move(table), std::move(operands), std::move(conditions)), fieldValue(0),
         fieldId(0)
   {
   }
