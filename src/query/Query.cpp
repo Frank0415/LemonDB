@@ -30,7 +30,7 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
       {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
       }
-      else if (result.first.empty())
+      if (result.first.empty())
       {
         result.first = cond.value;
       }

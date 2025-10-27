@@ -83,10 +83,7 @@ QueryResult::Ptr MaxQuery::execute()
         }
         return make_unique<SuccessMsgResult>(maxValue);
       }
-      else
-      {
-        return make_unique<NullQueryResult>();
-      }
+      return make_unique<NullQueryResult>();
     }
     catch (const IllFormedQueryCondition& e)
     {

@@ -27,6 +27,8 @@ QueryResult::Ptr CopyTableQuery::execute()
     }
     catch (...)
     {
+      // Intentionally ignore: table doesn't exist, which is expected
+      (void)0;
     }
     if (targetExists)
     {

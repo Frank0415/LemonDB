@@ -15,9 +15,6 @@
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
 
-constexpr const Table::ValueType Table::ValueTypeMax;
-constexpr const Table::ValueType Table::ValueTypeMin;
-
 Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 {
   try
@@ -91,11 +88,8 @@ Table::Object::Ptr Table::operator[](const Table::KeyType& key)
     // not found
     return nullptr;
   }
-  else
-  {
-    return createProxy(
-        data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
-  }
+  return createProxy(
+      data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
 }
 
 std::ostream& operator<<(std::ostream& os, const Table& table)

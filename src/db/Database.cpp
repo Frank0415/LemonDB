@@ -15,9 +15,9 @@
 #include <utility>
 #include <vector>
 
-#include "Table.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
+#include "Table.h"
 
 std::unique_ptr<Database> Database::instance = nullptr;
 
@@ -118,10 +118,7 @@ std::string Database::getFileTableName(const std::string& fileName)
     fileTableNameMap.emplace(fileName, tableName);
     return tableName;
   }
-  else
-  {
-    return it->second;
-  }
+  return it->second;
 }
 
 Table& Database::loadTableFromStream(std::istream& is, const std::string& source)
@@ -131,7 +128,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
                                           : "Invalid table format: ";
 
   std::string tableName;
-  Table::SizeType fieldCount;
+  Table::SizeType fieldCount = 0;
   std::deque<Table::KeyType> fields;
 
   std::string line;
@@ -163,10 +160,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
     {
       throw LoadFromStreamException(errString + "Failed to load field names.");
     }
-    else
-    {
-      fields.emplace_back(std::move(field));
-    }
+    fields.emplace_back(std::move(field));
   }
 
   if (fields.front() != "KEY")
@@ -192,7 +186,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
     tuple.reserve(fieldCount - 1);
     for (Table::SizeType i = 1; i < fieldCount; ++i)
     {
-      Table::ValueType value;
+      Table::ValueType value = 0;
       if (!(sstream >> value))
         throw LoadFromStreamException(errString + "Invalid row on LINE " +
                                       std::to_string(lineCount));

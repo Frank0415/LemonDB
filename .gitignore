@@ -56,4 +56,5 @@
 !tests/*.h
 
 !.clang-format
+!.clang-tidy
 !CPPLINT.cfg

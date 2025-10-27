@@ -29,7 +29,7 @@ void parseArgs(int argc, char* argv[])
                              {"threads", required_argument, nullptr, 't'},
                              {nullptr, no_argument, nullptr, 0}};
   const char* shortOpts = "l:t:";
-  int opt, longIndex;
+  int opt = 0, longIndex = 0;
   while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
   {
     if (opt == 'l')

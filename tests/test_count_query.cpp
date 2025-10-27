@@ -26,7 +26,8 @@ void dropIfExists(const std::string& name)
   }
   catch (...)
   {
-    // Ignore if the table doesn't exist
+    // Intentionally ignore: table may not exist during cleanup
+    (void)0;
   }
 }
 

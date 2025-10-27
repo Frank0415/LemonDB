@@ -75,7 +75,8 @@ QueryResult::Ptr DuplicateQuery::execute()
       }
       catch (const ConflictingKey& e)
       {
-        // if key conflict exists, skip
+        // Intentionally ignore: if key conflict exists, skip this record
+        (void)e;
       }
     }
 

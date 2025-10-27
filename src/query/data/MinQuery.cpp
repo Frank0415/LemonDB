@@ -82,10 +82,7 @@ QueryResult::Ptr MinQuery::execute()
         }
         return make_unique<SuccessMsgResult>(minValue);
       }
-      else
-      {
-        return make_unique<NullQueryResult>();
-      }
+      return make_unique<NullQueryResult>();
     }
     catch (const IllFormedQueryCondition& e)
     {
