@@ -1,10 +1,15 @@
 #include "DeleteQuery.h"
 
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 constexpr const char* DeleteQuery::qname;

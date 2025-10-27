@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryBuilders.h"
 

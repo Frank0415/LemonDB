@@ -1,9 +1,14 @@
 #include "SwapQuery.h"
 
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 constexpr const char* SwapQuery::qname;
 

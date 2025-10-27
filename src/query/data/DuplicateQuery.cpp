@@ -1,13 +1,17 @@
 #include "DuplicateQuery.h"
 
-#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
-#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 constexpr const char* DuplicateQuery::qname;

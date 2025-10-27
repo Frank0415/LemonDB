@@ -7,6 +7,7 @@
 
 #include "db/Database.h"
 #include "db/Table.h"
+#include "query/Query.h"
 #include "query/QueryResult.h"
 #include "query/data/SumQuery.h"
 

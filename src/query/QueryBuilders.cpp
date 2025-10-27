@@ -10,6 +10,10 @@
 #include <string>
 
 #include "../db/Database.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
+#include "Query.h"
+#include "QueryParser.h"
 #include "data/AddQuery.h"
 #include "data/CountQuery.h"
 #include "data/DeleteQuery.h"

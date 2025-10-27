@@ -1,10 +1,13 @@
 #include "CountQuery.h"
 
-#include <algorithm>
+#include <exception>
 #include <memory>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 // Implementation of the execute method for CountQuery
 QueryResult::Ptr CountQuery::execute()

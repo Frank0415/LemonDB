@@ -5,10 +5,16 @@
 #include "Query.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
+
+#include "../db/Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 {

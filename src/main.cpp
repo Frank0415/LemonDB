@@ -4,12 +4,18 @@
 
 #include <getopt.h>
 
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 
+#include "query/Query.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
+#include "query/QueryResult.h"
 
 struct
 {

@@ -1,12 +1,17 @@
+#include "SumQuery.h"
+
 #include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
-#include <numeric>
 #include <string>
 #include <vector>
 
-#include "db/Database.h"
-#include "query/QueryResult.h"
-#include "query/data/SumQuery.h"
+#include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr SumQuery::execute()
 {

@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "db/Database.h"
 #include "db/Table.h"
+#include "query/Query.h"
 #include "query/QueryResult.h"
 #include "query/data/SwapQuery.h"
 

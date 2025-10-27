@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
+#include <cstddef>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>

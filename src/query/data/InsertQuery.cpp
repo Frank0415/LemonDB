@@ -4,13 +4,18 @@
 
 #include "InsertQuery.h"
 
-#include <algorithm>
+#include <cstdlib>
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 constexpr const char* InsertQuery::qname;

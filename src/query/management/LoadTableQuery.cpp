@@ -4,11 +4,14 @@
 
 #include "LoadTableQuery.h"
 
+#include <exception>
 #include <fstream>
 #include <memory>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/formatter.h"
+#include "../QueryResult.h"
 
 constexpr const char* LoadTableQuery::qname;
 

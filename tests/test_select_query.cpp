@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,7 +11,6 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 #include "query/data/SelectQuery.h"
-#include "query/data/SwapQuery.h"
 
 namespace
 {

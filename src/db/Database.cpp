@@ -4,6 +4,7 @@
 
 #include "Database.h"
 
+#include <cstdlib>
 #include <deque>
 #include <fstream>
 #include <iomanip>
@@ -15,6 +16,8 @@
 #include <vector>
 
 #include "Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 std::unique_ptr<Database> Database::instance = nullptr;
 

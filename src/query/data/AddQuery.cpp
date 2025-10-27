@@ -1,11 +1,14 @@
 #include "AddQuery.h"
 
-#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
-#include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 constexpr const char* AddQuery::qname;
