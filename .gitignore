@@ -51,10 +51,15 @@
 
 # Allow CMake and tests
 !CMakeLists.txt
-!tests
-!tests/*.cpp
-!tests/*.h
+!gtests
+!gtests/*.cpp
+!gtests/*.h
 
 !.clang-format
 !.clang-tidy
 !CPPLINT.cfg
+!CPPLINT.cfg
+
+!test
+!test/run.sh
+!test/data

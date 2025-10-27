@@ -12,6 +12,8 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "../../query/QueryResult.h"
+#include "../../query/data/SumQuery.h"
 
 QueryResult::Ptr SumQuery::execute()
 {
@@ -38,7 +40,7 @@ QueryResult::Ptr SumQuery::execute()
       fids.emplace_back(table.getFieldIndex(f));
     }
 
-    vector<int> sums(fids.size(), 0);
+    vector<Table::ValueType> sums(fids.size(), 0);
     bool handled = this->testKeyCondition(table,
                                           [&](bool ok, Table::Object::Ptr&& obj)
                                           {
