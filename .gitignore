@@ -42,6 +42,10 @@
 !hooks
 !hooks/*
 
+# Allow helper scripts
+!scripts
+!scripts/*.sh
+
 # Allow pre-commit config
 !.pre-commit-config.yaml
 
