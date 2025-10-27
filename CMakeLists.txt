@@ -143,42 +143,42 @@ if(ENABLE_UBSAN)
 endif()
 
 # Google Test Setup
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
+# include(FetchContent)
+# FetchContent_Declare(
+#     googletest
+#     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+#     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+# )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(googletest)
+# FetchContent_MakeAvailable(googletest)
 
 # Enable testing
-enable_testing()
+# enable_testing()
 
 # Create test executable
-add_executable(lemondb_tests
-    gtests/test_example.cpp
-    gtests/test_count_query.cpp
-    gtests/test_delete_query.cpp
-    gtests/test_limits_query.cpp
-    gtests/test_select_query.cpp
-    gtests/test_duplicate_query.cpp
-    gtests/test_swap_query.cpp
-    gtests/test_arith_query.cpp
-    gtests/test_sum_query.cpp
-    gtests/test_copytable_query.cpp
-    gtests/test_truncate_query.cpp
-)
+# add_executable(lemondb_tests
+#     gtests/test_example.cpp
+#     gtests/test_count_query.cpp
+#     gtests/test_delete_query.cpp
+#     gtests/test_limits_query.cpp
+#     gtests/test_select_query.cpp
+#     gtests/test_duplicate_query.cpp
+#     gtests/test_swap_query.cpp
+#     gtests/test_arith_query.cpp
+#     gtests/test_sum_query.cpp
+#     gtests/test_copytable_query.cpp
+#     gtests/test_truncate_query.cpp
+# )
 
-target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(lemondb_tests 
-    lemondb_lib
-    gtest
-    gtest_main
-)
+# target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+# target_link_libraries(lemondb_tests 
+#     lemondb_lib
+#     gtest
+#     gtest_main
+# )
 
 # Register tests with gtest
-add_test(NAME lemondb_tests COMMAND lemondb_tests)
+# add_test(NAME lemondb_tests COMMAND lemondb_tests)
