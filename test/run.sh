@@ -58,12 +58,12 @@ echo "================"
 
 for test in "${TESTS[@]}"; do
   if [ ! -f "queries/${test}.query" ]; then
-    echo "⚠ SKIP: queries/${test}.query not found"
+    echo "SKIP: queries/${test}.query not found"
     continue
   fi
 
   if [ ! -f "stdout/${test}.out" ]; then
-    echo "⚠ SKIP: stdout/${test}.out not found"
+    echo "SKIP: stdout/${test}.out not found"
     continue
   fi
 
@@ -72,10 +72,10 @@ for test in "${TESTS[@]}"; do
   ./lemondb < "queries/${test}.query" > 1.out 2>/dev/null
   # Compare output
   if diff -q 1.out "stdout/${test}.out" >/dev/null 2>&1; then
-    echo "✓ PASS: ${test}"
+    echo "PASS: ${test}"
     ((PASSED++))
   else
-    echo "✗ FAIL: ${test}"
+    echo "FAIL: ${test}"
     ((FAILED++))
     # Show first 10 lines of diff
     echo "  First differences:"
