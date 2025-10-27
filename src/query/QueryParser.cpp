@@ -15,10 +15,14 @@ QueryParser::QueryParser() : first(nullptr), last(nullptr)
 Query::Ptr QueryParser::parseQuery(const std::string& queryString)
 {
   if (first == nullptr)
+  {
     throw QueryBuilderMatchFailed(queryString);
+  }
   auto t = tokenizeQueryString(queryString);
   if (t.token.empty())
+  {
     throw QueryBuilderMatchFailed("");
+  }
   first->clear();
   return first->tryExtractQuery(t);
 }
@@ -48,6 +52,8 @@ TokenizedQueryString QueryParser::tokenizeQueryString(const std::string& querySt
   s.str(queryString);
   std::string tStr;
   while (s >> tStr)
+  {
     t.token.push_back(tStr);
+  }
   return t;
 }

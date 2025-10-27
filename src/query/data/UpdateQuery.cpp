@@ -21,9 +21,11 @@ QueryResult::Ptr UpdateQuery::execute()
 {
   using namespace std;
   if (this->operands.size() != 2)
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                        "Invalid number of operands (? operands)."_f %
                                            operands.size());
+  }
   Database& db = Database::getInstance();
   try
   {

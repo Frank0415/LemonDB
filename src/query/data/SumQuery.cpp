@@ -43,7 +43,9 @@ QueryResult::Ptr SumQuery::execute()
                                           [&](bool ok, Table::Object::Ptr&& obj)
                                           {
                                             if (!ok)
+                                            {
                                               return;
+                                            }
                                             if (obj)
                                             {
                                               for (size_t i = 0; i < fids.size(); ++i)

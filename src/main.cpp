@@ -42,7 +42,7 @@ void parseArgs(int argc, char* argv[])
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << std::endl;
+      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
     }
   }
 }
@@ -54,9 +54,13 @@ std::string extractQueryString(std::istream& is)
   {
     int ch = is.get();
     if (ch == ';')
+    {
       return buf;
+    }
     if (ch == EOF)
+    {
       throw std::ios_base::failure("End of input");
+    }
     buf.push_back((char)ch);
   } while (true);
 }
@@ -75,8 +79,7 @@ int main(int argc, char* argv[])
     fin.open(parsedArgs.listen);
     if (!fin.is_open())
     {
-      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory"
-                << std::endl;
+      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
       exit(-1);
     }
   }
@@ -88,7 +91,7 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: error: --listen argument not found, not allowed in "
                  "production mode"
-              << std::endl;
+              << '\n';
     exit(-1);
   }
 #else
@@ -97,7 +100,7 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode"
-              << std::endl;
+              << '\n';
     is.rdbuf(std::cin.rdbuf());
   }
 #endif
@@ -105,17 +108,17 @@ int main(int argc, char* argv[])
   if (parsedArgs.threads < 0)
   {
     std::cerr << "lemondb: error: threads num can not be negative value " << parsedArgs.threads
-              << std::endl;
+              << '\n';
     exit(-1);
   }
   else if (parsedArgs.threads == 0)
   {
     // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num" << std::endl;
+    std::cerr << "lemondb: info: auto detect thread num" << '\n';
   }
   else
   {
-    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << std::endl;
+    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << '\n';
   }
 
   QueryParser p;
@@ -164,7 +167,7 @@ int main(int argc, char* argv[])
     catch (const std::exception& e)
     {
       std::cout.flush();
-      std::cerr << e.what() << std::endl;
+      std::cerr << e.what() << '\n';
     }
   }
 

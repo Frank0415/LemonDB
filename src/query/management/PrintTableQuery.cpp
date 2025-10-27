@@ -24,7 +24,7 @@ QueryResult::Ptr PrintTableQuery::execute()
     cout << "================\n";
     cout << "TABLE = ";
     cout << table;
-    cout << "================\n" << endl;
+    cout << "================\n" << '\n';
     return make_unique<SuccessMsgResult>(qname, this->targetTable);
   }
   catch (const TableNameNotFound& e)

@@ -31,8 +31,12 @@ QueryResult::Ptr SelectQuery::execute()
     fieldsOrder.reserve(this->operands.size() + 1);
     fieldsOrder.emplace_back("KEY");
     for (const auto& f : this->operands)
+    {
       if (f != "KEY")
+      {
         fieldsOrder.emplace_back(f);
+      }
+    }
     vector<Table::FieldIndex> fieldIds;
     fieldIds.reserve(fieldsOrder.size() - 1);
     for (size_t i = 1; i < fieldsOrder.size(); ++i)
@@ -45,12 +49,16 @@ QueryResult::Ptr SelectQuery::execute()
                                           [&](bool ok, Table::Object::Ptr&& obj)
                                           {
                                             if (!ok)
+                                            {
                                               return;
+                                            }
                                             if (obj)
                                             {
                                               buffer << "( " << obj->key();
                                               for (size_t j = 0; j < fieldIds.size(); ++j)
+                                              {
                                                 buffer << " " << (*obj)[fieldIds[j]];
+                                              }
                                               buffer << " )\n";
                                             }
                                           });
@@ -63,7 +71,9 @@ QueryResult::Ptr SelectQuery::execute()
     for (auto it = table.begin(); it != table.end(); ++it)
     {
       if (this->evalCondition(*it))
+      {
         rows.push_back(it);
+      }
     }
     sort(rows.begin(), rows.end(), [](const Table::Iterator& a, const Table::Iterator& b)
          { return (*a).key() < (*b).key(); });
@@ -72,7 +82,9 @@ QueryResult::Ptr SelectQuery::execute()
     {
       buffer << "( " << (*it).key();
       for (size_t j = 0; j < fieldIds.size(); ++j)
+      {
         buffer << " " << (*it)[fieldIds[j]];
+      }
       buffer << " )\n";
     }
     return make_unique<TextRowsResult>(buffer.str());

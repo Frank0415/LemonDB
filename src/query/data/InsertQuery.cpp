@@ -24,8 +24,10 @@ QueryResult::Ptr InsertQuery::execute()
 {
   using namespace std;
   if (this->operands.empty())
+  {
     return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                        "No operand (? operands)."_f % operands.size());
+  }
   Database& db = Database::getInstance();
   try
   {

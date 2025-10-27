@@ -73,19 +73,19 @@ void Database::dropTable(const std::string& tableName)
 void Database::printAllTable()
 {
   const int width = 15;
-  std::cout << "Database overview:" << std::endl;
-  std::cout << "=========================" << std::endl;
+  std::cout << "Database overview:" << '\n';
+  std::cout << "=========================" << '\n';
   std::cout << std::setw(width) << "Table name";
   std::cout << std::setw(width) << "# of fields";
-  std::cout << std::setw(width) << "# of entries" << std::endl;
+  std::cout << std::setw(width) << "# of entries" << '\n';
   for (const auto& table : this->tables)
   {
     std::cout << std::setw(width) << table.first;
     std::cout << std::setw(width) << (*table.second).field().size() + 1;
-    std::cout << std::setw(width) << (*table.second).size() << std::endl;
+    std::cout << std::setw(width) << (*table.second).size() << '\n';
   }
-  std::cout << "Total " << this->tables.size() << " tables." << std::endl;
-  std::cout << "=========================" << std::endl;
+  std::cout << "Total " << this->tables.size() << " tables." << '\n';
+  std::cout << "=========================" << '\n';
 }
 
 Database& Database::getInstance()
@@ -134,7 +134,9 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
   std::string line;
   std::stringstream sstream;
   if (!std::getline(is, line))
+  {
     throw LoadFromStreamException(errString + "Failed to read table metadata line.");
+  }
 
   sstream.str(line);
   sstream >> tableName >> fieldCount;
@@ -175,21 +177,27 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
   while (std::getline(is, line))
   {
     if (line.empty())
+    {
       break; // Read to an empty line
+    }
     lineCount++;
     sstream.clear();
     sstream.str(line);
     std::string key;
     if (!(sstream >> key))
+    {
       throw LoadFromStreamException(errString + "Missing or invalid KEY field.");
+    }
     std::vector<Table::ValueType> tuple;
     tuple.reserve(fieldCount - 1);
     for (Table::SizeType i = 1; i < fieldCount; ++i)
     {
       Table::ValueType value = 0;
       if (!(sstream >> value))
+      {
         throw LoadFromStreamException(errString + "Invalid row on LINE " +
-                                      std::to_string(lineCount));
+                                       std::to_string(lineCount));
+      }
       tuple.emplace_back(value);
     }
     table->insertByIndex(key, std::move(tuple));

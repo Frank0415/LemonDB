@@ -39,7 +39,9 @@ QueryResult::Ptr SwapQuery::execute()
                                           [&](bool ok, Table::Object::Ptr&& obj)
                                           {
                                             if (!ok)
+                                            {
                                               return;
+                                            }
                                             if (obj)
                                             {
                                               auto tmp = (*obj)[f1];
