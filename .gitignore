@@ -53,3 +53,7 @@
 
 !.clang-format
 !CPPLINT.cfg
+
+!test
+!test/run.sh
+!test/data
