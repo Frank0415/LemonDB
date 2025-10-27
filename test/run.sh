@@ -1,16 +1,15 @@
 #!/bin/bash
 
-echo "1"
+echo "WARNING: Files over 300 lines:"
+find src -type f -print0 | xargs -0 wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
+
+echo "Files over 200 lines:"
+find src -type f -print0 | xargs -0 wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
 
 mkdir data/tmp
 
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18
-cmake --build build -j$(nproc)
-# echo "4"
-# ls test/data/queries
-# echo "5"
-
-echo $(nproc)
+cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 > /dev/null 2>&1
+cmake --build build -j$(nproc) > /dev/null 2>&1
 
 cp ./build/bin/lemondb ./lemondb
 
@@ -68,9 +67,3 @@ rm 1.out
 echo "================="
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"
-
-# ls tmp
-
-# for file in tmp/*; do
-#     cat $file
-# done
