@@ -75,11 +75,6 @@ class ErrorMsgResult : public FailedQueryResult
   std::string msg;
 
 public:
-  bool display() override
-  {
-    return false;
-  }
-
   ErrorMsgResult(const char* qname, const std::string& msg)
   {
     this->msg = R"(Query "?" failed : ?)"_f % qname % msg;
