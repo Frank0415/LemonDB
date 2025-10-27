@@ -19,7 +19,6 @@ QueryResult::Ptr UpdateQuery::execute()
                                        "Invalid number of operands (? operands)."_f %
                                            operands.size());
   Database& db = Database::getInstance();
-  Table::SizeType counter = 0;
   try
   {
     auto& table = db[this->targetTable];
@@ -33,6 +32,7 @@ QueryResult::Ptr UpdateQuery::execute()
       this->fieldValue = (Table::ValueType)strtol(this->operands[1].c_str(), nullptr, 10);
     }
     auto result = initCondition(table);
+    Table::SizeType counter = 0;
     if (result.second)
     {
       for (auto it = table.begin(); it != table.end(); ++it)

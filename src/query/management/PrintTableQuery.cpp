@@ -15,10 +15,10 @@ constexpr const char* PrintTableQuery::qname;
 QueryResult::Ptr PrintTableQuery::execute()
 {
   using namespace std;
-  Database& db = Database::getInstance();
+  const Database& db = Database::getInstance();
   try
   {
-    auto& table = db[this->targetTable];
+    const auto& table = db[this->targetTable];
     cout << "================\n";
     cout << "TABLE = ";
     cout << table;
