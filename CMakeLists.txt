@@ -160,17 +160,17 @@ enable_testing()
 
 # Create test executable
 add_executable(lemondb_tests
-    tests/test_example.cpp
-    tests/test_count_query.cpp
-    tests/test_delete_query.cpp
-    tests/test_limits_query.cpp
-    tests/test_select_query.cpp
-    tests/test_duplicate_query.cpp
-    tests/test_swap_query.cpp
-    tests/test_arith_query.cpp
-    tests/test_sum_query.cpp
-    tests/test_copytable_query.cpp
-    tests/test_truncate_query.cpp
+    gtests/test_example.cpp
+    gtests/test_count_query.cpp
+    gtests/test_delete_query.cpp
+    gtests/test_limits_query.cpp
+    gtests/test_select_query.cpp
+    gtests/test_duplicate_query.cpp
+    gtests/test_swap_query.cpp
+    gtests/test_arith_query.cpp
+    gtests/test_sum_query.cpp
+    gtests/test_copytable_query.cpp
+    gtests/test_truncate_query.cpp
 )
 
 target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)

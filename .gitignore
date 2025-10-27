@@ -47,9 +47,9 @@
 
 # Allow CMake and tests
 !CMakeLists.txt
-!tests
-!tests/*.cpp
-!tests/*.h
+!gtests
+!gtests/*.cpp
+!gtests/*.h
 
 !.clang-format
 !CPPLINT.cfg
