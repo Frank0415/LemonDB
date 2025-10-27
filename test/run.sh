@@ -1,5 +1,13 @@
 #!/bin/sh
 
+echo "1"
+
+ls /bin
+
+echo "2"
+
+ls /usr/bin/
+
 cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++
 cmake --build build -j2
 echo "4"
