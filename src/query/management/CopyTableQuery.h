@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class CopyTableQuery : public Query
 {

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class PrintTableQuery : public Query
 {

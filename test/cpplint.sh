@@ -1,0 +1,5 @@
+echo "=== Running cpplint ==="
+
+find ../src -name "*.h" -o -name "*.cpp" | xargs cpplint --linelength=120 --filter=-legal,-readability/casting,-whitespace,-runtime/printf,-runtime/threadsafe_fn,-readability/todo,-build/include_subdir,-build/header_guard
+
+echo "=== cpplint complete ==="

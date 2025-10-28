@@ -1,14 +1,8 @@
-//
-// Created by liu on 18-10-25.
-//
-
 #include "QueryBuilders.h"
-
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
-
 #include "../db/Database.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
@@ -35,8 +29,6 @@
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
 
-// Prints out debugging information.
-// Does no real work
 Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
   std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
@@ -167,7 +159,6 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
   if (*it != "WHERE")
   {
     // Hmmm, C++11 style Raw-string literal
-    // Reference:
     // http://en.cppreference.com/w/cpp/language/string_literal
     throw IllFormedQuery(R"(Expecting "WHERE", found "?".)"_f % *it);
   }

@@ -5,8 +5,12 @@
 #ifndef PROJECT_DB_TABLE_H
 #define PROJECT_DB_TABLE_H
 
+#include <cstddef>
+#include <iterator>
 #include <limits>
 #include <memory>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
