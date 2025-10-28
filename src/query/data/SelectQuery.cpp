@@ -16,16 +16,15 @@
 
 QueryResult::Ptr SelectQuery::execute()
 {
-  using namespace std;
   try
   {
     auto& db = Database::getInstance();
     auto& table = db[this->targetTable];
     if (this->operands.empty())
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
     }
-    vector<string> fieldsOrder;
+    std::vector<std::string> fieldsOrder;
     fieldsOrder.reserve(this->operands.size() + 1);
     fieldsOrder.emplace_back("KEY");
     for (const auto& f : this->operands)
@@ -35,14 +34,14 @@ QueryResult::Ptr SelectQuery::execute()
         fieldsOrder.emplace_back(f);
       }
     }
-    vector<Table::FieldIndex> fieldIds;
+    std::vector<Table::FieldIndex> fieldIds;
     fieldIds.reserve(fieldsOrder.size() - 1);
     for (size_t i = 1; i < fieldsOrder.size(); ++i)
     {
       fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
     }
 
-    ostringstream buffer;
+    std::ostringstream buffer;
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool ok, Table::Object::Ptr&& obj)
                                                 {
@@ -62,10 +61,10 @@ QueryResult::Ptr SelectQuery::execute()
                                                 });
     if (handled)
     {
-      return make_unique<TextRowsResult>(buffer.str());
+      return std::make_unique<TextRowsResult>(buffer.str());
     }
 
-    vector<Table::Iterator> rows;
+    std::vector<Table::Iterator> rows;
     for (auto it = table.begin(); it != table.end(); ++it)
     {
       if (this->evalCondition(*it))
@@ -73,8 +72,8 @@ QueryResult::Ptr SelectQuery::execute()
         rows.push_back(it);
       }
     }
-    sort(rows.begin(), rows.end(), [](const Table::Iterator& a, const Table::Iterator& b)
-         { return (*a).key() < (*b).key(); });
+    std::sort(rows.begin(), rows.end(), [](const Table::Iterator& a, const Table::Iterator& b)
+              { return (*a).key() < (*b).key(); });
 
     for (const auto& it : rows)
     {
@@ -85,19 +84,20 @@ QueryResult::Ptr SelectQuery::execute()
       }
       buffer << " )\n";
     }
-    return make_unique<TextRowsResult>(buffer.str());
+    return std::make_unique<TextRowsResult>(buffer.str());
   }
   catch (const TableNameNotFound&)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
   catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 

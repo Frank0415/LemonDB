@@ -17,7 +17,6 @@
 
 QueryResult::Ptr SumQuery::execute()
 {
-  using namespace std;
   Database& db = Database::getInstance();
 
   try
@@ -25,22 +24,22 @@ QueryResult::Ptr SumQuery::execute()
     auto& table = db[this->targetTable];
     if (this->operands.empty())
     {
-      return make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
+      return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
     }
     // Check if any operand is "KEY" using std::any_of
     if (std::any_of(this->operands.begin(), this->operands.end(),
                     [](const auto& f) { return f == "KEY"; }))
     {
-      return make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
+      return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
     }
-    vector<Table::FieldIndex> fids;
+    std::vector<Table::FieldIndex> fids;
     fids.reserve(this->operands.size());
     for (const auto& f : this->operands)
     {
       fids.emplace_back(table.getFieldIndex(f));
     }
 
-    vector<Table::ValueType> sums(fids.size(), 0);
+    std::vector<Table::ValueType> sums(fids.size(), 0);
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool ok, Table::Object::Ptr&& obj)
                                                 {
@@ -69,23 +68,24 @@ QueryResult::Ptr SumQuery::execute()
         }
       }
     }
-    return make_unique<SuccessMsgResult>(sums);
+    return std::make_unique<SuccessMsgResult>(sums);
   }
   catch (const TableNameNotFound&)
   {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such table.");
   }
   catch (const TableFieldNotFound&)
   {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such field.");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such field.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, e.what());
   }
   catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "Unknown error '?'"_f % e.what());
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable,
+                                            "Unknown error '?'"_f % e.what());
   }
 }
 

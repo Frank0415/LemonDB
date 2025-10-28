@@ -63,7 +63,7 @@ void parseArgs(int argc, char* argv[])
 std::string extractQueryString(std::istream& is)
 {
   std::string buf;
-  do
+  while (true)
   {
     const int ch = is.get();
     if (ch == ';')
@@ -75,9 +75,9 @@ std::string extractQueryString(std::istream& is)
       throw std::ios_base::failure("End of input");
     }
     buf.push_back(static_cast<char>(ch));
-  } while (true);
+  }
 }
-}  // namespace
+} // namespace
 
 int main(int argc, char* argv[])
 {

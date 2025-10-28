@@ -14,20 +14,20 @@
 
 QueryResult::Ptr PrintTableQuery::execute()
 {
-  using namespace std;
+  using std::string_literals::operator""s;
   const Database& db = Database::getInstance();
   try
   {
     const auto& table = db[this->targetTable];
-    cout << "================\n";
-    cout << "TABLE = ";
-    cout << table;
-    cout << "================\n" << '\n';
-    return make_unique<SuccessMsgResult>(qname, this->targetTable);
+    std::cout << "================\n";
+    std::cout << "TABLE = ";
+    std::cout << table;
+    std::cout << "================\n" << '\n';
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTable);
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
 }
 

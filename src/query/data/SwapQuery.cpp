@@ -12,12 +12,11 @@
 
 QueryResult::Ptr SwapQuery::execute()
 {
-  using namespace std;
   if (this->operands.size() != 2)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                       "Invalid number of operands (? operands)."_f %
-                                           operands.size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                operands.size());
   }
 
   try
@@ -26,8 +25,8 @@ QueryResult::Ptr SwapQuery::execute()
     auto& table = db[this->targetTable];
     if (operands[0] == "KEY" || operands[1] == "KEY")
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                         "Ill-formed query: KEY cannot be swapped.");
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                              "Ill-formed query: KEY cannot be swapped.");
     }
     const auto f1 = table.getFieldIndex(operands[0]);
     const auto f2 = table.getFieldIndex(operands[1]);
@@ -62,23 +61,25 @@ QueryResult::Ptr SwapQuery::execute()
         }
       }
     }
-    return make_unique<RecordCountResult>(static_cast<int>(counter));
+    return std::make_unique<RecordCountResult>(static_cast<int>(counter));
   }
   catch (const TableNameNotFound&)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
-  catch (const invalid_argument& e)
+  catch (const std::invalid_argument& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unknown error '?'"_f % e.what());
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 std::string SwapQuery::toString()

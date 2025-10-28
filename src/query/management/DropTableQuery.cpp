@@ -14,20 +14,20 @@
 
 QueryResult::Ptr DropTableQuery::execute()
 {
-  using namespace std;
+  using std::string_literals::operator""s;
   Database& db = Database::getInstance();
   try
   {
     db.dropTable(this->targetTable);
-    return make_unique<SuccessMsgResult>(qname);
+    return std::make_unique<SuccessMsgResult>(qname);
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, targetTable, "No such table."s);
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, e.what());
   }
 }
 

@@ -16,12 +16,12 @@
 
 QueryResult::Ptr DuplicateQuery::execute()
 {
-  using namespace std;
+  using std::string_literals::operator""s;
   try
   {
     if (!this->operands.empty())
     {
-      return make_unique<ErrorMsgResult>(
+      return std::make_unique<ErrorMsgResult>(
           qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
     }
     auto& db = Database::getInstance();
@@ -78,28 +78,30 @@ QueryResult::Ptr DuplicateQuery::execute()
       }
     }
 
-    return make_unique<RecordCountResult>(counter);
+    return std::make_unique<RecordCountResult>(counter);
   }
   catch (const NotFoundKey& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
-  catch (const invalid_argument& e)
+  catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unknown error '?'"_f % e.what());
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 

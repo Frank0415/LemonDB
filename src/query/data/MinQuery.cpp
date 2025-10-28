@@ -1,12 +1,12 @@
 #include "MinQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
@@ -16,18 +16,19 @@
 
 QueryResult::Ptr MinQuery::execute()
 {
-  using namespace std;
+  using std::string_literals::operator""s;
   if (this->operands.empty())
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                       "No operand (? operands)."_f % operands.size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+                                            "No operand (? operands)."_f % operands.size());
   }
   Database& db = Database::getInstance();
   try
   {
     auto& table = db[this->targetTable];
 
-    vector<Table::FieldIndex> fieldId; // transform into its own Id, avoid lookups in map everytime
+    // transform into its own Id, avoid lookups in map everytime
+    std::vector<Table::FieldIndex> fieldId;
 
     try
     {
@@ -42,12 +43,12 @@ QueryResult::Ptr MinQuery::execute()
     }
     catch (const TableFieldNotFound& e)
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
     }
-    catch (const exception& e)
+    catch (const std::exception& e)
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                         "Unkonwn error '?'."_f % e.what());
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                              "Unkonwn error '?'."_f % e.what());
     }
 
     try
@@ -56,8 +57,8 @@ QueryResult::Ptr MinQuery::execute()
       if (result.second)
       {
         bool found = false;
-        vector<Table::ValueType> minValue(fieldId.size(),
-                                          Table::ValueTypeMax); // each has its own min value
+        std::vector<Table::ValueType> minValue(fieldId.size(),
+                                               Table::ValueTypeMax); // each has its own min value
 
         for (auto it = table.begin(); it != table.end(); ++it)
         {
@@ -74,44 +75,46 @@ QueryResult::Ptr MinQuery::execute()
 
         if (!found)
         {
-          return make_unique<NullQueryResult>();
+          return std::make_unique<NullQueryResult>();
         }
-        return make_unique<SuccessMsgResult>(minValue);
+        return std::make_unique<SuccessMsgResult>(minValue);
       }
-      return make_unique<NullQueryResult>();
+      return std::make_unique<NullQueryResult>();
     }
     catch (const IllFormedQueryCondition& e)
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
     }
-    catch (const invalid_argument& e)
+    catch (const std::invalid_argument& e)
     {
       // Cannot convert operand to string
-      return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                         "Unknown error '?'"_f % e.what());
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                              "Unknown error '?'"_f % e.what());
     }
-    catch (const exception& e)
+    catch (const std::exception& e)
     {
-      return make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                         "Unkonwn error '?'."_f % e.what());
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                              "Unkonwn error '?'."_f % e.what());
     }
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
-  catch (const invalid_argument& e)
+  catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unknown error '?'"_f % e.what());
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 
