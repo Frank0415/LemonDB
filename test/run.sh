@@ -62,6 +62,10 @@ done
 
 rm 1.out
 
+cd ..
+
+./clangtidy.sh
+
 echo "================="
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"

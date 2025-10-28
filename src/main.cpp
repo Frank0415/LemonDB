@@ -29,13 +29,13 @@
 
 namespace
 {
-struct
+struct Args
 {
   std::string listen;
   std::int64_t threads = 0;
-} parsedArgs;
+};
 
-void parseArgs(int argc, char* argv[])
+void parseArgs(int argc, char* argv[], Args& args)
 {
   const option longOpts[] = {{"listen", required_argument, nullptr, 'l'},
                              {"threads", required_argument, nullptr, 't'},
@@ -47,17 +47,42 @@ void parseArgs(int argc, char* argv[])
   {
     if (opt == 'l')
     {
-      parsedArgs.listen = optarg;
+      args.listen = optarg;
     }
     else if (opt == 't')
     {
-      parsedArgs.threads = std::strtol(optarg, nullptr, 10);
+      args.threads = std::strtol(optarg, nullptr, 10);
     }
     else
     {
       std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
     }
   }
+}
+
+void validateAndPrintThreads(std::int64_t threads)
+{
+  if (threads < 0)
+  {
+    std::cerr << "lemondb: error: threads num can not be negative value " << threads << '\n';
+    std::exit(-1);
+  }
+  else if (threads == 0)
+  {
+    // @TODO Auto detect the thread num
+    std::cerr << "lemondb: info: auto detect thread num" << '\n';
+  }
+  else
+  {
+    std::cerr << "lemondb: info: running in " << threads << " threads" << '\n';
+  }
+}
+
+void setupParser(QueryParser& p)
+{
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
 }
 
 std::string extractQueryString(std::istream& is)
@@ -81,16 +106,10 @@ std::string extractQueryString(std::istream& is)
 
 int main(int argc, char* argv[])
 {
-  // Assume only C++ style I/O is used in lemondb
-#ifdef LEMONDB_WITH_MSAN
-  // Keep stdio synchronized to avoid MemorySanitizer false positives from unsynchronized buffers
   std::ios_base::sync_with_stdio(true);
-#else
-  // Disable sync for better throughput when sanitizers are not involved
-  std::ios_base::sync_with_stdio(false);
-#endif
 
-  parseArgs(argc, argv);
+  Args parsedArgs{};
+  parseArgs(argc, argv, parsedArgs);
 
   std::ifstream fin;
   std::istream* input = &std::cin;
@@ -119,35 +138,18 @@ int main(int argc, char* argv[])
   if (parsedArgs.listen.empty())
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
-                 "instead in debug mode"
-              << std::endl;
+                 "instead in debug mode\n";
+    //<< std::endl;
     input = &std::cin;
   }
 #endif
 
   std::istream& is = *input;
 
-  if (parsedArgs.threads < 0)
-  {
-    std::cerr << "lemondb: error: threads num can not be negative value " << parsedArgs.threads
-              << '\n';
-    exit(-1);
-  }
-  else if (parsedArgs.threads == 0)
-  {
-    // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num" << '\n';
-  }
-  else
-  {
-    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << '\n';
-  }
+  validateAndPrintThreads(parsedArgs.threads);
 
   QueryParser p;
-
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  setupParser(p);
 
   size_t counter = 0;
 
@@ -183,7 +185,6 @@ int main(int argc, char* argv[])
     }
     catch (const std::ios_base::failure& e)
     {
-      // End of input
       break;
     }
     catch (const std::exception& e)
