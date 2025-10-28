@@ -65,6 +65,8 @@ rm 1.out
 cd ..
 
 ./clangtidy.sh
+./cpplint.sh
+./cppcheck.sh
 
 echo "================="
 echo "Tests passed: ${PASSED}"

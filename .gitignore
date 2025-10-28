@@ -63,4 +63,6 @@
 !test
 !test/run.sh
 !test/clangtidy.sh
+!test/cpplint.sh
+!test/cppcheck.sh
 !test/data
