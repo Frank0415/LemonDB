@@ -4,6 +4,7 @@
 
 #include <getopt.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -26,10 +27,12 @@
 #define LEMONDB_WITH_MSAN 1
 #endif
 
+namespace
+{
 struct
 {
   std::string listen;
-  long threads = 0;
+  std::int64_t threads = 0;
 } parsedArgs;
 
 void parseArgs(int argc, char* argv[])
@@ -74,6 +77,7 @@ std::string extractQueryString(std::istream& is)
     buf.push_back(static_cast<char>(ch));
   } while (true);
 }
+}  // namespace
 
 int main(int argc, char* argv[])
 {

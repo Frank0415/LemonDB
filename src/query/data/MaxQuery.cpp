@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
@@ -67,10 +68,7 @@ QueryResult::Ptr MaxQuery::execute()
 
             for (size_t i = 0; i < fieldId.size(); ++i)
             {
-              if ((*it)[fieldId[i]] > maxValue[i])
-              {
-                maxValue[i] = (*it)[fieldId[i]];
-              }
+              maxValue[i] = std::max(maxValue[i], (*it)[fieldId[i]]);
             }
           }
         }

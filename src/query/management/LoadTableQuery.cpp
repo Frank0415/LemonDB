@@ -10,7 +10,7 @@
 #include <string>
 
 #include "../../db/Database.h"
-#include "../../utils/uexception.h"
+#include "../../utils/formatter.h"
 #include "../QueryResult.h"
 
 QueryResult::Ptr LoadTableQuery::execute()

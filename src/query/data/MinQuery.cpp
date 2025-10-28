@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
@@ -66,10 +67,7 @@ QueryResult::Ptr MinQuery::execute()
 
             for (size_t i = 0; i < fieldId.size(); ++i)
             {
-              if ((*it)[fieldId[i]] < minValue[i])
-              {
-                minValue[i] = (*it)[fieldId[i]];
-              }
+              minValue[i] = std::min(minValue[i], (*it)[fieldId[i]]);
             }
           }
         }

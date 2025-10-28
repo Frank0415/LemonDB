@@ -50,7 +50,7 @@ void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
     throw ConflictingKey(err);
   }
   this->keyMap.emplace(key, this->data.size());
-  this->data.emplace_back(key, data);
+  this->data.emplace_back(key, std::move(data));
 }
 
 void Table::deleteByIndex(const KeyType& key)
