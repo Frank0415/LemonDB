@@ -2,7 +2,63 @@ name: Run JOJ3 on Push
 on: [push]
 
 jobs:
+  # static-analysis:
+  #   name: Static Analysis
+  #   runs-on: focs-latest-slim
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@focs
+
+  #     - name: Install static analysis tools
+  #       env:
+  #         DEBIAN_FRONTEND: noninteractive
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y clang clang-format clang-tidy cppcheck python3-pip
+  #         pip3 install --user cpplint
+
+  #     - name: Configure project
+  #       run: |
+  #         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+  #     - name: Build project
+  #       run: |
+  #         cmake --build build -- -j"$(nproc)"
+
+  #     - name: Run clang-format check
+  #       run: |
+  #         set -euo pipefail
+  #         git ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' -z | \
+  #           xargs -0 -r clang-format --dry-run --Werror
+
+  #     - name: Run clang-tidy
+  #       run: |
+  #         set -euo pipefail
+  #         if git ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' -z | grep -q .; then
+  #           git ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' -z | \
+  #             xargs -0 -r -n1 clang-tidy --warnings-as-errors=* -p build
+  #         else
+  #           echo "No translation units to analyze"
+  #         fi
+
+  #     - name: Run cppcheck
+  #       run: |
+  #         set -euo pipefail
+  #         cppcheck --project=build/compile_commands.json \
+  #                  --enable=warning,style,performance,portability \
+  #                  --inline-suppr \
+  #                  --std=c++17 \
+  #                  --suppress=missingIncludeSystem \
+  #                  --error-exitcode=1
+
+  #     - name: Run cpplint
+  #       run: |
+  #         set -euo pipefail
+  #         git ls-files '*.c' '*.cc' '*.cxx' '*.cpp' '*.c++' '*.h' '*.hh' '*.hpp' '*.hxx' -z | \
+  #           xargs -0 -r python3 -m cpplint --quiet --config=CPPLINT.cfg
+
   run:
+    # needs: static-analysis
     runs-on: focs-latest-slim
     container:
       volumes:
@@ -14,5 +70,4 @@ jobs:
         uses: actions/checkout@focs
       - name: Run joj3
         run: |
-          sudo -E -u tt joj3 -conf-root /home/tt/.config/joj/projects/p2/push                    
-
+          sudo -E -u tt joj3 -conf-root /home/tt/.config/joj/projects/p2/push
