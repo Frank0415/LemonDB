@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "=== Running clang-tidy ==="
+
 files=$(find ../src -name "*.cpp" -o -name "*.h")
 compile_commands_path="../build/compile_commands.json"
 
