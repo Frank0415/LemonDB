@@ -14,7 +14,7 @@ template <typename T> static inline std::string to_string(std::vector<T>& vec)
   return str;
 }
 
-template <typename T> static inline std::string to_string(T t)
+template <typename T> static inline std::string to_string(const T& t)
 {
   return std::to_string(t);
 }
@@ -24,17 +24,17 @@ template <typename T> inline std::string operator%(std::string format, T t)
   auto ind = format.find('?');
   if (ind == 0 || format[ind - 1] != '\\')
   {
-    format.replace(ind, 1u, to_string(t));
+    format.replace(ind, 1U, to_string(t));
   }
   return format;
 }
 
-template <> inline std::string operator%(std::string format, std::string s)
+template <> inline std::string operator%(std::string format, const std::string& s)
 {
   auto ind = format.find('?');
   if (ind == 0 || format[ind - 1] != '\\')
   {
-    format.replace(ind, 1u, s);
+    format.replace(ind, 1U, s);
   }
   return format;
 }
@@ -44,7 +44,7 @@ template <> inline std::string operator%(std::string format, const char* s)
   auto ind = format.find('?');
   if (ind == 0 || format[ind - 1] != '\\')
   {
-    format.replace(ind, 1u, s);
+    format.replace(ind, 1U, s);
   }
   return format;
 }
