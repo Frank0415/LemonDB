@@ -62,4 +62,5 @@
 
 !test
 !test/run.sh
+!test/clangtidy.sh
 !test/data
