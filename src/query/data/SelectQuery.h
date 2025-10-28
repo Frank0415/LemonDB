@@ -3,6 +3,7 @@
 #include <string>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class SelectQuery : public ComplexQuery
 {

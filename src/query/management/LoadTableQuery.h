@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class LoadTableQuery : public Query
 {

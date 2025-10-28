@@ -3,7 +3,6 @@
 //
 
 #include <getopt.h>
-
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,6 +11,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
+
+#include <unistd.h>
 
 #include "query/Query.h"
 #include "query/QueryBuilders.h"

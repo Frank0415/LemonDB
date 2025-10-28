@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "../db/Table.h"
+#include "Query.h"
 #include "QueryParser.h"
 
 #define QueryBuilder(name) name##QueryBuilder

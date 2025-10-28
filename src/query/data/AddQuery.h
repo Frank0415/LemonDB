@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class AddQuery : public ComplexQuery
 {
