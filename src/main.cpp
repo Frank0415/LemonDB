@@ -60,6 +60,31 @@ void parseArgs(int argc, char* argv[], Args& args)
   }
 }
 
+void validateAndPrintThreads(std::int64_t threads)
+{
+  if (threads < 0)
+  {
+    std::cerr << "lemondb: error: threads num can not be negative value " << threads << '\n';
+    std::exit(-1);
+  }
+  else if (threads == 0)
+  {
+    // @TODO Auto detect the thread num
+    std::cerr << "lemondb: info: auto detect thread num" << '\n';
+  }
+  else
+  {
+    std::cerr << "lemondb: info: running in " << threads << " threads" << '\n';
+  }
+}
+
+void setupParser(QueryParser& p)
+{
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
+  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+}
+
 std::string extractQueryString(std::istream& is)
 {
   std::string buf;
@@ -82,7 +107,6 @@ std::string extractQueryString(std::istream& is)
 int main(int argc, char* argv[])
 {
   std::ios_base::sync_with_stdio(true);
-
 
   Args parsedArgs{};
   parseArgs(argc, argv, parsedArgs);
@@ -122,27 +146,10 @@ int main(int argc, char* argv[])
 
   std::istream& is = *input;
 
-  if (parsedArgs.threads < 0)
-  {
-    std::cerr << "lemondb: error: threads num can not be negative value " << parsedArgs.threads
-              << '\n';
-    exit(-1);
-  }
-  else if (parsedArgs.threads == 0)
-  {
-    // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num\n";
-  }
-  else
-  {
-    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << '\n';
-  }
+  validateAndPrintThreads(parsedArgs.threads);
 
   QueryParser p;
-
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  setupParser(p);
 
   size_t counter = 0;
 
