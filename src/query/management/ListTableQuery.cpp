@@ -8,8 +8,7 @@
 #include <string>
 
 #include "../../db/Database.h"
-
-constexpr const char* ListTableQuery::qname;
+#include "../QueryResult.h"
 
 QueryResult::Ptr ListTableQuery::execute()
 {

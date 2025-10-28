@@ -4,26 +4,35 @@
 
 #include <getopt.h>
 
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 
+#include "query/Query.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
+#include "query/QueryResult.h"
 
-#if defined(__has_feature)
+#ifdef __has_feature
 #if __has_feature(memory_sanitizer)
 #define LEMONDB_WITH_MSAN 1
 #endif
 #endif
-#if defined(__SANITIZE_MEMORY__)
+#ifdef __SANITIZE_MEMORY__
 #define LEMONDB_WITH_MSAN 1
 #endif
 
+namespace
+{
 struct
 {
   std::string listen;
-  long threads = 0;
+  std::int64_t threads = 0;
 } parsedArgs;
 
 void parseArgs(int argc, char* argv[])
@@ -32,7 +41,8 @@ void parseArgs(int argc, char* argv[])
                              {"threads", required_argument, nullptr, 't'},
                              {nullptr, no_argument, nullptr, 0}};
   const char* shortOpts = "l:t:";
-  int opt, longIndex;
+  int opt = 0;
+  int longIndex = 0;
   while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
   {
     if (opt == 'l')
@@ -45,7 +55,7 @@ void parseArgs(int argc, char* argv[])
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << std::endl;
+      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
     }
   }
 }
@@ -53,16 +63,21 @@ void parseArgs(int argc, char* argv[])
 std::string extractQueryString(std::istream& is)
 {
   std::string buf;
-  do
+  while (true)
   {
-    int ch = is.get();
+    const int ch = is.get();
     if (ch == ';')
+    {
       return buf;
+    }
     if (ch == EOF)
+    {
       throw std::ios_base::failure("End of input");
-    buf.push_back((char)ch);
-  } while (true);
+    }
+    buf.push_back(static_cast<char>(ch));
+  }
 }
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -84,8 +99,7 @@ int main(int argc, char* argv[])
     fin.open(parsedArgs.listen);
     if (!fin.is_open())
     {
-      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory"
-                << std::endl;
+      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
       exit(-1);
     }
     input = &fin;
@@ -97,7 +111,7 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: error: --listen argument not found, not allowed in "
                  "production mode"
-              << std::endl;
+              << '\n';
     exit(-1);
   }
 #else
@@ -116,17 +130,17 @@ int main(int argc, char* argv[])
   if (parsedArgs.threads < 0)
   {
     std::cerr << "lemondb: error: threads num can not be negative value " << parsedArgs.threads
-              << std::endl;
+              << '\n';
     exit(-1);
   }
   else if (parsedArgs.threads == 0)
   {
     // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num" << std::endl;
+    std::cerr << "lemondb: info: auto detect thread num" << '\n';
   }
   else
   {
-    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << std::endl;
+    std::cerr << "lemondb: info: running in " << parsedArgs.threads << " threads" << '\n';
   }
 
   QueryParser p;
@@ -143,7 +157,7 @@ int main(int argc, char* argv[])
     {
       // A very standard REPL
       // REPL: Read-Evaluate-Print-Loop
-      std::string queryStr = extractQueryString(is);
+      const std::string queryStr = extractQueryString(is);
       Query::Ptr query = p.parseQuery(queryStr);
       QueryResult::Ptr result = query->execute();
       std::cout << ++counter << "\n";
@@ -175,7 +189,7 @@ int main(int argc, char* argv[])
     catch (const std::exception& e)
     {
       std::cout.flush();
-      std::cerr << e.what() << std::endl;
+      std::cerr << e.what() << '\n';
     }
   }
 

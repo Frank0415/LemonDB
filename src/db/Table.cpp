@@ -7,14 +7,13 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "Database.h"
-
-constexpr const Table::ValueType Table::ValueTypeMax;
-constexpr const Table::ValueType Table::ValueTypeMin;
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 {
@@ -31,10 +30,10 @@ Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 bool Table::evalDuplicateCopy(Table::KeyType key)
 {
   key = key.append("_copy");
-  return this->keyMap.find(key) != this->keyMap.end();
+  return this->keyMap.contains(key);
 }
 
-void Table::duplicateKeyData(const Table::KeyType key)
+void Table::duplicateKeyData(const Table::KeyType& key)
 {
   Table::KeyType copyKey(key);
   copyKey.append("_copy");
@@ -44,13 +43,14 @@ void Table::duplicateKeyData(const Table::KeyType key)
 
 void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
 {
-  if (this->keyMap.find(key) != this->keyMap.end())
+  if (this->keyMap.contains(key))
   {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
+    const std::string err =
+        "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
     throw ConflictingKey(err);
   }
   this->keyMap.emplace(key, this->data.size());
-  this->data.emplace_back(key, data);
+  this->data.emplace_back(key, std::move(data));
 }
 
 void Table::deleteByIndex(const KeyType& key)
@@ -61,12 +61,13 @@ void Table::deleteByIndex(const KeyType& key)
   // the key doesn't exist
   if (it == this->keyMap.end())
   {
-    std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
+    const std::string err =
+        "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
     throw NotFoundKey(err);
   }
 
   // the index of the key to delete
-  SizeType index = it->second;
+  const SizeType index = it->second;
   keyMap.erase(it);
 
   // swap the current data to the last one and pop back
@@ -74,7 +75,7 @@ void Table::deleteByIndex(const KeyType& key)
   {
     Datum& lastDatum = this->data.back();
     // Save the key before moving
-    KeyType lastKey = lastDatum.key;
+    const KeyType lastKey = lastDatum.key;
     this->data[index] = std::move(lastDatum);
     this->keyMap[lastKey] = index;
   }
@@ -89,11 +90,8 @@ Table::Object::Ptr Table::operator[](const Table::KeyType& key)
     // not found
     return nullptr;
   }
-  else
-  {
-    return createProxy(
-        data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
-  }
+  return createProxy(
+      data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
 }
 
 std::ostream& operator<<(std::ostream& os, const Table& table)

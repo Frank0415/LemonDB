@@ -1,9 +1,12 @@
 #include "TruncateTableQuery.h"
 
+#include <exception>
 #include <memory>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 constexpr const char* qname_tr = "TRUNCATE";
 

@@ -59,8 +59,10 @@ TEST(AddQueryTest, AddWithCondition)
   std::vector<std::string> operands = {"f1", "f2", "sum"};
   QueryCondition cond;
   cond.field = "f1";
+  cond.fieldId = 0;
   cond.op = ">";
   cond.value = "2";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
 
   auto q = std::make_unique<AddQuery>("add_cond_test", operands, conds);
@@ -127,8 +129,10 @@ TEST(SubQueryTest, SubWithCondition)
   std::vector<std::string> operands = {"f1", "f2", "diff"};
   QueryCondition cond;
   cond.field = "f1";
+  cond.fieldId = 0;
   cond.op = ">=";
   cond.value = "10";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
 
   auto q = std::make_unique<SubQuery>("sub_cond_test", operands, conds);
@@ -169,13 +173,17 @@ TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID)
   // conditions: totalCredit > 100 AND class < 2015
   QueryCondition cond1;
   cond1.field = "totalCredit";
+  cond1.fieldId = 0;
   cond1.op = ">";
   cond1.value = "100";
+  cond1.valueParsed = 0;
 
   QueryCondition cond2;
   cond2.field = "class";
+  cond2.fieldId = 0;
   cond2.op = "<";
   cond2.value = "2015";
+  cond2.valueParsed = 0;
 
   std::vector<QueryCondition> conds{cond1, cond2};
 

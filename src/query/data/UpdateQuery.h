@@ -6,6 +6,8 @@
 #define PROJECT_UPDATEQUERY_H
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "../Query.h"
 
@@ -17,7 +19,13 @@ class UpdateQuery : public ComplexQuery
   Table::KeyType keyValue;
 
 public:
-  using ComplexQuery::ComplexQuery;
+  UpdateQuery(std::string table,
+              std::vector<std::string> operands,
+              std::vector<QueryCondition> conditions)
+      : ComplexQuery(std::move(table), std::move(operands), std::move(conditions)), fieldValue(0),
+        fieldId(0)
+  {
+  }
 
   QueryResult::Ptr execute() override;
 

@@ -1,23 +1,24 @@
 #include "AddQuery.h"
 
-#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
-#include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
 #include "../QueryResult.h"
-
-constexpr const char* AddQuery::qname;
 
 QueryResult::Ptr AddQuery::execute()
 {
-  using namespace std;
+  using std::string_literals::operator""s;
   try
   {
     if (this->operands.size() < 2)
     {
-      return make_unique<ErrorMsgResult>(
+      return std::make_unique<ErrorMsgResult>(
           qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
     }
     auto& db = Database::getInstance();
@@ -27,7 +28,7 @@ QueryResult::Ptr AddQuery::execute()
     if (!result.second)
     {
       // No valid conditions, return 0
-      return make_unique<RecordCountResult>(0);
+      return std::make_unique<RecordCountResult>(0);
     }
     // this operands stores a list of ADD ( fields ... destField ) FROM table
     // WHERE ( cond ) ...;
@@ -52,28 +53,30 @@ QueryResult::Ptr AddQuery::execute()
       (*it)[table.getFieldIndex(this->operands.back())] = sum;
       count++;
     }
-    return make_unique<RecordCountResult>(count);
+    return std::make_unique<RecordCountResult>(count);
   }
   catch (const NotFoundKey& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
   }
-  catch (const invalid_argument& e)
+  catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error '?'"_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unknown error '?'"_f % e.what());
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 

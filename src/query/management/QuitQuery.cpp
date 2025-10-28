@@ -8,8 +8,7 @@
 #include <string>
 
 #include "../../db/Database.h"
-
-constexpr const char* QuitQuery::qname;
+#include "../QueryResult.h"
 
 std::string QuitQuery::toString()
 {

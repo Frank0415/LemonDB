@@ -7,6 +7,7 @@
 
 #include "db/Database.h"
 #include "db/Table.h"
+#include "query/Query.h"
 #include "query/QueryResult.h"
 #include "query/data/SumQuery.h"
 
@@ -22,6 +23,8 @@ void dropIfExists(const std::string& name)
   }
   catch (...)
   {
+    // Intentionally ignore: table may not exist during cleanup
+    (void)0;
   }
 }
 
@@ -40,8 +43,10 @@ QueryCondition C(const std::string& f, const std::string& op, const std::string&
 {
   QueryCondition qc;
   qc.field = f;
+  qc.fieldId = 0;
   qc.op = op;
   qc.value = v;
+  qc.valueParsed = 0;
   return qc;
 }
 

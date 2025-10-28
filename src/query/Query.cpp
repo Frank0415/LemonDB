@@ -5,10 +5,16 @@
 #include "Query.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
+
+#include "../db/Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 {
@@ -24,7 +30,7 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
       {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
       }
-      else if (result.first.empty())
+      if (result.first.empty())
       {
         result.first = cond.value;
       }
@@ -37,7 +43,8 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
     else
     {
       cond.fieldId = table.getFieldIndex(cond.field);
-      cond.valueParsed = (Table::ValueType)std::strtol(cond.value.c_str(), nullptr, 10);
+      cond.valueParsed =
+          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, 10));
       int op = 0;
       try
       {

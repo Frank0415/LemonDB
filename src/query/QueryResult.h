@@ -75,11 +75,6 @@ class ErrorMsgResult : public FailedQueryResult
   std::string msg;
 
 public:
-  bool display() override
-  {
-    return false;
-  }
-
   ErrorMsgResult(const char* qname, const std::string& msg)
   {
     this->msg = R"(Query "?" failed : ?)"_f % qname % msg;
@@ -113,7 +108,7 @@ public:
     this->msg = R"(ANSWER = "?".)"_f % number;
   }
 
-  explicit SuccessMsgResult(std::vector<int> results, bool debug = true) : debug_(debug)
+  explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) : debug_(debug)
   {
     std::stringstream ss;
     ss << "ANSWER = ( ";

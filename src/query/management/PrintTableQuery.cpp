@@ -9,25 +9,25 @@
 #include <string>
 
 #include "../../db/Database.h"
-
-constexpr const char* PrintTableQuery::qname;
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr PrintTableQuery::execute()
 {
-  using namespace std;
-  Database& db = Database::getInstance();
+  using std::string_literals::operator""s;
+  const Database& db = Database::getInstance();
   try
   {
-    auto& table = db[this->targetTable];
-    cout << "================\n";
-    cout << "TABLE = ";
-    cout << table;
-    cout << "================\n" << endl;
-    return make_unique<SuccessMsgResult>(qname, this->targetTable);
+    const auto& table = db[this->targetTable];
+    std::cout << "================\n";
+    std::cout << "TABLE = ";
+    std::cout << table;
+    std::cout << "================\n" << '\n';
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTable);
   }
   catch (const TableNameNotFound& e)
   {
-    return make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
   }
 }
 

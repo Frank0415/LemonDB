@@ -1,13 +1,15 @@
 #include "CopyTableQuery.h"
 
+#include <cstddef>
+#include <exception>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "../../db/Database.h"
-
-constexpr const char* CopyTableQuery::qname;
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr CopyTableQuery::execute()
 {
@@ -23,17 +25,18 @@ QueryResult::Ptr CopyTableQuery::execute()
     }
     catch (...)
     {
+      // Intentionally ignore: table doesn't exist, which is expected
+      (void)0;
     }
     if (targetExists)
     {
       return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Target table name exists");
     }
 
-    std::vector<std::string> fields = src.field();
+    const std::vector<std::string> fields = src.field();
     auto dup = std::make_unique<Table>(this->newTableName, fields);
-    for (auto it = src.begin(); it != src.end(); ++it)
+    for (const auto& obj : src)
     {
-      const auto& obj = *it;
       std::vector<Table::ValueType> row;
       row.reserve(fields.size());
       for (size_t i = 0; i < fields.size(); ++i)

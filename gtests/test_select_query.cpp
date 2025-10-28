@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,7 +11,6 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 #include "query/data/SelectQuery.h"
-#include "query/data/SwapQuery.h"
 
 namespace
 {
@@ -25,7 +25,8 @@ void dropIfExists(const std::string& name)
   }
   catch (...)
   {
-    // ignore
+    // Intentionally ignore: table may not exist during cleanup
+    (void)0;
   }
 }
 
@@ -44,8 +45,10 @@ QueryCondition C(const std::string& f, const std::string& op, const std::string&
 {
   QueryCondition qc;
   qc.field = f;
+  qc.fieldId = 0;
   qc.op = op;
   qc.value = v;
+  qc.valueParsed = 0;
   return qc;
 }
 

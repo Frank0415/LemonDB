@@ -72,9 +72,8 @@ private:
     Datum(Datum&&) noexcept = default;
     Datum& operator=(Datum&&) noexcept = default;
 
-    explicit Datum(const SizeType& size)
+    explicit Datum(const SizeType& size) : datum(size, ValueType())
     {
-      datum = std::vector<ValueType>(size, ValueType());
     }
 
     template <class ValueTypeContainer>
@@ -142,7 +141,7 @@ public:
 
     ~ObjectImpl() = default;
 
-    KeyType key() const
+    const KeyType& key() const
     {
       return it->key;
     }
@@ -368,7 +367,7 @@ public:
    * Duplicate a row of data by its key
    * @param key
    */
-  void duplicateKeyData(const KeyType key);
+  void duplicateKeyData(const KeyType& key);
 
   /**
    * Find the index of a field in the fieldMap
@@ -507,11 +506,11 @@ Table::Table(const std::string& name, const FieldIDContainer& fields)
     : fields(fields.cbegin(), fields.cend()), tableName(name)
 {
   SizeType i = 0;
-  for (const auto& field : fields)
+  for (const auto& fieldName : fields)
   {
-    if (field == "KEY")
+    if (fieldName == "KEY")
       throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
-    fieldMap.emplace(field, i++);
+    fieldMap.emplace(fieldName, i++);
   }
 }
 

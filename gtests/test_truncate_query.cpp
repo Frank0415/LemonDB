@@ -1,6 +1,6 @@
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,6 +22,8 @@ void dropIfExists(const std::string& name)
   }
   catch (...)
   {
+    // Intentionally ignore: table may not exist during cleanup
+    (void)0;
   }
 }
 

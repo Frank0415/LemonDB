@@ -26,7 +26,8 @@ void dropIfExists(const std::string& name)
   }
   catch (...)
   {
-    // Ignore if the table doesn't exist
+    // Intentionally ignore: table may not exist during cleanup
+    (void)0;
   }
 }
 
@@ -47,8 +48,10 @@ QueryCondition C(const std::string& field, const std::string& op, const std::str
 {
   QueryCondition qc;
   qc.field = field;
+  qc.fieldId = 0;
   qc.op = op;
   qc.value = value;
+  qc.valueParsed = 0;
   return qc;
 }
 
