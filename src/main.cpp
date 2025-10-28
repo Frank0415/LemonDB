@@ -17,12 +17,12 @@
 #include "query/QueryParser.h"
 #include "query/QueryResult.h"
 
-#if defined(__has_feature)
+#ifdef __has_feature
 #if __has_feature(memory_sanitizer)
 #define LEMONDB_WITH_MSAN 1
 #endif
 #endif
-#if defined(__SANITIZE_MEMORY__)
+#ifdef __SANITIZE_MEMORY__
 #define LEMONDB_WITH_MSAN 1
 #endif
 
@@ -38,7 +38,8 @@ void parseArgs(int argc, char* argv[])
                              {"threads", required_argument, nullptr, 't'},
                              {nullptr, no_argument, nullptr, 0}};
   const char* shortOpts = "l:t:";
-  int opt = 0, longIndex = 0;
+  int opt = 0;
+  int longIndex = 0;
   while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
   {
     if (opt == 'l')
@@ -70,7 +71,7 @@ std::string extractQueryString(std::istream& is)
     {
       throw std::ios_base::failure("End of input");
     }
-    buf.push_back((char)ch);
+    buf.push_back(static_cast<char>(ch));
   } while (true);
 }
 

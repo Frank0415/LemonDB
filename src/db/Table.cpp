@@ -30,7 +30,7 @@ Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 bool Table::evalDuplicateCopy(Table::KeyType key)
 {
   key = key.append("_copy");
-  return this->keyMap.find(key) != this->keyMap.end();
+  return this->keyMap.contains(key);
 }
 
 void Table::duplicateKeyData(const Table::KeyType& key)
@@ -43,9 +43,10 @@ void Table::duplicateKeyData(const Table::KeyType& key)
 
 void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
 {
-  if (this->keyMap.find(key) != this->keyMap.end())
+  if (this->keyMap.contains(key))
   {
-    const std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
+    const std::string err =
+        "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
     throw ConflictingKey(err);
   }
   this->keyMap.emplace(key, this->data.size());
@@ -60,7 +61,8 @@ void Table::deleteByIndex(const KeyType& key)
   // the key doesn't exist
   if (it == this->keyMap.end())
   {
-    const std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
+    const std::string err =
+        "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
     throw NotFoundKey(err);
   }
 

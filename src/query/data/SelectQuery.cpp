@@ -50,16 +50,16 @@ QueryResult::Ptr SelectQuery::execute()
                                                   {
                                                     return;
                                                   }
-                                            if (obj)
-                                            {
-                                              buffer << "( " << obj->key();
-                                              for (size_t j = 0; j < fieldIds.size(); ++j)
-                                              {
-                                                buffer << " " << (*obj)[fieldIds[j]];
-                                              }
-                                              buffer << " )\n";
-                                            }
-                                          });
+                                                  if (obj)
+                                                  {
+                                                    buffer << "( " << obj->key();
+                                                    for (size_t j = 0; j < fieldIds.size(); ++j)
+                                                    {
+                                                      buffer << " " << (*obj)[fieldIds[j]];
+                                                    }
+                                                    buffer << " )\n";
+                                                  }
+                                                });
     if (handled)
     {
       return make_unique<TextRowsResult>(buffer.str());

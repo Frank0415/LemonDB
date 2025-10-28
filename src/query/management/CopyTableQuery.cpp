@@ -35,9 +35,8 @@ QueryResult::Ptr CopyTableQuery::execute()
 
     const std::vector<std::string> fields = src.field();
     auto dup = std::make_unique<Table>(this->newTableName, fields);
-    for (auto it = src.begin(); it != src.end(); ++it)
+    for (const auto& obj : src)
     {
-      const auto& obj = *it;
       std::vector<Table::ValueType> row;
       row.reserve(fields.size());
       for (size_t i = 0; i < fields.size(); ++i)

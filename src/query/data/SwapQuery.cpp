@@ -40,14 +40,14 @@ QueryResult::Ptr SwapQuery::execute()
                                                   {
                                                     return;
                                                   }
-                                            if (obj)
-                                            {
-                                              auto tmp = (*obj)[f1];
-                                              (*obj)[f1] = (*obj)[f2];
-                                              (*obj)[f2] = tmp;
-                                              ++counter;
-                                            }
-                                          });
+                                                  if (obj)
+                                                  {
+                                                    auto tmp = (*obj)[f1];
+                                                    (*obj)[f1] = (*obj)[f2];
+                                                    (*obj)[f2] = tmp;
+                                                    ++counter;
+                                                  }
+                                                });
 
     if (!handled)
     {

@@ -48,14 +48,14 @@ QueryResult::Ptr SumQuery::execute()
                                                   {
                                                     return;
                                                   }
-                                            if (obj)
-                                            {
-                                              for (size_t i = 0; i < fids.size(); ++i)
-                                              {
-                                                sums[i] += (*obj)[fids[i]];
-                                              }
-                                            }
-                                          });
+                                                  if (obj)
+                                                  {
+                                                    for (size_t i = 0; i < fids.size(); ++i)
+                                                    {
+                                                      sums[i] += (*obj)[fids[i]];
+                                                    }
+                                                  }
+                                                });
     if (!handled)
     {
       for (auto it = table.begin(); it != table.end(); ++it)

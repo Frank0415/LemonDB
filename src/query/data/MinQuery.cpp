@@ -74,7 +74,7 @@ QueryResult::Ptr MinQuery::execute()
           }
         }
 
-        if (found == false)
+        if (!found)
         {
           return make_unique<NullQueryResult>();
         }

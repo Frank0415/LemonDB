@@ -125,7 +125,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
 {
   auto& db = Database::getInstance();
   const std::string errString = !source.empty() ? R"(Invalid table (from "?") format: )"_f % source
-                                                 : "Invalid table format: ";
+                                                : "Invalid table format: ";
 
   std::string tableName;
   Table::SizeType fieldCount = 0;
