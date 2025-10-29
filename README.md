@@ -11,12 +11,12 @@ cmake -S . -B build
 #Change the number as you want 
 #Or use -j$(nproc) to use as many as cores.
 #(-j0 if you use ninja instead of make) 
-cmake --build build -j4
+cmake --build build -j8
 ```
 or
 ```bash
 # configure and build together 
-cmake -S . -B build && cmake --build build -j4
+cmake -S . -B build && cmake --build build -j8
 ```
 > 'Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.'
 
@@ -24,13 +24,14 @@ The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the d
 
 ## Static Analysis
 
-Every push runs clang-format, clang-tidy, cppcheck, and cpplint in CI. You can reproduce the same checks locally with:
-
-```bash
-./scripts/run-static-analysis.sh
-```
+Every push runs clang-format, clang-tidy, cppcheck, and cpplint in CI.
+A comprehensive static analysis tool is automatically run on every commit and pull request via Gitea Actions, using the `./test/run.sh` script.
 
 Make sure the script's dependencies (`cmake`, `clang-format`, `clang-tidy`, `cppcheck`, and the Python `cpplint` package) are installed and on your `PATH`.
+
+## Performance Benchmarking
+
+### Single-threaded Benchmarking 
 
 
 ## Contributing
