@@ -45,16 +45,16 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
       cond.fieldId = table.getFieldIndex(cond.field);
       cond.valueParsed =
           static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, 10));
-      int op = 0;
+      int operator_index = 0;
       try
       {
-        op = opmap.at(cond.op);
+        operator_index = opmap.at(cond.op);
       }
       catch (const std::out_of_range& e)
       {
         throw IllFormedQueryCondition(R"("?" is not a valid condition operator.)"_f % cond.op);
       }
-      switch (op)
+      switch (operator_index)
       {
       case '>':
         cond.comp = std::greater<>();

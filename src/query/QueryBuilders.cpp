@@ -119,74 +119,74 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
   // The "WHERE" clause can be ommitted
   // The args of OPER clause can be ommitted
 
-  auto it = query.token.cbegin();
+  auto iterator = query.token.cbegin();
   auto end = query.token.cend();
-  it += 1; // Take to args;
-  if (it == query.token.end())
+  iterator += 1; // Take to args;
+  if (iterator == query.token.end())
   {
     throw IllFormedQuery("Missing FROM clause");
   }
-  if (*it != "FROM")
+  if (*iterator != "FROM")
   {
-    if (*it != "(")
+    if (*iterator != "(")
     {
       throw IllFormedQuery("Ill-formed operand.");
     }
-    ++it;
-    while (*it != ")")
+    ++iterator;
+    while (*iterator != ")")
     {
-      this->operandToken.push_back(*it);
-      ++it;
-      if (it == end)
+      this->operandToken.push_back(*iterator);
+      ++iterator;
+      if (iterator == end)
       {
         throw IllFormedQuery("Ill-formed operand");
       }
     }
-    if (++it == end || *it != "FROM")
+    if (++iterator == end || *iterator != "FROM")
     {
       throw IllFormedQuery("Missing FROM clause");
     }
   }
-  if (++it == end)
+  if (++iterator == end)
   {
     throw IllFormedQuery("Missing targed table");
   }
-  this->targetTable = *it;
-  if (++it == end) // the "WHERE" clause is ommitted
+  this->targetTable = *iterator;
+  if (++iterator == end) // the "WHERE" clause is ommitted
   {
     return;
   }
-  if (*it != "WHERE")
+  if (*iterator != "WHERE")
   {
     // Hmmm, C++11 style Raw-string literal
     // http://en.cppreference.com/w/cpp/language/string_literal
-    throw IllFormedQuery(R"(Expecting "WHERE", found "?".)"_f % *it);
+    throw IllFormedQuery(R"(Expecting "WHERE", found "?".)"_f % *iterator);
   }
-  while (++it != end)
+  while (++iterator != end)
   {
-    if (*it != "(")
+    if (*iterator != "(")
     {
       throw IllFormedQuery("Ill-formed query condition");
     }
     QueryCondition cond;
     cond.fieldId = 0;
     cond.valueParsed = 0;
-    if (++it == end)
+    if (++iterator == end)
     {
       throw IllFormedQuery("Missing field in condition");
     }
-    cond.field = *it;
-    if (++it == end)
+    cond.field = *iterator;
+    if (++iterator == end)
     {
       throw IllFormedQuery("Missing operator in condition");
     }
-    cond.op = *it;
-    if (++it == end)
+    cond.op = *iterator;
+    if (++iterator == end)
     {
       throw IllFormedQuery("Missing  in condition");
     }
-    cond.value = *it;
-    if (++it == end || *it != ")")
+    cond.value = *iterator;
+    if (++iterator == end || *iterator != ")")
     {
       throw IllFormedQuery("Ill-formed query condition");
     }
