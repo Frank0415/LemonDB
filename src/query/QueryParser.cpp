@@ -18,13 +18,13 @@ Query::Ptr QueryParser::parseQuery(const std::string& queryString)
   {
     throw QueryBuilderMatchFailed(queryString);
   }
-  auto t = tokenizeQueryString(queryString);
-  if (t.token.empty())
+  auto tokenized = tokenizeQueryString(queryString);
+  if (tokenized.token.empty())
   {
     throw QueryBuilderMatchFailed("");
   }
   first->clear();
-  return first->tryExtractQuery(t);
+  return first->tryExtractQuery(tokenized);
 }
 
 void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
@@ -46,14 +46,14 @@ void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
 
 TokenizedQueryString QueryParser::tokenizeQueryString(const std::string& queryString)
 {
-  TokenizedQueryString t;
-  t.rawQeuryString = queryString;
-  std::stringstream s;
-  s.str(queryString);
+  TokenizedQueryString result;
+  result.rawQeuryString = queryString;
+  std::stringstream stream;
+  stream.str(queryString);
   std::string tStr;
-  while (s >> tStr)
+  while (stream >> tStr)
   {
-    t.token.push_back(tStr);
+    result.token.push_back(tStr);
   }
-  return t;
+  return result;
 }

@@ -41,9 +41,9 @@ public:
     return std::make_unique<FailedQueryBuilder>();
   }
 
-  Query::Ptr tryExtractQuery(TokenizedQueryString& q) final
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) final
   {
-    throw QueryBuilderMatchFailed(q.rawQeuryString);
+    throw QueryBuilderMatchFailed(query.rawQeuryString);
   }
 
   void setNext(QueryBuilder::Ptr&& builder) final

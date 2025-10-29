@@ -22,10 +22,10 @@ QueryResult::Ptr MinQuery::execute()
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                             "No operand (? operands)."_f % operands.size());
   }
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
   try
   {
-    auto& table = db[this->targetTable];
+    auto& table = database[this->targetTable];
 
     // transform into its own Id, avoid lookups in map everytime
     std::vector<Table::FieldIndex> fieldId;
