@@ -5,10 +5,14 @@
 #ifndef PROJECT_PRINTTABLEQUERY_H
 #define PROJECT_PRINTTABLEQUERY_H
 
-#include "../Query.h"
+#include <string>
 
-class PrintTableQuery : public Query {
-  static constexpr const char *qname = "SHOWTABLE";
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class PrintTableQuery : public Query
+{
+  static constexpr const char* qname = "SHOWTABLE";
 
 public:
   using Query::Query;

@@ -1,9 +1,14 @@
 #ifndef PROJECT_SELECT_QUERY_H
 #define PROJECT_SELECT_QUERY_H
-#include "../Query.h"
+#include <string>
 
-class SelectQuery : public ComplexQuery {
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class SelectQuery : public ComplexQuery
+{
   static constexpr const char* qname = "SELECT";
+
 public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;

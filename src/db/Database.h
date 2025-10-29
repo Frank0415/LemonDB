@@ -6,11 +6,14 @@
 #define PROJECT_DB_H
 
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <iostream>
 
 #include "Table.h"
 
-class Database {
+class Database
+{
 private:
   /**
    * A unique pointer to the global database object
@@ -33,34 +36,33 @@ private:
   Database() = default;
 
 public:
-  void testDuplicate(const std::string &tableName);
+  void testDuplicate(const std::string& tableName);
 
-  Table &registerTable(Table::Ptr &&table);
+  Table& registerTable(Table::Ptr&& table);
 
-  void dropTable(const std::string &tableName);
+  void dropTable(const std::string& tableName);
 
   void printAllTable();
 
-  Table &operator[](const std::string &tableName);
+  Table& operator[](const std::string& tableName);
 
-  const Table &operator[](const std::string &tableName) const;
+  const Table& operator[](const std::string& tableName) const;
 
-  Database &operator=(const Database &) = delete;
+  Database& operator=(const Database&) = delete;
 
-  Database &operator=(Database &&) = delete;
+  Database& operator=(Database&&) = delete;
 
-  Database(const Database &) = delete;
+  Database(const Database&) = delete;
 
-  Database(Database &&) = delete;
+  Database(Database&&) = delete;
 
   ~Database() = default;
 
-  static Database &getInstance();
+  static Database& getInstance();
 
-  void updateFileTableName(const std::string &fileName,
-                           const std::string &tableName);
+  void updateFileTableName(const std::string& fileName, const std::string& tableName);
 
-  std::string getFileTableName(const std::string &fileName);
+  std::string getFileTableName(const std::string& fileName);
 
   /**
    * Load a table from an input stream (i.e., a file)
@@ -68,7 +70,7 @@ public:
    * @param source
    * @return reference of loaded table
    */
-  Table &loadTableFromStream(std::istream &is, const std::string &source = "");
+  Table& loadTableFromStream(std::istream& is, const std::string& source = "");
 
   void exit();
 };

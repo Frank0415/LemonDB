@@ -18,9 +18,19 @@ or
 # configure and build together 
 cmake -S . -B build && cmake --build build -j4
 ```
-> “Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.”
+> 'Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.'
 
 The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
+
+## Static Analysis
+
+Every push runs clang-format, clang-tidy, cppcheck, and cpplint in CI. You can reproduce the same checks locally with:
+
+```bash
+./scripts/run-static-analysis.sh
+```
+
+Make sure the script's dependencies (`cmake`, `clang-format`, `clang-tidy`, `cppcheck`, and the Python `cpplint` package) are installed and on your `PATH`.
 
 
 ## Contributing

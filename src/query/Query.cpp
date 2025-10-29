@@ -5,34 +5,57 @@
 #include "Query.h"
 
 #include <cassert>
+#include <cstdlib>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
-std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
+#include "../db/Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
+
+std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
+{
   const std::unordered_map<std::string, int> opmap{
       {">", '>'}, {"<", '<'}, {"=", '='}, {">=", 'g'}, {"<=", 'l'},
   };
   std::pair<std::string, bool> result = {"", true};
-  for (auto &cond : condition) {
-    if (cond.field == "KEY") {
-      if (cond.op != "=") {
+  for (auto& cond : condition)
+  {
+    if (cond.field == "KEY")
+    {
+      if (cond.op != "=")
+      {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
-      } else if (result.first.empty()) {
+      }
+      if (result.first.empty())
+      {
         result.first = cond.value;
-      } else if (result.first != cond.value) {
+      }
+      else if (result.first != cond.value)
+      {
         result.second = false;
         return result;
       }
-    } else {
+    }
+    else
+    {
       cond.fieldId = table.getFieldIndex(cond.field);
       cond.valueParsed =
-          (Table::ValueType)std::strtol(cond.value.c_str(), nullptr, 10);
+          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, 10));
       int op = 0;
-      try {
+      try
+      {
         op = opmap.at(cond.op);
-      } catch (const std::out_of_range &e) {
-        throw IllFormedQueryCondition(
-            R"("?" is not a valid condition operator.)"_f % cond.op);
       }
-      switch (op) {
+      catch (const std::out_of_range& e)
+      {
+        throw IllFormedQueryCondition(R"("?" is not a valid condition operator.)"_f % cond.op);
+      }
+      switch (op)
+      {
       case '>':
         cond.comp = std::greater<>();
         break;
@@ -56,31 +79,41 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
   return result;
 }
 
-bool ComplexQuery::evalCondition(const Table::Object &object) {
+bool ComplexQuery::evalCondition(const Table::Object& object)
+{
   bool ret = true;
-  for (const auto &cond : condition) {
-    if (cond.field != "KEY") {
+  for (const auto& cond : condition)
+  {
+    if (cond.field != "KEY")
+    {
       ret = ret && cond.comp(object[cond.fieldId], cond.valueParsed);
-    } else {
+    }
+    else
+    {
       ret = ret && (object.key() == cond.value);
     }
   }
   return ret;
 }
 
-bool ComplexQuery::testKeyCondition(
-    Table &table,
-    const std::function<void(bool, Table::Object::Ptr &&)> &function) {
+bool ComplexQuery::testKeyCondition(Table& table,
+                                    const std::function<void(bool, Table::Object::Ptr&&)>& function)
+{
   auto condResult = initCondition(table);
-  if (!condResult.second) {
+  if (!condResult.second)
+  {
     function(false, nullptr);
     return true;
   }
-  if (!condResult.first.empty()) {
+  if (!condResult.first.empty())
+  {
     auto object = table[condResult.first];
-    if (object != nullptr && evalCondition(*object)) {
+    if (object != nullptr && evalCondition(*object))
+    {
       function(true, std::move(object));
-    } else {
+    }
+    else
+    {
       function(false, nullptr);
     }
     return true;

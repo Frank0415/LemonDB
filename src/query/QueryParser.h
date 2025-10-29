@@ -7,31 +7,34 @@
 
 #include "Query.h"
 
-struct TokenizedQueryString {
+struct TokenizedQueryString
+{
   std::vector<std::string> token;
   std::string rawQeuryString;
 };
 
-class QueryBuilder {
+class QueryBuilder
+{
 public:
   typedef std::unique_ptr<QueryBuilder> Ptr;
 
-  virtual Query::Ptr tryExtractQuery(TokenizedQueryString &queryString) = 0;
-  virtual void setNext(Ptr &&builder) = 0;
+  virtual Query::Ptr tryExtractQuery(TokenizedQueryString& queryString) = 0;
+  virtual void setNext(Ptr&& builder) = 0;
   virtual void clear() = 0;
 
   virtual ~QueryBuilder() = default;
 };
 
-class QueryParser {
+class QueryParser
+{
   QueryBuilder::Ptr first; // An owning pointer
-  QueryBuilder *last;      // None owning reference
+  QueryBuilder* last;      // None owning reference
 
-  TokenizedQueryString tokenizeQueryString(const std::string &queryString);
+  TokenizedQueryString tokenizeQueryString(const std::string& queryString);
 
 public:
-  Query::Ptr parseQuery(const std::string &queryString);
-  void registerQueryBuilder(QueryBuilder::Ptr &&qBuilder);
+  Query::Ptr parseQuery(const std::string& queryString);
+  void registerQueryBuilder(QueryBuilder::Ptr&& qBuilder);
 
   QueryParser();
   ~QueryParser() = default;

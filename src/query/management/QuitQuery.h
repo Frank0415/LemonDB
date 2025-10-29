@@ -5,10 +5,14 @@
 #ifndef PROJECT_QUITQUERY_H
 #define PROJECT_QUITQUERY_H
 
-#include "../Query.h"
+#include <string>
 
-class QuitQuery : public Query {
-  static constexpr const char *qname = "QUIT";
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class QuitQuery : public Query
+{
+  static constexpr const char* qname = "QUIT";
 
 public:
   QuitQuery() = default;

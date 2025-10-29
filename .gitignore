@@ -42,13 +42,27 @@
 !hooks
 !hooks/*
 
+# Allow helper scripts
+!scripts
+!scripts/*.sh
+
 # Allow pre-commit config
 !.pre-commit-config.yaml
 
 # Allow CMake and tests
 !CMakeLists.txt
-!tests
-!tests/*.cpp
-!tests/*.h
+!gtests
+!gtests/*.cpp
+!gtests/*.h
 
 !.clang-format
+!.clang-tidy
+!CPPLINT.cfg
+!CPPLINT.cfg
+
+!test
+!test/run.sh
+!test/clangtidy.sh
+!test/cpplint.sh
+!test/cppcheck.sh
+!test/data

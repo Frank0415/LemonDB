@@ -5,10 +5,14 @@
 #ifndef PROJECT_DROPTABLEQUERY_H
 #define PROJECT_DROPTABLEQUERY_H
 
-#include "../Query.h"
+#include <string>
 
-class DropTableQuery : public Query {
-  static constexpr const char *qname = "DROP";
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class DropTableQuery : public Query
+{
+  static constexpr const char* qname = "DROP";
 
 public:
   using Query::Query;
