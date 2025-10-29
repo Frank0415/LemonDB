@@ -1,8 +1,4 @@
 #include "QueryBuilders.h"
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
 #include "../db/Database.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
@@ -28,6 +24,10 @@
 #include "management/PrintTableQuery.h"
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <string>
 
 Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {

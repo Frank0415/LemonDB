@@ -2,18 +2,16 @@
 // Created by liu on 18-10-21.
 //
 
-#include <getopt.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
+#include <getopt.h>
 #include <iostream>
 #include <memory>
 #include <string>
-
 #include <unistd.h>
-
 #include "query/Query.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
