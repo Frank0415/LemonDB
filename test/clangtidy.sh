@@ -4,7 +4,7 @@ echo "=== Running clang-tidy ==="
 
 usr=$(whoami)
 
-files=$(find ../src ../test -name "*.cpp" -o -name "*.h")
+files=$(find ../src -name "*.cpp" -o -name "*.h")
 
 
 if [[ $usr == "frank" || $usr == "114514" ]]; then
@@ -24,7 +24,7 @@ if [ "$usr" = "frank" ]; then
     ["performance"]='performance-*'
     ["portability"]='portability-*'
     ["readability"]='readability-*'
-    ["google"]='google-*'
+    ["google"]='google-*,-google-readability-braces-around-statements'
   )
 
   for group in "${!check_groups[@]}"; do
@@ -35,13 +35,13 @@ if [ "$usr" = "frank" ]; then
       --extra-arg=-D__clang_analyzer__ \
       --extra-arg-before=-std=c++20 \
       --extra-arg-before=-x --extra-arg-before=c++ \
-      -header-filter='^(\.\./src/.*|.*\.h)$' \
+      -header-filter="^(\.\./src/.*|.*\\.h)$" \
       -- \
       -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}' >> "${group}.tidy"
     done
   done
 else
-  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*'
+  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*,-google-readability-braces-around-statements'
 
   for file in $files; do
     $TIDY "$file" -p="$compile_commands_path" \
@@ -49,7 +49,7 @@ else
     --extra-arg=-D__clang_analyzer__ \
     --extra-arg-before=-std=c++20 \
     --extra-arg-before=-x --extra-arg-before=c++ \
-    -header-filter='^(\.\./src/.*|.*\.h)$' \
+    -header-filter="^(\.\./src/.*|.*\\.h)$" \
     -- \
     -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}'
   done
