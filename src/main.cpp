@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 
   // Main loop: async query submission
   std::vector<std::future<void>> pending_queries;
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
 
   QueryResultCollector g_result_collector;
   std::atomic<size_t> g_query_counter{0};
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
                           pending_queries.end());
   };
 
-  while (input_stream && !db.isEnd())
+  while (input_stream && !database.isEnd())
   {
     try
     {
