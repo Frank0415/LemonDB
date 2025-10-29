@@ -289,14 +289,14 @@ public:
       return retVal;
     }
 
-    bool operator==(const IteratorImpl& other)
+    bool operator==(const IteratorImpl& other) const
     {
       return this->it == other.it;
     }
 
-    bool operator!=(const IteratorImpl& other)
+    friend bool operator!=(const IteratorImpl& lhs, const IteratorImpl& rhs)
     {
-      return this->it != other.it;
+      return lhs.it != rhs.it;
     }
 
     bool operator<=(const IteratorImpl& other)
