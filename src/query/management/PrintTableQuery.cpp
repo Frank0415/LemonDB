@@ -15,10 +15,10 @@
 QueryResult::Ptr PrintTableQuery::execute()
 {
   using std::string_literals::operator""s;
-  const Database& db = Database::getInstance();
+  const Database& database = Database::getInstance();
   try
   {
-    const auto& table = db[this->targetTable];
+    const auto& table = database[this->targetTable];
     std::cout << "================\n";
     std::cout << "TABLE = ";
     std::cout << table;

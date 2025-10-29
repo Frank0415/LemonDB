@@ -24,9 +24,9 @@ QueryResult::Ptr DeleteQuery::execute()
 
   try
   {
-    Database& db = Database::getInstance();
+    Database& database = Database::getInstance();
     Table::SizeType counter = 0;
-    auto& table = db[this->targetTable];
+    auto& table = database[this->targetTable];
     auto result = initCondition(table);
     if (result.second)
     {

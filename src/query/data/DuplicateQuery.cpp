@@ -24,8 +24,8 @@ QueryResult::Ptr DuplicateQuery::execute()
       return std::make_unique<ErrorMsgResult>(
           qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
     }
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    auto& database = Database::getInstance();
+    auto& table = database[this->targetTable];
     auto result = initCondition(table);
     if (!result.second)
     {

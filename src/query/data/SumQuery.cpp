@@ -24,56 +24,66 @@
 QueryResult::Ptr SumQuery::execute()
 {
 
-  try {
-    Database &db = Database::getInstance();
-    auto &table = db[this->targetTable];
+  try
+  {
+    Database& database = Database::getInstance();
+    auto& table = database[this->targetTable];
 
-    if (this->operands.empty()) {
-      return make_unique<ErrorMsgResult>("SUM", this->targetTable,
-                                         "Invalid number of fields");
+    if (this->operands.empty())
+    {
+      return make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
     }
-    for (const auto &f : this->operands) {
-      if (f == "KEY") {
-        return make_unique<ErrorMsgResult>("SUM", this->targetTable,
-                                           "KEY cannot be summed.");
+    for (const auto& f : this->operands)
+    {
+      if (f == "KEY")
+      {
+        return make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
       }
     }
     auto result = initCondition(table);
-    if (!result.second) {
+    if (!result.second)
+    {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
     std::vector<Table::FieldIndex> fids;
     fids.reserve(this->operands.size());
-    for (const auto& f : this->operands)
+    for (const auto& field : this->operands)
     {
-      fids.emplace_back(table.getFieldIndex(f));
+      fids.emplace_back(table.getFieldIndex(field));
     }
 
     // NEW: LOCK IMPL
-    auto &lockmgr = TableLockManager::getInstance();
+    auto& lockmgr = TableLockManager::getInstance();
     auto lock = lockmgr.acquireRead(this->targetTable);
 
     // NEW: READ LOCK PROTECTED MODE
-    static ThreadPool &pool = ThreadPool::getInstance();
+    static ThreadPool& pool = ThreadPool::getInstance();
     const size_t chunk_size = 20000;
     const size_t num_fields = fids.size();
 
-    if (pool.getThreadCount() <= 1) {
+    if (pool.getThreadCount() <= 1)
+    {
       std::vector<int> sums(num_fields, 0);
-      bool handled =
-          this->testKeyCondition(table, [&](bool ok, Table::Object::Ptr &&obj) {
-            if (!ok || !obj)
-              return;
-            for (size_t i = 0; i < num_fields; ++i) {
-              sums[i] += (*obj)[fids[i]];
-            }
-          });
+      bool handled = this->testKeyCondition(table,
+                                            [&](bool ok, Table::Object::Ptr&& obj)
+                                            {
+                                              if (!ok || !obj)
+                                                return;
+                                              for (size_t i = 0; i < num_fields; ++i)
+                                              {
+                                                sums[i] += (*obj)[fids[i]];
+                                              }
+                                            });
 
-      if (!handled) {
-        for (auto it = table.begin(); it != table.end(); ++it) {
-          if (this->evalCondition(*it)) {
-            for (size_t i = 0; i < num_fields; ++i) {
-              sums[i] += (*it)[fids[i]];
+      if (!handled)
+      {
+        for (auto iterator = table.begin(); iterator != table.end(); ++iterator)
+        {
+          if (this->evalCondition(*iterator))
+          {
+            for (size_t i = 0; i < num_fields; ++i)
+            {
+              sums[i] += (*iterator)[fids[i]];
             }
           }
         }
@@ -87,23 +97,29 @@ QueryResult::Ptr SumQuery::execute()
 
     // NEEDS ANOTHER SET OF LOGIC FOR TABLE < 2000
 
-    auto it = table.begin();
-    while (it != table.end()) {
-      auto chunk_begin = it;
+    auto iterator = table.begin();
+    while (iterator != table.end())
+    {
+      auto chunk_begin = iterator;
       size_t count = 0;
-      while (it != table.end() && count < chunk_size) {
-        ++it;
+      while (iterator != table.end() && count < chunk_size)
+      {
+        ++iterator;
         ++count;
       }
-      auto chunk_end = it;
+      auto chunk_end = iterator;
 
-      futures.push_back(
-          pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
+      futures.push_back(pool.submit(
+          [this, fids, chunk_begin, chunk_end, num_fields]()
+          {
             std::vector<int> local_sums(num_fields, 0);
-            for (auto it = chunk_begin; it != chunk_end; ++it) {
-              if (this->evalCondition(*it)) {
-                for (size_t i = 0; i < num_fields; ++i) {
-                  local_sums[i] += (*it)[fids[i]];
+            for (auto iterator = chunk_begin; iterator != chunk_end; ++iterator)
+            {
+              if (this->evalCondition(*iterator))
+              {
+                for (size_t i = 0; i < num_fields; ++i)
+                {
+                  local_sums[i] += (*iterator)[fids[i]];
                 }
               }
             }
@@ -112,25 +128,32 @@ QueryResult::Ptr SumQuery::execute()
     }
 
     std::vector<int> sums(num_fields, 0);
-    for (size_t i = 0; i < futures.size(); ++i) {
+    for (size_t i = 0; i < futures.size(); ++i)
+    {
       auto local_sums = futures[i].get();
-      for (size_t j = 0; j < num_fields; ++j) {
+      for (size_t j = 0; j < num_fields; ++j)
+      {
         sums[j] += local_sums[j];
       }
     }
 
     return make_unique<SuccessMsgResult>(sums);
-  } catch (const TableNameNotFound &) {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable,
-                                       "No such table.");
-  } catch (const TableFieldNotFound &) {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable,
-                                       "No such field.");
-  } catch (const IllFormedQueryCondition &e) {
+  }
+  catch (const TableNameNotFound&)
+  {
+    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such table.");
+  }
+  catch (const TableFieldNotFound&)
+  {
+    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such field.");
+  }
+  catch (const IllFormedQueryCondition& e)
+  {
     return make_unique<ErrorMsgResult>("SUM", this->targetTable, e.what());
-  } catch (const std::exception &e) {
-    return make_unique<ErrorMsgResult>("SUM", this->targetTable,
-                                       "Unknown error '?'"_f % e.what());
+  }
+  catch (const std::exception& e)
+  {
+    return make_unique<ErrorMsgResult>("SUM", this->targetTable, "Unknown error '?'"_f % e.what());
   }
 }
 

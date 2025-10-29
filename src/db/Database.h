@@ -5,10 +5,10 @@
 #ifndef PROJECT_DB_H
 #define PROJECT_DB_H
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <iostream>
 
 #include "Table.h"
 
@@ -75,7 +75,7 @@ public:
    * @param source
    * @return reference of loaded table
    */
-  Table& loadTableFromStream(std::istream& is, const std::string& source = "");
+  static Table& loadTableFromStream(std::istream& input_stream, const std::string& source = "");
 
   /**
    * Signal that QUIT has been called and no more queries should be read
@@ -85,7 +85,10 @@ public:
   /**
    * Check if QUIT has been called
    */
-  bool isEnd() const { return endInput; }
+  bool isEnd() const
+  {
+    return endInput;
+  }
 };
 
 #endif // PROJECT_DB_H

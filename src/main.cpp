@@ -2,8 +2,6 @@
 // Created by liu on 18-10-21.
 //
 
-#include <getopt.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -13,6 +11,7 @@
 #include <exception>
 #include <fstream>
 #include <future>
+#include <getopt.h>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -87,28 +86,28 @@ void validateAndPrintThreads(std::int64_t threads)
   }
 }
 
-void setupParser(QueryParser& p)
+void setupParser(QueryParser& parser)
 {
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
 }
 
-std::string extractQueryString(std::istream& is)
+std::string extractQueryString(std::istream& input_stream)
 {
   std::string buf;
   while (true)
   {
-    const int ch = is.get();
-    if (ch == ';')
+    const int character = input_stream.get();
+    if (character == ';')
     {
       return buf;
     }
-    if (ch == EOF)
+    if (character == EOF)
     {
       throw std::ios_base::failure("End of input");
     }
-    buf.push_back(static_cast<char>(ch));
+    buf.push_back(static_cast<char>(character));
   }
 }
 } // namespace
@@ -152,21 +151,20 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode\n";
-    //<< std::endl;
     input = &std::cin;
   }
 #endif
 
-  std::istream& is = *input;
+  std::istream& input_stream = *input;
 
   validateAndPrintThreads(parsedArgs.threads);
 
-  QueryParser p;
-  setupParser(p);
+  QueryParser parser;
+  setupParser(parser);
 
   // Main loop: async query submission
   std::vector<std::future<void>> pending_queries;
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
 
   QueryResultCollector g_result_collector;
   std::atomic<size_t> g_query_counter{0};
@@ -186,13 +184,13 @@ int main(int argc, char* argv[])
                           pending_queries.end());
   };
 
-  while (is && !db.isEnd())
+  while (input_stream && !database.isEnd())
   {
     try
     {
-      std::string queryStr = extractQueryString(is);
+      std::string queryStr = extractQueryString(input_stream);
 
-      Query::Ptr query = p.parseQuery(queryStr);
+      Query::Ptr query = parser.parseQuery(queryStr);
 
       size_t query_id = g_query_counter.fetch_add(1) + 1;
 

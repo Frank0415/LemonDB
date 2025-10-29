@@ -15,7 +15,7 @@
 
 QueryResult::Ptr DumpTableQuery::execute()
 {
-  const auto& db = Database::getInstance();
+  const auto& database = Database::getInstance();
   try
   {
     std::ofstream outfile(this->fileName);
@@ -23,7 +23,7 @@ QueryResult::Ptr DumpTableQuery::execute()
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
-    outfile << db[this->targetTable];
+    outfile << database[this->targetTable];
     outfile.close();
     return std::make_unique<SuccessMsgResult>(qname, targetTable);
   }

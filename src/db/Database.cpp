@@ -23,8 +23,8 @@ std::unique_ptr<Database> Database::instance = nullptr;
 
 void Database::testDuplicate(const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it != this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator != this->tables.end())
   {
     throw DuplicatedTableName("Error when inserting table \"" + tableName +
                               "\". Name already exists.");
@@ -41,33 +41,33 @@ Table& Database::registerTable(Table::Ptr&& table)
 
 Table& Database::operator[](const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end())
   {
     throw TableNameNotFound("Error accesing table \"" + tableName + "\". Table not found.");
   }
-  return *(it->second);
+  return *(iterator->second);
 }
 
 const Table& Database::operator[](const std::string& tableName) const
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end())
   {
     throw TableNameNotFound("Error accesing table \"" + tableName + "\". Table not found.");
   }
-  return *(it->second);
+  return *(iterator->second);
 }
 
 void Database::dropTable(const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end())
   {
     throw TableNameNotFound("Error when trying to drop table \"" + tableName +
                             "\". Table not found.");
   }
-  this->tables.erase(it);
+  this->tables.erase(iterator);
 }
 
 void Database::printAllTable()
@@ -104,8 +104,8 @@ void Database::updateFileTableName(const std::string& fileName, const std::strin
 
 std::string Database::getFileTableName(const std::string& fileName)
 {
-  auto it = fileTableNameMap.find(fileName);
-  if (it == fileTableNameMap.end())
+  auto iterator = fileTableNameMap.find(fileName);
+  if (iterator == fileTableNameMap.end())
   {
     std::ifstream infile(fileName);
     if (!infile.is_open())
@@ -118,12 +118,12 @@ std::string Database::getFileTableName(const std::string& fileName)
     fileTableNameMap.emplace(fileName, tableName);
     return tableName;
   }
-  return it->second;
+  return iterator->second;
 }
 
-Table& Database::loadTableFromStream(std::istream& is, const std::string& source)
+Table& Database::loadTableFromStream(std::istream& input_stream, const std::string& source)
 {
-  auto& db = Database::getInstance();
+  auto& database = Database::getInstance();
   const std::string errString = !source.empty() ? R"(Invalid table (from "?") format: )"_f % source
                                                 : "Invalid table format: ";
 
@@ -133,7 +133,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
 
   std::string line;
   std::stringstream sstream;
-  if (!std::getline(is, line))
+  if (!std::getline(input_stream, line))
   {
     throw LoadFromStreamException(errString + "Failed to read table metadata line.");
   }
@@ -146,9 +146,9 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
   }
 
   // throw error if tableName duplicates
-  db.testDuplicate(tableName);
+  database.testDuplicate(tableName);
 
-  if (!(std::getline(is, line)))
+  if (!(std::getline(input_stream, line)))
   {
     throw LoadFromStreamException(errString + "Failed to load field names.");
   }
@@ -174,7 +174,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
   auto table = std::make_unique<Table>(tableName, fields);
 
   Table::SizeType lineCount = 2;
-  while (std::getline(is, line))
+  while (std::getline(input_stream, line))
   {
     if (line.empty())
     {
@@ -203,7 +203,7 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
     table->insertByIndex(key, std::move(tuple));
   }
 
-  return db.registerTable(std::move(table));
+  return database.registerTable(std::move(table));
 }
 
 void Database::exit() {

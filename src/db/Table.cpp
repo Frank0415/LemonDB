@@ -56,10 +56,10 @@ void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
 void Table::deleteByIndex(const KeyType& key)
 {
   // the key to delete
-  auto it = this->keyMap.find(key);
+  auto iterator = this->keyMap.find(key);
 
   // the key doesn't exist
-  if (it == this->keyMap.end())
+  if (iterator == this->keyMap.end())
   {
     const std::string err =
         "In Table \"" + this->tableName + "\" : Key \"" + key + "\" doesn't exist!";
@@ -67,8 +67,8 @@ void Table::deleteByIndex(const KeyType& key)
   }
 
   // the index of the key to delete
-  const SizeType index = it->second;
-  keyMap.erase(it);
+  const SizeType index = iterator->second;
+  keyMap.erase(iterator);
 
   // swap the current data to the last one and pop back
   if (index != this->data.size() - 1)
@@ -84,17 +84,18 @@ void Table::deleteByIndex(const KeyType& key)
 
 Table::Object::Ptr Table::operator[](const Table::KeyType& key)
 {
-  auto it = keyMap.find(key);
-  if (it == keyMap.end())
+  auto iterator = this->keyMap.find(key);
+  if (iterator == keyMap.end())
   {
     // not found
     return nullptr;
   }
-  return createProxy(
-      data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
+  return createProxy(data.begin() +
+                         static_cast<std::vector<Table::Datum>::difference_type>(iterator->second),
+                     this);
 }
 
-std::ostream& operator<<(std::ostream& os, const Table& table)
+std::ostream& operator<<(std::ostream& out, const Table& table)
 {
   const int width = 10;
   std::stringstream buffer;
@@ -115,5 +116,5 @@ std::ostream& operator<<(std::ostream& os, const Table& table)
     }
     buffer << "\n";
   }
-  return os << buffer.str();
+  return out << buffer.str();
 }

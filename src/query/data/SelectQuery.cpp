@@ -18,8 +18,8 @@ QueryResult::Ptr SelectQuery::execute()
 {
   try
   {
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    auto& database = Database::getInstance();
+    auto& table = database[this->targetTable];
     if (this->operands.empty())
     {
       return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
@@ -27,11 +27,11 @@ QueryResult::Ptr SelectQuery::execute()
     std::vector<std::string> fieldsOrder;
     fieldsOrder.reserve(this->operands.size() + 1);
     fieldsOrder.emplace_back("KEY");
-    for (const auto& f : this->operands)
+    for (const auto& field : this->operands)
     {
-      if (f != "KEY")
+      if (field != "KEY")
       {
-        fieldsOrder.emplace_back(f);
+        fieldsOrder.emplace_back(field);
       }
     }
     std::vector<Table::FieldIndex> fieldIds;
@@ -43,9 +43,9 @@ QueryResult::Ptr SelectQuery::execute()
 
     std::ostringstream buffer;
     const bool handled = this->testKeyCondition(table,
-                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                [&](bool success, Table::Object::Ptr&& obj)
                                                 {
-                                                  if (!ok)
+                                                  if (!success)
                                                   {
                                                     return;
                                                   }
@@ -72,15 +72,16 @@ QueryResult::Ptr SelectQuery::execute()
         rows.push_back(it);
       }
     }
-    std::sort(rows.begin(), rows.end(), [](const Table::Iterator& a, const Table::Iterator& b)
-              { return (*a).key() < (*b).key(); });
+    std::sort(rows.begin(), rows.end(),
+              [](const Table::Iterator& first, const Table::Iterator& second)
+              { return (*first).key() < (*second).key(); });
 
-    for (const auto& it : rows)
+    for (const auto& iterator : rows)
     {
-      buffer << "( " << (*it).key();
+      buffer << "( " << (*iterator).key();
       for (size_t j = 0; j < fieldIds.size(); ++j)
       {
-        buffer << " " << (*it)[fieldIds[j]];
+        buffer << " " << (*iterator)[fieldIds[j]];
       }
       buffer << " )\n";
     }

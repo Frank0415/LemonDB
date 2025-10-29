@@ -15,12 +15,12 @@ QueryResult::Ptr CopyTableQuery::execute()
 {
   try
   {
-    auto& db = Database::getInstance();
-    auto& src = db[this->targetTable];
+    auto& database = Database::getInstance();
+    auto& src = database[this->targetTable];
     bool targetExists = false;
     try
     {
-      (void)db[this->newTableName];
+      (void)database[this->newTableName];
       targetExists = true;
     }
     catch (...)
@@ -46,7 +46,7 @@ QueryResult::Ptr CopyTableQuery::execute()
       dup->insertByIndex(obj.key(), std::move(row));
     }
 
-    db.registerTable(std::move(dup));
+    database.registerTable(std::move(dup));
     return std::make_unique<NullQueryResult>();
   }
   catch (const TableNameNotFound&)

@@ -24,10 +24,10 @@ QueryResult::Ptr UpdateQuery::execute()
                                             "Invalid number of operands (? operands)."_f %
                                                 operands.size());
   }
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
   try
   {
-    auto& table = db[this->targetTable];
+    auto& table = database[this->targetTable];
     if (this->operands[0] == "KEY")
     {
       this->keyValue = this->operands[1];

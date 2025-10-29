@@ -6,7 +6,7 @@
 
 #include <ostream>
 
-std::ostream& operator<<(std::ostream& os, const QueryResult& table)
+std::ostream& operator<<(std::ostream& out, const QueryResult& table)
 {
-  return table.output(os);
+  return table.output(out);
 }

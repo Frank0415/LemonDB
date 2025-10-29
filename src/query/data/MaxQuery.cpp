@@ -25,8 +25,8 @@ QueryResult::Ptr MaxQuery::execute()
 
   try
   {
-    Database& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    Database& database = Database::getInstance();
+    auto& table = database[this->targetTable];
 
     // transform into its own Id, avoid lookups in map everytime
     std::vector<Table::FieldIndex> fieldId;

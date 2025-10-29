@@ -23,9 +23,9 @@ QueryResult::Ptr CountQuery::execute()
     }
 
     // Get a reference to the database singleton instance
-    Database& db = Database::getInstance();
+    Database& database = Database::getInstance();
     // Access the target table using the table name
-    Table& table = db[this->targetTable];
+    Table& table = database[this->targetTable];
 
     // Initialize the WHERE clause condition. The 'second' member of the
     // returned pair is a flag indicating if the condition can ever be true.
