@@ -66,3 +66,6 @@
 !test/cpplint.sh
 !test/cppcheck.sh
 !test/data
+!test/gtests
+!test/gtests/
+!test/gtests/*.cpp
