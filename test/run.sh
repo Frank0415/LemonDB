@@ -7,8 +7,8 @@ find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort
 usr=$(whoami)
 
 if [[ $usr == "frank" ]]; then
-  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > /dev/null 2>&1
-  cmake --build build -j$(nproc) > /dev/null 2>&1
+  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON
+  cmake --build build -j$(nproc)
 elif [[ $usr == "114514" ]]; then # not working, replace with your own whoami
     cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > /dev/null 2>&1 # not working, replace with your own clang-18
     cmake --build build -j$(nproc) > /dev/null 2>&1

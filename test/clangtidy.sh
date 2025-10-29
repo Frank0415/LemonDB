@@ -20,7 +20,7 @@ if [ "$usr" = "frank" ]; then
     ["bugprone"]='bugprone-*'
     ["cppcoreguidelines"]='cppcoreguidelines-*'
     ["misc"]='misc-*'
-    ["modernize"]='modernize-*'
+    ["modernize"]='modernize-*,-modernize-use-trailing-return-type'
     ["performance"]='performance-*'
     ["portability"]='portability-*'
     ["readability"]='readability-*'
@@ -41,7 +41,7 @@ if [ "$usr" = "frank" ]; then
     done
   done
 else
-  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,performance-*,portability-*,readability-*,google-*'
+  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*'
 
   for file in $files; do
     $TIDY "$file" -p="$compile_commands_path" \
