@@ -133,10 +133,9 @@ int main(int argc, char* argv[])
     input = &fin;
   }
 
-  ThreadPool::initialize(parsedArgs.threads > 0
-                             ? static_cast<size_t>(parsedArgs.threads)
-                             : std::thread::hardware_concurrency());
-  ThreadPool &pool = ThreadPool::getInstance();
+  ThreadPool::initialize(parsedArgs.threads > 0 ? static_cast<size_t>(parsedArgs.threads)
+                                                : std::thread::hardware_concurrency());
+  ThreadPool& pool = ThreadPool::getInstance();
 
 #ifdef NDEBUG
   // In production mode, listen argument must be defined
@@ -167,26 +166,30 @@ int main(int argc, char* argv[])
 
   // Main loop: async query submission
   std::vector<std::future<void>> pending_queries;
-  Database &db = Database::getInstance();
+  Database& db = Database::getInstance();
 
   QueryResultCollector g_result_collector;
   std::atomic<size_t> g_query_counter{0};
 
-  auto prune_completed = [&pending_queries]() {
-    pending_queries.erase(
-        std::remove_if(pending_queries.begin(), pending_queries.end(),
-                       [](std::future<void> &f) {
-                         if (!f.valid()) {
-                           return true;
-                         }
-                         return f.wait_for(std::chrono::seconds(0)) ==
-                                std::future_status::ready;
-                       }),
-        pending_queries.end());
+  auto prune_completed = [&pending_queries]()
+  {
+    pending_queries.erase(std::remove_if(pending_queries.begin(), pending_queries.end(),
+                                         [](std::future<void>& f)
+                                         {
+                                           if (!f.valid())
+                                           {
+                                             return true;
+                                           }
+                                           return f.wait_for(std::chrono::seconds(0)) ==
+                                                  std::future_status::ready;
+                                         }),
+                          pending_queries.end());
   };
 
-  while (is && !db.isEnd()) {
-    try {
+  while (is && !db.isEnd())
+  {
+    try
+    {
       std::string queryStr = extractQueryString(is);
 
       Query::Ptr query = p.parseQuery(queryStr);
@@ -194,26 +197,33 @@ int main(int argc, char* argv[])
       size_t query_id = g_query_counter.fetch_add(1) + 1;
 
       // Check if this is an instant query (LOAD, QUIT, DROP, DUMP)
-      if (query->isInstant()) {
+      if (query->isInstant())
+      {
         // Wait for all pending queries to complete before executing instant
         // query
-        for (auto &f : pending_queries) {
+        for (auto& f : pending_queries)
+        {
           f.wait();
         }
         pending_queries.clear();
 
         // Execute instant query synchronously (in main thread)
         executeQueryAsync(std::move(query), query_id, g_result_collector);
-      } else {
+      }
+      else
+      {
         prune_completed();
 
         const size_t worker_count = std::max<size_t>(1, pool.getThreadCount());
         const size_t max_parallel = worker_count > 1 ? worker_count - 1 : 1;
 
-        while (pending_queries.size() >= max_parallel) {
-          if (!pending_queries.empty()) {
-            auto &front_future = pending_queries.front();
-            if (front_future.valid()) {
+        while (pending_queries.size() >= max_parallel)
+        {
+          if (!pending_queries.empty())
+          {
+            auto& front_future = pending_queries.front();
+            if (front_future.valid())
+            {
               front_future.wait();
             }
             pending_queries.erase(pending_queries.begin());
@@ -222,24 +232,28 @@ int main(int argc, char* argv[])
         }
 
         // Async submit query (don't wait for completion)
-        auto future = pool.submit(
-            [q = std::move(query), query_id, &g_result_collector]() mutable {
-              executeQueryAsync(std::move(q), query_id, g_result_collector);
-            });
+        auto future =
+            pool.submit([q = std::move(query), query_id, &g_result_collector]() mutable
+                        { executeQueryAsync(std::move(q), query_id, g_result_collector); });
 
         pending_queries.push_back(std::move(future));
       }
-
-    } catch (const std::ios_base::failure &e) {
+    }
+    catch (const std::ios_base::failure& e)
+    {
       break;
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception& e)
+    {
       std::cerr << "Error parsing query: " << e.what() << '\n';
     }
   }
 
   // Wait for all remaining queries to complete
-  for (size_t i = 0; i < pending_queries.size(); ++i) {
-    if (pending_queries[i].valid()) {
+  for (size_t i = 0; i < pending_queries.size(); ++i)
+  {
+    if (pending_queries[i].valid())
+    {
       pending_queries[i].wait();
     }
   }
