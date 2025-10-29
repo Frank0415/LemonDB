@@ -9,13 +9,13 @@ files=$(find ../src ../test -name "*.cpp" -o -name "*.h")
 
 if [[ $usr == "frank" || $usr == "114514" ]]; then
   export TIDY="clang-tidy"
-else 
+else
   export TIDY="clang-tidy-18"
 fi
 
 compile_commands_path="../build/compile_commands.json"
 
-if [ "$(whoami)" = "frank" ]; then
+if [ "$usr" = "frank" ]; then
   declare -A check_groups=(
     ["bugprone"]='bugprone-*'
     ["cppcoreguidelines"]='cppcoreguidelines-*'
