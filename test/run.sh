@@ -4,8 +4,18 @@ find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort
 echo "Files over 200 lines:"
 find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
 
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 > /dev/null 2>&1
-cmake --build build -j$(nproc) > /dev/null 2>&1
+usr=$(whoami)
+
+if [[ $usr == "frank" ]]; then
+  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > /dev/null 2>&1
+  cmake --build build -j$(nproc) > /dev/null 2>&1
+else if [[ $usr != "114514" ]]; then
+    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 > /dev/null 2>&1
+    cmake --build build -j$(nproc) > /dev/null 2>&1
+else
+    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 > /dev/null 2>&1
+    cmake --build build -j$(nproc) > /dev/null 2>&1
+fi
 
 cp ./build/bin/lemondb ./lemondb
 
