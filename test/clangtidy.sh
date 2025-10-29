@@ -37,7 +37,7 @@ if [ "$usr" = "frank" ]; then
       --extra-arg-before=-x --extra-arg-before=c++ \
       -header-filter="^(\.\./src/.*|.*\\.h)$" \
       -- \
-      -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}' >> "${group}.tidy"
+      -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}' >> "clang.${group}.tidy"
     done
   done
 else
