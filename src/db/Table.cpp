@@ -84,17 +84,18 @@ void Table::deleteByIndex(const KeyType& key)
 
 Table::Object::Ptr Table::operator[](const Table::KeyType& key)
 {
-  auto it = keyMap.find(key);
-  if (it == keyMap.end())
+  auto iterator = keyMap.find(key);
+  if (iterator == keyMap.end())
   {
     // not found
     return nullptr;
   }
-  return createProxy(
-      data.begin() + static_cast<std::vector<Table::Datum>::difference_type>(it->second), this);
+  return createProxy(data.begin() +
+                         static_cast<std::vector<Table::Datum>::difference_type>(iterator->second),
+                     this);
 }
 
-std::ostream& operator<<(std::ostream& os, const Table& table)
+std::ostream& operator<<(std::ostream& out, const Table& table)
 {
   const int width = 10;
   std::stringstream buffer;
@@ -115,5 +116,5 @@ std::ostream& operator<<(std::ostream& os, const Table& table)
     }
     buffer << "\n";
   }
-  return os << buffer.str();
+  return out << buffer.str();
 }

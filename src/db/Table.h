@@ -131,7 +131,8 @@ public:
   public:
     typedef std::unique_ptr<ObjectImpl> Ptr;
 
-    ObjectImpl(Iterator datumIt, const Table* t) : it(datumIt), table(const_cast<Table*>(t))
+    ObjectImpl(Iterator datumIt, const Table* table_ptr)
+        : it(datumIt), table(const_cast<Table*>(table_ptr))
     {
     }
 
@@ -209,7 +210,7 @@ public:
     const Table* table = nullptr;
 
   public:
-    IteratorImpl(DatumIterator datumIt, const Table* t) : it(datumIt), table(t)
+    IteratorImpl(DatumIterator datumIt, const Table* table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
@@ -324,14 +325,14 @@ public:
   typedef IteratorImpl<ConstObject, decltype(data.cbegin())> ConstIterator;
 
 private:
-  static ConstObject::Ptr createProxy(ConstDataIterator it, const Table* table)
+  static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)
   {
-    return std::make_unique<ConstObject>(it, table);
+    return std::make_unique<ConstObject>(iterator, table);
   }
 
-  static Object::Ptr createProxy(DataIterator it, const Table* table)
+  static Object::Ptr createProxy(DataIterator iterator, const Table* table)
   {
-    return std::make_unique<Object>(it, table);
+    return std::make_unique<Object>(iterator, table);
   }
 
 public:
@@ -500,21 +501,23 @@ public:
    * @param table
    * @return the origin ostream
    */
-  friend std::ostream& operator<<(std::ostream& os, const Table& table);
+  friend std::ostream& operator<<(std::ostream& out, const Table& table);
 };
 
-std::ostream& operator<<(std::ostream& os, const Table& table);
+std::ostream& operator<<(std::ostream& out, const Table& table);
 
 template <class FieldIDContainer>
 Table::Table(const std::string& name, const FieldIDContainer& fields)
     : fields(fields.cbegin(), fields.cend()), tableName(name)
 {
-  SizeType i = 0;
+  SizeType index = 0;
   for (const auto& fieldName : fields)
   {
     if (fieldName == "KEY")
+    {
       throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
-    fieldMap.emplace(fieldName, i++);
+    }
+    fieldMap.emplace(fieldName, index++);
   }
 }
 
