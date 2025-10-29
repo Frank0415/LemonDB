@@ -1,10 +1,8 @@
 #!/bin/bash
-
 echo "WARNING: Files over 300 lines:"
-find src -type f -print0 | xargs -0 wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
-
+find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
 echo "Files over 200 lines:"
-find src -type f -print0 | xargs -0 wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
+find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
 
 cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 > /dev/null 2>&1
 cmake --build build -j$(nproc) > /dev/null 2>&1

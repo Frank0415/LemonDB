@@ -138,7 +138,6 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode\n";
-    //<< std::endl;
     input = &std::cin;
   }
 #endif

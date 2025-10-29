@@ -2,22 +2,30 @@
 
 echo "=== Running clang-tidy ==="
 
-files=$(find ../src -name "*.cpp" -o -name "*.h")
+usr=$(whoami)
+
+files=$(find ../src ../test -name "*.cpp" -o -name "*.h")
+
+
+if [[ $usr == "frank" || $usr == "114514" ]]; then
+  export TIDY="clang-tidy"
+else 
+  export TIDY="clang-tidy-18"
+fi
+
 compile_commands_path="../build/compile_commands.json"
 
-# Run clang-tidy on each file
+TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,performance-*,portability-*,readability-*,google-*'
+
 for file in $files; do
-  clang-tidy-18 "$file" -p="$compile_commands_path" -checks='-*,clang-analyzer-*,-clang-analyzer-security*,-clang-analyzer-alpha*,bugprone-suspicious-string-compare,google-global-names-in-headers,misc-include-cleaner,misc-const-correctness,performance-*' \
-  -warnings-as-errors='codequality-no-header-guard,cppcoreguidelines-init-variables,readability-redundant-*,performance' \
+  $TIDY "$file" -p="$compile_commands_path" \
+  -checks="$TIDY_CHECKS" \
   --extra-arg=-D__clang_analyzer__ \
   --extra-arg-before=-std=c++20 \
   --extra-arg-before=-x --extra-arg-before=c++ \
   -header-filter='^(\.\./src/.*|.*\.h)$' \
   -- \
-  -Wsystem-headers \
-  codequality-*,modernize-*,portability-* 2>&1 | sed '/include\/c++/ {N;N;d;}' 
-  # codequality-no-public-member-variables
-  # misc-*
+  -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}'
 done
 
 echo "=== clang-tidy complete ==="
