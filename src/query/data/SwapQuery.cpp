@@ -21,29 +21,29 @@ QueryResult::Ptr SwapQuery::execute()
 
   try
   {
-    Database& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    Database& database = Database::getInstance();
+    auto& table = database[this->targetTable];
     if (operands[0] == "KEY" || operands[1] == "KEY")
     {
       return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
                                               "Ill-formed query: KEY cannot be swapped.");
     }
-    const auto f1 = table.getFieldIndex(operands[0]);
-    const auto f2 = table.getFieldIndex(operands[1]);
+    const auto field_index_1 = table.getFieldIndex(operands[0]);
+    const auto field_index_2 = table.getFieldIndex(operands[1]);
 
     Table::SizeType counter = 0;
     const bool handled = this->testKeyCondition(table,
-                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                [&](bool success, Table::Object::Ptr&& obj)
                                                 {
-                                                  if (!ok)
+                                                  if (!success)
                                                   {
                                                     return;
                                                   }
                                                   if (obj)
                                                   {
-                                                    auto tmp = (*obj)[f1];
-                                                    (*obj)[f1] = (*obj)[f2];
-                                                    (*obj)[f2] = tmp;
+                                                    auto tmp = (*obj)[field_index_1];
+                                                    (*obj)[field_index_1] = (*obj)[field_index_2];
+                                                    (*obj)[field_index_2] = tmp;
                                                     ++counter;
                                                   }
                                                 });
@@ -54,9 +54,9 @@ QueryResult::Ptr SwapQuery::execute()
       {
         if (this->evalCondition(*it))
         {
-          auto tmp = (*it)[f1];
-          (*it)[f1] = (*it)[f2];
-          (*it)[f2] = tmp;
+          auto tmp = (*it)[field_index_1];
+          (*it)[field_index_1] = (*it)[field_index_2];
+          (*it)[field_index_2] = tmp;
           ++counter;
         }
       }

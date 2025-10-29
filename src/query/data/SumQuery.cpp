@@ -17,33 +17,33 @@
 
 QueryResult::Ptr SumQuery::execute()
 {
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
 
   try
   {
-    auto& table = db[this->targetTable];
+    auto& table = database[this->targetTable];
     if (this->operands.empty())
     {
       return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
     }
     // Check if any operand is "KEY" using std::any_of
     if (std::any_of(this->operands.begin(), this->operands.end(),
-                    [](const auto& f) { return f == "KEY"; }))
+                    [](const auto& field) { return field == "KEY"; }))
     {
       return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
     }
     std::vector<Table::FieldIndex> fids;
     fids.reserve(this->operands.size());
-    for (const auto& f : this->operands)
+    for (const auto& field : this->operands)
     {
-      fids.emplace_back(table.getFieldIndex(f));
+      fids.emplace_back(table.getFieldIndex(field));
     }
 
     std::vector<Table::ValueType> sums(fids.size(), 0);
     const bool handled = this->testKeyCondition(table,
-                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                [&](bool success, Table::Object::Ptr&& obj)
                                                 {
-                                                  if (!ok)
+                                                  if (!success)
                                                   {
                                                     return;
                                                   }
