@@ -43,13 +43,13 @@
 class Table
 {
 public:
-  typedef std::string KeyType;
-  typedef std::string FieldNameType;
-  typedef size_t FieldIndex;
-  typedef int ValueType;
+  using KeyType = std::string;
+  using FieldNameType = std::string;
+  using FieldIndex = size_t;
+  using ValueType = int;
   static constexpr const ValueType ValueTypeMax = std::numeric_limits<ValueType>::max();
   static constexpr const ValueType ValueTypeMin = std::numeric_limits<ValueType>::min();
-  typedef size_t SizeType;
+  using SizeType = size_t;
 
 private:
   /** A row in the table */
@@ -86,8 +86,8 @@ private:
     }
   };
 
-  typedef std::vector<Datum>::iterator DataIterator;
-  typedef std::vector<Datum>::const_iterator ConstDataIterator;
+  using DataIterator = std::vector<Datum>::iterator;
+  using ConstDataIterator = std::vector<Datum>::const_iterator;
 
   /** The fields, ordered as defined in fieldMap */
   std::vector<FieldNameType> fields;
@@ -103,7 +103,7 @@ private:
   std::string tableName;
 
 public:
-  typedef std::unique_ptr<Table> Ptr;
+  using Ptr = std::unique_ptr<Table>;
 
   /**
    * A proxy class that provides abstraction on internal Implementation.
@@ -121,7 +121,7 @@ public:
     Table* table;
 
   public:
-    typedef std::unique_ptr<ObjectImpl> Ptr;
+    using Ptr = std::unique_ptr<ObjectImpl>;
 
     ObjectImpl(Iterator datumIt, const Table* table_ptr)
         : it(datumIt), table(const_cast<Table*>(table_ptr))
@@ -138,7 +138,7 @@ public:
 
     ~ObjectImpl() = default;
 
-    const KeyType& key() const
+    [[nodiscard]] const KeyType& key() const
     {
       return it->key;
     }
@@ -168,19 +168,19 @@ public:
       DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
     }
 
-    VType& get(const FieldNameType& field) const
+    [[nodiscard]] VType& get(const FieldNameType& field) const
     {
       DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
     }
 
-    VType& get(const FieldIndex& index) const
+    [[nodiscard]] VType& get(const FieldIndex& index) const
     {
       DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
     }
   };
 
-  typedef ObjectImpl<DataIterator, ValueType> Object;
-  typedef ObjectImpl<ConstDataIterator, const ValueType> ConstObject;
+  using Object = ObjectImpl<DataIterator, ValueType>;
+  using ConstObject = ObjectImpl<ConstDataIterator, const ValueType>;
 
   /**
    * A proxy class that provides iteration on the table
@@ -313,8 +313,8 @@ public:
     }
   };
 
-  typedef IteratorImpl<Object, decltype(data.begin())> Iterator;
-  typedef IteratorImpl<ConstObject, decltype(data.cbegin())> ConstIterator;
+  using Iterator = IteratorImpl<Object, decltype(data.begin())>;
+  using ConstIterator = IteratorImpl<ConstObject, decltype(data.cbegin())>;
 
 private:
   static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)

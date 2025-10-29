@@ -37,7 +37,7 @@ public:
   {
   }
 
-  typedef std::unique_ptr<Query> Ptr;
+  using Ptr = std::unique_ptr<Query>;
 
   virtual QueryResult::Ptr execute() = 0;
 
@@ -69,7 +69,7 @@ protected:
   std::vector<QueryCondition> condition;
 
 public:
-  typedef std::unique_ptr<ComplexQuery> Ptr;
+  using Ptr = std::unique_ptr<ComplexQuery>;
 
   /**
    * init a fast condition according to the table
@@ -111,7 +111,7 @@ public:
   }
 
   /** Get operands in the query */
-  const std::vector<std::string>& getOperands() const
+  [[nodiscard]] const std::vector<std::string>& getOperands() const
   {
     return operands;
   }

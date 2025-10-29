@@ -16,7 +16,7 @@
 class QueryResult
 {
 public:
-  typedef std::unique_ptr<QueryResult> Ptr;
+  using Ptr = std::unique_ptr<QueryResult>;
 
   virtual bool success() = 0;
 
