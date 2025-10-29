@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "../src/db/Database.h"
 #include "../src/db/Table.h"
@@ -7,12 +11,12 @@
 #include "../src/query/data/DuplicateQuery.h"
 
 // A comprehensive test for DuplicateQuery that tests conditional copy_copy functionality
-TEST(DuplicateQueryTest, DuplicateCreatesCopies) {
+TEST(DuplicateQueryTest, DuplicateCreatesCopies)
+{
   using TableV = Table::ValueType;
   // create table and register
-  auto t =
-      std::make_unique<Table>("dup_test", std::vector<std::string>{"f1", "f2"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("dup_test", std::vector<std::string>{"f1", "f2"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows
   table.insertByIndex("k1", std::vector<TableV>{1, 10});

@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "../src/db/Database.h"
 #include "../src/db/Table.h"
@@ -7,12 +11,12 @@
 #include "../src/query/data/AddQuery.h"
 #include "../src/query/data/SubQuery.h"
 
-TEST(AddQueryTest, AddSumsFieldsIntoDestination) {
+TEST(AddQueryTest, AddSumsFieldsIntoDestination)
+{
   using TableV = Table::ValueType;
   // create table and register
-  auto t = std::make_unique<Table>("add_test",
-                                   std::vector<std::string>{"f1", "f2", "sum"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("add_test", std::vector<std::string>{"f1", "f2", "sum"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows
   table.insertByIndex("k1", std::vector<TableV>{1, 2, 0});
@@ -39,12 +43,12 @@ TEST(AddQueryTest, AddSumsFieldsIntoDestination) {
   Database::getInstance().dropTable("add_test");
 }
 
-TEST(AddQueryTest, AddWithCondition) {
+TEST(AddQueryTest, AddWithCondition)
+{
   using TableV = Table::ValueType;
   // create table and register
-  auto t = std::make_unique<Table>("add_cond_test",
-                                   std::vector<std::string>{"f1", "f2", "sum"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("add_cond_test", std::vector<std::string>{"f1", "f2", "sum"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows
   table.insertByIndex("k1", std::vector<TableV>{1, 2, 0});
@@ -55,8 +59,10 @@ TEST(AddQueryTest, AddWithCondition) {
   std::vector<std::string> operands = {"f1", "f2", "sum"};
   QueryCondition cond;
   cond.field = "f1";
+  cond.fieldId = 0;
   cond.op = ">";
   cond.value = "2";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
 
   auto q = std::make_unique<AddQuery>("add_cond_test", operands, conds);
@@ -75,12 +81,12 @@ TEST(AddQueryTest, AddWithCondition) {
   Database::getInstance().dropTable("add_cond_test");
 }
 
-TEST(SubQueryTest, DelSubFieldsIntoDestination) {
+TEST(SubQueryTest, DelSubFieldsIntoDestination)
+{
   using TableV = Table::ValueType;
   // create table and register
-  auto t = std::make_unique<Table>(
-      "sub_test", std::vector<std::string>{"f1", "f2", "diff"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("sub_test", std::vector<std::string>{"f1", "f2", "diff"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows
   table.insertByIndex("k1", std::vector<TableV>{5, 2, 0});
@@ -107,12 +113,12 @@ TEST(SubQueryTest, DelSubFieldsIntoDestination) {
   Database::getInstance().dropTable("sub_test");
 }
 
-TEST(SubQueryTest, SubWithCondition) {
+TEST(SubQueryTest, SubWithCondition)
+{
   using TableV = Table::ValueType;
   // create table and register
-  auto t = std::make_unique<Table>(
-      "sub_cond_test", std::vector<std::string>{"f1", "f2", "diff"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("sub_cond_test", std::vector<std::string>{"f1", "f2", "diff"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows
   table.insertByIndex("k1", std::vector<TableV>{5, 2, 0});
@@ -123,8 +129,10 @@ TEST(SubQueryTest, SubWithCondition) {
   std::vector<std::string> operands = {"f1", "f2", "diff"};
   QueryCondition cond;
   cond.field = "f1";
+  cond.fieldId = 0;
   cond.op = ">=";
   cond.value = "10";
+  cond.valueParsed = 0;
   std::vector<QueryCondition> conds{cond};
 
   auto q = std::make_unique<SubQuery>("sub_cond_test", operands, conds);
@@ -143,13 +151,13 @@ TEST(SubQueryTest, SubWithCondition) {
   Database::getInstance().dropTable("sub_cond_test");
 }
 
-TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID) {
+TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID)
+{
   using TableV = Table::ValueType;
   // create table like Student: fields studentID, class, totalCredit
-  auto t = std::make_unique<Table>(
-      "student_like",
-      std::vector<std::string>{"studentID", "class", "totalCredit"});
-  Table &table = Database::getInstance().registerTable(std::move(t));
+  auto t = std::make_unique<Table>("student_like",
+                                   std::vector<std::string>{"studentID", "class", "totalCredit"});
+  Table& table = Database::getInstance().registerTable(std::move(t));
 
   // insert rows similar to student.tbl
   table.insertByIndex("s1", std::vector<TableV>{123123, 2014, 112});
@@ -165,13 +173,17 @@ TEST(AddSubQueryComplicatedTest, AddSubCopiesTotalCreditToStudentID) {
   // conditions: totalCredit > 100 AND class < 2015
   QueryCondition cond1;
   cond1.field = "totalCredit";
+  cond1.fieldId = 0;
   cond1.op = ">";
   cond1.value = "100";
+  cond1.valueParsed = 0;
 
   QueryCondition cond2;
   cond2.field = "class";
+  cond2.fieldId = 0;
   cond2.op = "<";
   cond2.value = "2015";
+  cond2.valueParsed = 0;
 
   std::vector<QueryCondition> conds{cond1, cond2};
 

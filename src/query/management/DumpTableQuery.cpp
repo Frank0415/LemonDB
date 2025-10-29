@@ -4,29 +4,36 @@
 
 #include "DumpTableQuery.h"
 
+#include <exception>
 #include <fstream>
+#include <memory>
+#include <string>
 
 #include "../../db/Database.h"
+#include "../../utils/formatter.h"
+#include "../QueryResult.h"
 
-constexpr const char *DumpTableQuery::qname;
-
-QueryResult::Ptr DumpTableQuery::execute() {
-  using namespace std;
-  auto &db = Database::getInstance();
-  try {
-    ofstream outfile(this->fileName);
-    if (!outfile.is_open()) {
-      return make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f %
-                                                    this->fileName);
+QueryResult::Ptr DumpTableQuery::execute()
+{
+  const auto& db = Database::getInstance();
+  try
+  {
+    std::ofstream outfile(this->fileName);
+    if (!outfile.is_open())
+    {
+      return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
     outfile << db[this->targetTable];
     outfile.close();
-    return make_unique<SuccessMsgResult>(qname, targetTable);
-  } catch (const exception &e) {
-    return make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+  }
+  catch (const std::exception& e)
+  {
+    return std::make_unique<ErrorMsgResult>(qname, e.what());
   }
 }
 
-std::string DumpTableQuery::toString() {
+std::string DumpTableQuery::toString()
+{
   return "QUERY = Dump TABLE, FILE = \"" + this->fileName + "\"";
 }

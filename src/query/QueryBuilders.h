@@ -5,68 +5,95 @@
 #ifndef PROJECT_QUERYBUILDERS_H
 #define PROJECT_QUERYBUILDERS_H
 
-#include "../db/Table.h"
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "Query.h"
 #include "QueryParser.h"
 
 #define QueryBuilder(name) name##QueryBuilder
 
-#define QueryBuilderClass(name)                                                \
-  class QueryBuilder(name) : public QueryBuilder {                             \
-    Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;          \
+#define QueryBuilderClass(name)                                                                    \
+  class QueryBuilder(name) : public QueryBuilder                                                   \
+  {                                                                                                \
+    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
   }
 
-#define BasicQueryBuilderClass(name)                                           \
-  class QueryBuilder(name) : public BasicQueryBuilder {                        \
-    Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;          \
+#define BasicQueryBuilderClass(name)                                                               \
+  class QueryBuilder(name) : public BasicQueryBuilder                                              \
+  {                                                                                                \
+    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
   }
 
-#define ComplexQueryBuilderClass(name)                                         \
-  class QueryBuilder(name) : public ComplexQueryBuilder {                      \
-    Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;          \
+#define ComplexQueryBuilderClass(name)                                                             \
+  class QueryBuilder(name) : public ComplexQueryBuilder                                            \
+  {                                                                                                \
+    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
   }
 
-class FailedQueryBuilder : public QueryBuilder {
+class FailedQueryBuilder : public QueryBuilder
+{
 public:
-  static QueryBuilder::Ptr getDefault() {
+  static QueryBuilder::Ptr getDefault()
+  {
     return std::make_unique<FailedQueryBuilder>();
   }
 
-  Query::Ptr tryExtractQuery(TokenizedQueryString &q) final {
+  Query::Ptr tryExtractQuery(TokenizedQueryString& q) final
+  {
     throw QueryBuilderMatchFailed(q.rawQeuryString);
   }
 
-  void setNext(QueryBuilder::Ptr &&builder) final {(void)builder;}
+  void setNext(QueryBuilder::Ptr&& builder) final
+  {
+    (void)builder;
+  }
 
-  void clear() override {}
+  void clear() override
+  {
+  }
 
   ~FailedQueryBuilder() override = default;
 };
 
-class BasicQueryBuilder : public QueryBuilder {
+class BasicQueryBuilder : public QueryBuilder
+{
 protected:
   QueryBuilder::Ptr nextBuilder;
 
 public:
-  void setNext(Ptr &&builder) override { nextBuilder = std::move(builder); }
+  void setNext(Ptr&& builder) override
+  {
+    nextBuilder = std::move(builder);
+  }
 
-  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override {
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override
+  {
     return nextBuilder->tryExtractQuery(query);
   }
 
-  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault()){};
+  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault())
+  {
+  }
 
-  void clear() override { nextBuilder->clear(); }
+  void clear() override
+  {
+    nextBuilder->clear();
+  }
 
   ~BasicQueryBuilder() override = default;
 };
 
-class ComplexQueryBuilder : public BasicQueryBuilder {
+class ComplexQueryBuilder : public BasicQueryBuilder
+{
 protected:
   std::string targetTable;
   std::vector<std::string> operandToken;
   std::vector<QueryCondition> conditionToken;
 
-  virtual void parseToken(TokenizedQueryString &query);
+  virtual void parseToken(TokenizedQueryString& query);
 
 public:
   void clear() override;
@@ -74,7 +101,7 @@ public:
 public:
   // Used as a debugging function.
   // Prints the parsed information
-  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
 };
 
 // Transparant builder
@@ -92,5 +119,6 @@ BasicQueryBuilderClass(ManageTable);
 // ComplexQueryBuilderClass(UpdateTable);
 // ComplexQueryBuilderClass(Insert);
 // ComplexQueryBuilderClass(Delete);
+// ComplexQueryBuilderClass(Count);
 
 #endif // PROJECT_QUERYBUILDERS_H

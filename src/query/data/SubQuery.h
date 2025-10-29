@@ -1,10 +1,14 @@
 #ifndef PROJECT_SUBQUERY_H
 #define PROJECT_SUBQUERY_H
 
-#include "../Query.h"
+#include <string>
 
-class SubQuery : public ComplexQuery {
-  static constexpr const char *qname = "SUB";
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class SubQuery : public ComplexQuery
+{
+  static constexpr const char* qname = "SUB";
 
 public:
   using ComplexQuery::ComplexQuery;

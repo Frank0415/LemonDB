@@ -8,20 +8,24 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "../db/Table.h"
 #include "QueryResult.h"
 
-struct QueryCondition {
+struct QueryCondition
+{
   std::string field;
   size_t fieldId;
   std::string op;
-  std::function<bool(const Table::ValueType &, const Table::ValueType &)> comp;
+  std::function<bool(const Table::ValueType&, const Table::ValueType&)> comp;
   std::string value;
   Table::ValueType valueParsed;
 };
 
-class Query {
+class Query
+{
 protected:
   std::string targetTable;
   int id = -1;
@@ -29,8 +33,9 @@ protected:
 public:
   Query() = default;
 
-  explicit Query(std::string targetTable)
-      : targetTable(std::move(targetTable)) {}
+  explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
+  {
+  }
 
   typedef std::unique_ptr<Query> Ptr;
 
@@ -48,16 +53,22 @@ public:
   virtual bool isInstant() const { return false; }
 };
 
-class NopQuery : public Query {
+class NopQuery : public Query
+{
 public:
-  QueryResult::Ptr execute() override {
+  QueryResult::Ptr execute() override
+  {
     return std::make_unique<NullQueryResult>();
   }
 
-  std::string toString() override { return "QUERY = NOOP"; }
+  std::string toString() override
+  {
+    return "QUERY = NOOP";
+  }
 };
 
-class ComplexQuery : public Query {
+class ComplexQuery : public Query
+{
 protected:
   /** The field names in the first () */
   std::vector<std::string> operands;
@@ -77,7 +88,7 @@ public:
    * if flag is false, the condition is always false
    * in this situation, the condition may not be fully initialized to save time
    */
-  std::pair<std::string, bool> initCondition(const Table &table);
+  std::pair<std::string, bool> initCondition(const Table& table);
 
   /**
    * skip the evaluation of KEY
@@ -86,7 +97,7 @@ public:
    * @param object
    * @return
    */
-  bool evalCondition(const Table::Object &object);
+  bool evalCondition(const Table::Object& object);
 
   /**
    * This function seems have small effect and causes somme bugs
@@ -95,20 +106,28 @@ public:
    * @param function
    * @return
    */
-  bool testKeyCondition(
-      Table &table,
-      const std::function<void(bool, Table::Object::Ptr &&)> &function);
+  bool testKeyCondition(Table& table,
+                        const std::function<void(bool, Table::Object::Ptr&&)>& function);
 
-  ComplexQuery(std::string targetTable, std::vector<std::string> operands,
+  ComplexQuery(std::string targetTable,
+               std::vector<std::string> operands,
                std::vector<QueryCondition> condition)
       : Query(std::move(targetTable)), operands(std::move(operands)),
-        condition(std::move(condition)) {}
+        condition(std::move(condition))
+  {
+  }
 
   /** Get operands in the query */
-  const std::vector<std::string> &getOperands() const { return operands; }
+  const std::vector<std::string>& getOperands() const
+  {
+    return operands;
+  }
 
   /** Get condition in the query, seems no use now */
-  const std::vector<QueryCondition> &getCondition() { return condition; }
+  const std::vector<QueryCondition>& getCondition()
+  {
+    return condition;
+  }
 };
 
 #endif // PROJECT_QUERY_H

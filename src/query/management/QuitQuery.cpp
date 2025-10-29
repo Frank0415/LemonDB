@@ -4,11 +4,16 @@
 
 #include "QuitQuery.h"
 
+#include <memory>
+#include <string>
+
 #include "../../db/Database.h"
+#include "../QueryResult.h"
 
-constexpr const char *QuitQuery::qname;
-
-std::string QuitQuery::toString() { return "QUERY = Quit"; }
+std::string QuitQuery::toString()
+{
+  return "QUERY = Quit";
+}
 
 QueryResult::Ptr QuitQuery::execute() {
   auto &db = Database::getInstance();

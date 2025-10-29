@@ -1,10 +1,14 @@
 #ifndef PROJECT_ADDQUERY_H
 #define PROJECT_ADDQUERY_H
 
-#include "../Query.h"
+#include <string>
 
-class AddQuery : public ComplexQuery {
-  static constexpr const char *qname = "ADD";
+#include "../Query.h"
+#include "../QueryResult.h"
+
+class AddQuery : public ComplexQuery
+{
+  static constexpr const char* qname = "ADD";
 
 public:
   using ComplexQuery::ComplexQuery;

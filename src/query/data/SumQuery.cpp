@@ -4,8 +4,25 @@
 #include "query/QueryResult.h"
 #include "threading/Threadpool.h"
 
-QueryResult::Ptr SumQuery::execute() {
-  using namespace std;
+#include "SumQuery.h"
+
+#include <algorithm>
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../query/QueryResult.h"
+#include "../../query/data/SumQuery.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
+
+QueryResult::Ptr SumQuery::execute()
+{
 
   try {
     Database &db = Database::getInstance();
@@ -25,9 +42,10 @@ QueryResult::Ptr SumQuery::execute() {
     if (!result.second) {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
-    vector<Table::FieldIndex> fids;
+    std::vector<Table::FieldIndex> fids;
     fids.reserve(this->operands.size());
-    for (const auto &f : this->operands) {
+    for (const auto& f : this->operands)
+    {
       fids.emplace_back(table.getFieldIndex(f));
     }
 
@@ -93,7 +111,7 @@ QueryResult::Ptr SumQuery::execute() {
           }));
     }
 
-    vector<int> sums(num_fields, 0);
+    std::vector<int> sums(num_fields, 0);
     for (size_t i = 0; i < futures.size(); ++i) {
       auto local_sums = futures[i].get();
       for (size_t j = 0; j < num_fields; ++j) {
@@ -116,6 +134,7 @@ QueryResult::Ptr SumQuery::execute() {
   }
 }
 
-std::string SumQuery::toString() {
+std::string SumQuery::toString()
+{
   return "QUERY = SUM \"" + this->targetTable + "\"";
 }
