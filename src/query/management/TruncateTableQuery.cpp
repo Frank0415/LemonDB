@@ -14,8 +14,8 @@ QueryResult::Ptr TruncateTableQuery::execute()
 {
   try
   {
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    auto& database = Database::getInstance();
+    auto& table = database[this->targetTable];
     table.clear();
 
     return std::make_unique<NullQueryResult>(); // silent success
