@@ -12,8 +12,8 @@
 
 QueryResult::Ptr ListTableQuery::execute()
 {
-  Database& db = Database::getInstance();
-  db.printAllTable();
+  Database& database = Database::getInstance();
+  database.printAllTable();
   return std::make_unique<SuccessMsgResult>(qname);
 }
 

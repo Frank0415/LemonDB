@@ -15,10 +15,10 @@
 QueryResult::Ptr DropTableQuery::execute()
 {
   using std::string_literals::operator""s;
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
   try
   {
-    db.dropTable(this->targetTable);
+    database.dropTable(this->targetTable);
     return std::make_unique<SuccessMsgResult>(qname);
   }
   catch (const TableNameNotFound& e)
