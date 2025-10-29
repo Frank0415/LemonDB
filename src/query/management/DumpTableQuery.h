@@ -24,6 +24,9 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  bool isWriter() const override { return false; } // DUMP only reads
+  bool isInstant() const override { return true; } // But must be serial
 };
 
 #endif // PROJECT_DUMPTABLEQUERY_H

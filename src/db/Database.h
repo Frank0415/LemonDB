@@ -31,6 +31,11 @@ private:
   std::unordered_map<std::string, std::string> fileTableNameMap;
 
   /**
+   * Flag to indicate if QUIT has been called
+   */
+  bool endInput = false;
+
+  /**
    * The default constructor is made private for singleton instance
    */
   Database() = default;
@@ -72,7 +77,18 @@ public:
    */
   static Table& loadTableFromStream(std::istream& input_stream, const std::string& source = "");
 
-  static void exit();
+  /**
+   * Signal that QUIT has been called and no more queries should be read
+   */
+  void exit();
+
+  /**
+   * Check if QUIT has been called
+   */
+  bool isEnd() const
+  {
+    return endInput;
+  }
 };
 
 #endif // PROJECT_DB_H
