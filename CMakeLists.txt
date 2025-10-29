@@ -160,17 +160,17 @@ endif()
 
 # Create test executable
 # add_executable(lemondb_tests
-#     gtests/test_example.cpp
-#     gtests/test_count_query.cpp
-#     gtests/test_delete_query.cpp
-#     gtests/test_limits_query.cpp
-#     gtests/test_select_query.cpp
-#     gtests/test_duplicate_query.cpp
-#     gtests/test_swap_query.cpp
-#     gtests/test_arith_query.cpp
-#     gtests/test_sum_query.cpp
-#     gtests/test_copytable_query.cpp
-#     gtests/test_truncate_query.cpp
+#     test/gtests/test_example.cpp
+#     test/gtests/test_count_query.cpp
+#     test/gtests/test_delete_query.cpp
+#     test/gtests/test_limits_query.cpp
+#     test/gtests/test_select_query.cpp
+#     test/gtests/test_duplicate_query.cpp
+#     test/gtests/test_swap_query.cpp
+#     test/gtests/test_arith_query.cpp
+#     test/gtests/test_sum_query.cpp
+#     test/gtests/test_copytable_query.cpp
+#     test/gtests/test_truncate_query.cpp
 # )
 
 # target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
