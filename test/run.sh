@@ -47,10 +47,15 @@ for test in "${TESTS[@]}"; do
         continue
     fi
     
-    # Run test
-    ./lemondb < "queries/${test}.query" > 1.out 2>/dev/null
+    start=$(date +%s.%N)
+    ./lemondb < "queries/${test}.query" 2>/dev/null | diff -q - "stdout/${test}.out" >/dev/null 2>&1
+    end=$(date +%s.%N)
+    elapsed=$(echo "$end - $start" | bc)
+
+    echo "Test: ${test} completed in ${elapsed} seconds"
+
     # Compare output
-    if diff -q 1.out "stdout/${test}.out" >/dev/null 2>&1; then
+    if [ $? -eq 0 ]; then
         echo "PASS: ${test}"
         ((PASSED++))
     else
@@ -60,7 +65,9 @@ for test in "${TESTS[@]}"; do
     fi
 done
 
-rm 1.out
+echo "================="
+echo "Tests passed: ${PASSED}"
+echo "Tests failed: ${FAILED}"
 
 cd ..
 
@@ -68,6 +75,4 @@ cd ..
 ./cpplint.sh
 ./cppcheck.sh
 
-echo "================="
-echo "Tests passed: ${PASSED}"
-echo "Tests failed: ${FAILED}"
+
