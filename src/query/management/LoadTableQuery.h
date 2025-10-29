@@ -25,6 +25,12 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  // LOAD is a writer query (modifies database state)
+  bool isWriter() const override { return true; }
+
+  // LOAD must execute immediately and serially (not parallel)
+  bool isInstant() const override { return true; }
 };
 
 #endif // PROJECT_LOADTABLEQUERY_H

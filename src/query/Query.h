@@ -44,6 +44,13 @@ public:
   virtual std::string toString() = 0;
 
   virtual ~Query() = default;
+
+  // For thread safety: indicate if this query modifies data
+  virtual bool isWriter() const { return false; }
+
+  // For execution order: indicate if this query must execute immediately (not
+  // parallel) e.g., LOAD and QUIT must execute serially
+  virtual bool isInstant() const { return false; }
 };
 
 class NopQuery : public Query
