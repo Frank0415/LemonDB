@@ -2,6 +2,10 @@
 // Created by liu on 18-10-21.
 //
 
+#include "query/Query.h"
+#include "query/QueryBuilders.h"
+#include "query/QueryParser.h"
+#include "query/QueryResult.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -12,10 +16,6 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
-#include "query/Query.h"
-#include "query/QueryBuilders.h"
-#include "query/QueryParser.h"
-#include "query/QueryResult.h"
 
 #ifdef __has_feature
 #if __has_feature(memory_sanitizer)
@@ -77,28 +77,28 @@ void validateAndPrintThreads(std::int64_t threads)
   }
 }
 
-void setupParser(QueryParser& p)
+void setupParser(QueryParser& parser)
 {
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
+  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
 }
 
-std::string extractQueryString(std::istream& is)
+std::string extractQueryString(std::istream& input_stream)
 {
   std::string buf;
   while (true)
   {
-    const int ch = is.get();
-    if (ch == ';')
+    const int character = input_stream.get();
+    if (character == ';')
     {
       return buf;
     }
-    if (ch == EOF)
+    if (character == EOF)
     {
       throw std::ios_base::failure("End of input");
     }
-    buf.push_back(static_cast<char>(ch));
+    buf.push_back(static_cast<char>(character));
   }
 }
 } // namespace
@@ -142,23 +142,23 @@ int main(int argc, char* argv[])
   }
 #endif
 
-  std::istream& is = *input;
+  std::istream& input_stream = *input;
 
   validateAndPrintThreads(parsedArgs.threads);
 
-  QueryParser p;
-  setupParser(p);
+  QueryParser parser;
+  setupParser(parser);
 
   size_t counter = 0;
 
-  while (is)
+  while (input_stream)
   {
     try
     {
       // A very standard REPL
       // REPL: Read-Evaluate-Print-Loop
-      const std::string queryStr = extractQueryString(is);
-      Query::Ptr query = p.parseQuery(queryStr);
+      const std::string queryStr = extractQueryString(input_stream);
+      Query::Ptr query = parser.parseQuery(queryStr);
       QueryResult::Ptr result = query->execute();
       std::cout << ++counter << "\n";
       if (result->success())

@@ -19,32 +19,26 @@
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
 
-#define _DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field)                                                 \
-  do                                                                                               \
+#define DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field)                                                  \
+  try                                                                                              \
   {                                                                                                \
-    try                                                                                            \
-    {                                                                                              \
-      auto& index = table->fieldMap.at(field);                                                     \
-      return it->datum.at(index);                                                                  \
-    }                                                                                              \
-    catch (const std::out_of_range& e)                                                             \
-    {                                                                                              \
-      throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));                   \
-    }                                                                                              \
-  } while (0)
+    auto& index = table->fieldMap.at(field);                                                       \
+    return it->datum.at(index);                                                                    \
+  }                                                                                                \
+  catch (const std::out_of_range& e)                                                               \
+  {                                                                                                \
+    throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));                     \
+  }
 
-#define _DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index)                                                \
-  do                                                                                               \
+#define DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index)                                                 \
+  try                                                                                              \
   {                                                                                                \
-    try                                                                                            \
-    {                                                                                              \
-      return it->datum.at(index);                                                                  \
-    }                                                                                              \
-    catch (const std::out_of_range& e)                                                             \
-    {                                                                                              \
-      throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));                      \
-    }                                                                                              \
-  } while (0)
+    return it->datum.at(index);                                                                    \
+  }                                                                                                \
+  catch (const std::out_of_range& e)                                                               \
+  {                                                                                                \
+    throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));                        \
+  }
 
 class Table
 {
@@ -75,22 +69,20 @@ private:
     operator=(const Datum&) = default; // Fix: Explicitly default the copy assignment operator.
     Datum(Datum&&) noexcept = default;
     Datum& operator=(Datum&&) noexcept = default;
+    ~Datum() = default;
 
     explicit Datum(const SizeType& size) : datum(size, ValueType())
     {
     }
 
     template <class ValueTypeContainer>
-    explicit Datum(const KeyType& key, const ValueTypeContainer& datum)
+    explicit Datum(const KeyType& key, const ValueTypeContainer& datum) : key(key), datum(datum)
     {
-      this->key = key;
-      this->datum = datum;
     }
 
     explicit Datum(const KeyType& key, std::vector<ValueType>&& datum) noexcept
+        : key(key), datum(std::move(datum))
     {
-      this->key = key;
-      this->datum = std::move(datum);
     }
   };
 
@@ -168,22 +160,22 @@ public:
      */
     VType& operator[](const FieldNameType& field) const
     {
-      _DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
+      DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
     }
 
     VType& operator[](const FieldIndex& index) const
     {
-      _DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
+      DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
     }
 
     VType& get(const FieldNameType& field) const
     {
-      _DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
+      DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
     }
 
     VType& get(const FieldIndex& index) const
     {
-      _DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
+      DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
     }
   };
 
