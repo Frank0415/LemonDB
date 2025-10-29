@@ -15,17 +15,44 @@ fi
 
 compile_commands_path="../build/compile_commands.json"
 
-TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,performance-*,portability-*,readability-*,google-*'
+if [ "$(whoami)" = "frank" ]; then
+  declare -A check_groups=(
+    ["bugprone"]='bugprone-*'
+    ["cppcoreguidelines"]='cppcoreguidelines-*'
+    ["misc"]='misc-*'
+    ["modernize"]='modernize-*'
+    ["performance"]='performance-*'
+    ["portability"]='portability-*'
+    ["readability"]='readability-*'
+    ["google"]='google-*'
+  )
 
-for file in $files; do
-  $TIDY "$file" -p="$compile_commands_path" \
-  -checks="$TIDY_CHECKS" \
-  --extra-arg=-D__clang_analyzer__ \
-  --extra-arg-before=-std=c++20 \
-  --extra-arg-before=-x --extra-arg-before=c++ \
-  -header-filter='^(\.\./src/.*|.*\.h)$' \
-  -- \
-  -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}'
-done
+  for group in "${!check_groups[@]}"; do
+    echo "Running $group checks..."
+    for file in $files; do
+      $TIDY "$file" -p="$compile_commands_path" \
+      -checks="-*,${check_groups[$group]}" \
+      --extra-arg=-D__clang_analyzer__ \
+      --extra-arg-before=-std=c++20 \
+      --extra-arg-before=-x --extra-arg-before=c++ \
+      -header-filter='^(\.\./src/.*|.*\.h)$' \
+      -- \
+      -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}' >> "${group}.tidy"
+    done
+  done
+else
+  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,performance-*,portability-*,readability-*,google-*'
+
+  for file in $files; do
+    $TIDY "$file" -p="$compile_commands_path" \
+    -checks="$TIDY_CHECKS" \
+    --extra-arg=-D__clang_analyzer__ \
+    --extra-arg-before=-std=c++20 \
+    --extra-arg-before=-x --extra-arg-before=c++ \
+    -header-filter='^(\.\./src/.*|.*\.h)$' \
+    -- \
+    -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}'
+  done
+fi
 
 echo "=== clang-tidy complete ==="
