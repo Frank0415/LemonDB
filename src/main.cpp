@@ -59,7 +59,8 @@ void parseArgs(int argc, char* argv[], Args& args)
     }
     else if (opt == 't')
     {
-      args.threads = std::strtol(optarg, nullptr, 10);
+      constexpr int decimal_base = 10;
+      args.threads = std::strtol(optarg, nullptr, decimal_base);
     }
     else
     {

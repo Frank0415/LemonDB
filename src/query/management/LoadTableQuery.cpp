@@ -15,7 +15,6 @@
 
 QueryResult::Ptr LoadTableQuery::execute()
 {
-  Database& database = Database::getInstance();
   try
   {
     std::ifstream infile(this->fileName);
@@ -23,7 +22,7 @@ QueryResult::Ptr LoadTableQuery::execute()
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
-    database.loadTableFromStream(infile, this->fileName);
+    Database::loadTableFromStream(infile, this->fileName);
     infile.close();
     return std::make_unique<SuccessMsgResult>(qname, targetTable);
   }
