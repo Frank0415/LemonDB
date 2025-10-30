@@ -1,6 +1,5 @@
 #include "query/data/SumQuery.h"
 #include "db/Database.h"
-#include "db/TableLockManager.h"
 #include "query/QueryResult.h"
 #include "threading/Threadpool.h"
 
@@ -52,11 +51,7 @@ QueryResult::Ptr SumQuery::execute()
       fids.emplace_back(table.getFieldIndex(field));
     }
 
-    // NEW: LOCK IMPL
-    auto& lockmgr = TableLockManager::getInstance();
-    auto lock = lockmgr.acquireRead(this->targetTable);
-
-    // NEW: READ LOCK PROTECTED MODE
+    // Execute query without locks - full parallelism
     static ThreadPool& pool = ThreadPool::getInstance();
     const size_t chunk_size = 20000;
     const size_t num_fields = fids.size();

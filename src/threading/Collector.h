@@ -20,17 +20,21 @@ public:
     results[query_id] = result;
   }
 
-  void outputAllResults() {
-    if (results.empty()) {
+  void outputAllResults()
+  {
+    if (results.empty())
+    {
       return;
     }
-    
+
     // Find the last query ID (which is QUIT)
     size_t last_query_id = results.rbegin()->first;
-    
-    for (const auto &[query_id, result] : results) {
+
+    for (const auto& [query_id, result] : results)
+    {
       // Skip output for QUIT query (last query)
-      if (query_id != last_query_id) {
+      if (query_id != last_query_id)
+      {
         std::cout << query_id << "\n" << result;
       }
     }
