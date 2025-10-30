@@ -2,23 +2,14 @@
 Checks: >
   -*,
   bugprone-*,
-  cert-*,
-  clang-analyzer-*,
   cppcoreguidelines-*,
-  google-*,
-  modernize-*,
-  performance-*,
-  readability-*,
   misc-*,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -google-readability-todo,
+  modernize-*,
   -modernize-use-trailing-return-type,
-  -readability-identifier-length,
-  -readability-magic-numbers,
-  -cert-err58-cpp,
-  -misc-non-private-member-variables-in-classes,
-  -cppcoreguidelines-non-private-member-variables-in-classes
+  performance-*,
+  portability-*,
+  readability-*,
+  google-*
 WarningsAsErrors: ''
 HeaderFilterRegex: '^(src|tests)/'
 CheckOptions:
