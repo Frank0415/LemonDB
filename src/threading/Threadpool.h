@@ -1,7 +1,7 @@
 #ifndef PROJECT_THREADPOOL_H
 #define PROJECT_THREADPOOL_H
 
-#include <atomic>
+#include <s
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -29,8 +29,8 @@ private:
     while (!done.load()) {
       std::function<void()> task;
       {
-        std::unique_lock<std::mutex> ul(lockx);
-        cv.wait(ul, [this]() { return !Task_assemble.empty() || done.load(); });
+        std::unique_lock<std::mutex> lock(lockx);
+        cv.wait(lock, [this]() { return !Task_assemble.empty() || done.load(); });
 
         if (done.load() && Task_assemble.empty()) {
           return;
@@ -55,12 +55,13 @@ private:
     }
   }
 
+public:
   // Deleted copy constructor and assignment operator
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
 
-public:
-  static void initialize(size_t num_threads) {
+  static void
+  initialize(size_t num_threads = std::thread::hardware_concurrency()) {
     std::lock_guard<std::mutex> lock(instance_mutex);
     if (initialized) {
       throw std::runtime_error("ThreadPool already initialized");
@@ -87,17 +88,18 @@ public:
     done.store(true);
     cv.notify_all();
     for (auto &thread : pool_vector) {
-      if (thread.joinable())
+      if (thread.joinable()) {
         thread.join();
+      }
     }
   }
 
   template <typename F, typename... Args>
-  auto submit(F &&f, Args &&...args) -> std::future<decltype(f(args...))> {
-    using return_type = decltype(f(args...));
+  auto submit(F &&func, Args &&...args) -> std::future<decltype(func(args...))> {
+    using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        std::bind(std::forward<F>(func), std::forward<Args>(args)...));
 
     std::future<return_type> ret = task->get_future();
     {
@@ -108,8 +110,8 @@ public:
     return ret;
   }
 
-  int getIdleThreadNum() const { return idleThreadNum.load(); }
-  size_t getThreadCount() const { return total_threads; }
+  [[nodiscard]] int getIdleThreadNum() const { return idleThreadNum.load(); }
+  [[nodiscard]] size_t getThreadCount() const { return total_threads; }
 };
 
 #endif // PROJECT_THREADPOOL_H

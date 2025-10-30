@@ -49,9 +49,9 @@ public:
 
   void printAllTable();
 
-  Table& operator[](const std::string& tableName);
+  [[nodiscard]] Table& operator[](const std::string& tableName);
 
-  const Table& operator[](const std::string& tableName) const;
+  [[nodiscard]] const Table& operator[](const std::string& tableName) const;
 
   Database& operator=(const Database&) = delete;
 
@@ -63,11 +63,11 @@ public:
 
   ~Database() = default;
 
-  static Database& getInstance();
+  [[nodiscard]] static Database& getInstance();
 
   void updateFileTableName(const std::string& fileName, const std::string& tableName);
 
-  std::string getFileTableName(const std::string& fileName);
+  [[nodiscard]] std::string getFileTableName(const std::string& fileName);
 
   /**
    * Load a table from an input stream (i.e., a file)
@@ -85,7 +85,7 @@ public:
   /**
    * Check if QUIT has been called
    */
-  bool isEnd() const
+  [[nodiscard]] bool isEnd() const
   {
     return endInput;
   }

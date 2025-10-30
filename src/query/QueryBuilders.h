@@ -98,7 +98,6 @@ protected:
 public:
   void clear() override;
 
-public:
   // Used as a debugging function.
   // Prints the parsed information
   Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;

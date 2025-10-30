@@ -18,9 +18,9 @@ class QueryResult
 public:
   using Ptr = std::unique_ptr<QueryResult>;
 
-  virtual bool success() = 0;
+  [[nodiscard]] virtual bool success() = 0;
 
-  virtual bool display() = 0;
+  [[nodiscard]] virtual bool display() = 0;
 
   virtual ~QueryResult() = default;
 

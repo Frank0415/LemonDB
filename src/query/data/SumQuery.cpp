@@ -65,10 +65,12 @@ QueryResult::Ptr SumQuery::execute()
     {
       std::vector<int> sums(num_fields, 0);
       bool handled = this->testKeyCondition(table,
-                                            [&](bool ok, Table::Object::Ptr&& obj)
+                                            [&](bool is_valid, Table::Object::Ptr&& obj)
                                             {
-                                              if (!ok || !obj)
+                                              if (!is_valid || !obj)
+                                              {
                                                 return;
+                                              }
                                               for (size_t i = 0; i < num_fields; ++i)
                                               {
                                                 sums[i] += (*obj)[fids[i]];

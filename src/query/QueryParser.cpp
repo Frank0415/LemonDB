@@ -8,9 +8,7 @@
 #include "Query.h"
 #include "QueryBuilders.h"
 
-QueryParser::QueryParser() : first(nullptr), last(nullptr)
-{
-}
+QueryParser::QueryParser() = default;
 
 Query::Ptr QueryParser::parseQuery(const std::string& queryString)
 {

@@ -33,11 +33,13 @@ Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
   std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
   std::cerr << "Tokens:\n";
+  constexpr int column_width = 10;
+  constexpr int tokens_per_line = 5;
   int count = 0;
   for (const auto& tok : query.token)
   {
-    std::cerr << std::setw(10) << "\"" << tok << "\"";
-    count = (count + 1) % 5;
+    std::cerr << std::setw(column_width) << "\"" << tok << "\"";
+    count = (count + 1) % tokens_per_line;
     if (count == 4)
     {
       std::cerr << '\n';
@@ -56,8 +58,8 @@ Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     if (query.token.front() == "LOAD")
     {
-      auto& db = Database::getInstance();
-      auto tableName = db.getFileTableName(query.token[1]);
+      auto& database = Database::getInstance();
+      auto tableName = database.getFileTableName(query.token[1]);
       return std::make_unique<LoadTableQuery>(tableName, query.token[1]);
     }
     if (query.token.front() == "DROP")
@@ -73,8 +75,8 @@ Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     if (query.token.front() == "DUMP")
     {
-      auto& db = Database::getInstance();
-      db.updateFileTableName(query.token[2], query.token[1]);
+      auto& database = Database::getInstance();
+      database.updateFileTableName(query.token[2], query.token[1]);
       return std::make_unique<DumpTableQuery>(query.token[1], query.token[2]);
     }
     if (query.token.front() == "COPYTABLE")

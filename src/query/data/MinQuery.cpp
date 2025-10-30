@@ -60,15 +60,15 @@ QueryResult::Ptr MinQuery::execute()
         std::vector<Table::ValueType> minValue(fieldId.size(),
                                                Table::ValueTypeMax); // each has its own min value
 
-        for (auto it = table.begin(); it != table.end(); ++it)
+        for (const auto& row : table)
         {
-          if (this->evalCondition(*it))
+          if (this->evalCondition(row))
           {
             found = true;
 
             for (size_t i = 0; i < fieldId.size(); ++i)
             {
-              minValue[i] = std::min(minValue[i], (*it)[fieldId[i]]);
+              minValue[i] = std::min(minValue[i], row[fieldId[i]]);
             }
           }
         }

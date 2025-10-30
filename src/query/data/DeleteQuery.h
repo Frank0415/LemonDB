@@ -16,7 +16,7 @@ public:
 
   std::string toString() override;
 
-  bool isWriter() const override { return true; }
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
 #endif // PROJECT_DELETEQUERY_H

@@ -52,9 +52,9 @@ QueryResult::Ptr SelectQuery::execute()
                                                   if (obj)
                                                   {
                                                     buffer << "( " << obj->key();
-                                                    for (size_t j = 0; j < fieldIds.size(); ++j)
+                                                    for (const auto& field_id : fieldIds)
                                                     {
-                                                      buffer << " " << (*obj)[fieldIds[j]];
+                                                      buffer << " " << (*obj)[field_id];
                                                     }
                                                     buffer << " )\n";
                                                   }
@@ -79,9 +79,9 @@ QueryResult::Ptr SelectQuery::execute()
     for (const auto& iterator : rows)
     {
       buffer << "( " << (*iterator).key();
-      for (size_t j = 0; j < fieldIds.size(); ++j)
+      for (const auto& field_id : fieldIds)
       {
-        buffer << " " << (*iterator)[fieldIds[j]];
+        buffer << " " << (*iterator)[field_id];
       }
       buffer << " )\n";
     }

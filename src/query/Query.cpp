@@ -42,9 +42,10 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
     }
     else
     {
+      constexpr int decimal_base = 10;
       cond.fieldId = table.getFieldIndex(cond.field);
       cond.valueParsed =
-          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, 10));
+          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, decimal_base));
       int operator_index = 0;
       try
       {

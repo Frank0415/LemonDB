@@ -15,15 +15,12 @@ private:
   TableLockManager() = default;
   ~TableLockManager() = default;
 
-  TableLockManager(const TableLockManager &) = delete;
-  TableLockManager &operator=(const TableLockManager &) = delete;
-
   std::shared_mutex &getOrCreateLock(const std::string &table_name) {
     {
       std::shared_lock<std::shared_mutex> read(map_mutex_);
-      auto it = lock_map_.find(table_name);
-      if (it != lock_map_.end()) {
-        return *it->second;
+      auto iter = lock_map_.find(table_name);
+      if (iter != lock_map_.end()) {
+        return *iter->second;
       }
     }
 
@@ -36,17 +33,20 @@ private:
   }
 
 public:
-  std::shared_lock<std::shared_mutex>
+  TableLockManager(const TableLockManager &) = delete;
+  TableLockManager &operator=(const TableLockManager &) = delete;
+
+  [[nodiscard]] std::shared_lock<std::shared_mutex>
   acquireRead(const std::string &table_name) {
     return std::shared_lock<std::shared_mutex>(getOrCreateLock(table_name));
   }
 
-  std::unique_lock<std::shared_mutex>
+  [[nodiscard]] std::unique_lock<std::shared_mutex>
   acquireWrite(const std::string &table_name) {
     return std::unique_lock<std::shared_mutex>(getOrCreateLock(table_name));
   }
 
-  static TableLockManager &getInstance() {
+  [[nodiscard]] static TableLockManager &getInstance() {
     static TableLockManager instance;
     return instance;
   }
