@@ -29,8 +29,8 @@ private:
     while (!done.load()) {
       std::function<void()> task;
       {
-        std::unique_lock<std::mutex> ul(lockx);
-        cv.wait(ul, [this]() { return !Task_assemble.empty() || done.load(); });
+        std::unique_lock<std::mutex> lock(lockx);
+        cv.wait(lock, [this]() { return !Task_assemble.empty() || done.load(); });
 
         if (done.load() && Task_assemble.empty()) {
           return;
@@ -87,17 +87,18 @@ public:
     done.store(true);
     cv.notify_all();
     for (auto &thread : pool_vector) {
-      if (thread.joinable())
+      if (thread.joinable()) {
         thread.join();
+      }
     }
   }
 
   template <typename F, typename... Args>
-  auto submit(F &&f, Args &&...args) -> std::future<decltype(f(args...))> {
-    using return_type = decltype(f(args...));
+  auto submit(F &&func, Args &&...args) -> std::future<decltype(func(args...))> {
+    using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        std::bind(std::forward<F>(func), std::forward<Args>(args)...));
 
     std::future<return_type> ret = task->get_future();
     {

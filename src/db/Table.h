@@ -268,14 +268,14 @@ public:
       return --it, *this;
     }
 
-    const IteratorImpl operator++(int)
+    IteratorImpl operator++(int)
     {
       auto retVal = IteratorImpl(*this);
       ++it;
       return retVal;
     }
 
-    const IteratorImpl operator--(int)
+    IteratorImpl operator--(int)
     {
       auto retVal = IteratorImpl(*this);
       --it;

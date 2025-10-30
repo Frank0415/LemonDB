@@ -21,9 +21,9 @@ private:
   std::shared_mutex &getOrCreateLock(const std::string &table_name) {
     {
       std::shared_lock<std::shared_mutex> read(map_mutex_);
-      auto it = lock_map_.find(table_name);
-      if (it != lock_map_.end()) {
-        return *it->second;
+      auto iter = lock_map_.find(table_name);
+      if (iter != lock_map_.end()) {
+        return *iter->second;
       }
     }
 

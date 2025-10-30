@@ -172,13 +172,13 @@ int main(int argc, char* argv[])
   auto prune_completed = [&pending_queries]()
   {
     pending_queries.erase(std::remove_if(pending_queries.begin(), pending_queries.end(),
-                                         [](std::future<void>& f)
+                                         [](std::future<void>& future)
                                          {
-                                           if (!f.valid())
+                                           if (!future.valid())
                                            {
                                              return true;
                                            }
-                                           return f.wait_for(std::chrono::seconds(0)) ==
+                                           return future.wait_for(std::chrono::seconds(0)) ==
                                                   std::future_status::ready;
                                          }),
                           pending_queries.end());

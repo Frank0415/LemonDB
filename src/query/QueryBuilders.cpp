@@ -56,8 +56,8 @@ Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     if (query.token.front() == "LOAD")
     {
-      auto& db = Database::getInstance();
-      auto tableName = db.getFileTableName(query.token[1]);
+      auto& database = Database::getInstance();
+      auto tableName = database.getFileTableName(query.token[1]);
       return std::make_unique<LoadTableQuery>(tableName, query.token[1]);
     }
     if (query.token.front() == "DROP")
@@ -73,8 +73,8 @@ Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     if (query.token.front() == "DUMP")
     {
-      auto& db = Database::getInstance();
-      db.updateFileTableName(query.token[2], query.token[1]);
+      auto& database = Database::getInstance();
+      database.updateFileTableName(query.token[2], query.token[1]);
       return std::make_unique<DumpTableQuery>(query.token[1], query.token[2]);
     }
     if (query.token.front() == "COPYTABLE")
