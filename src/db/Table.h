@@ -371,7 +371,7 @@ public:
    * @param field
    * @return fieldIndex
    */
-  FieldIndex getFieldIndex(const FieldNameType& field) const;
+  [[nodiscard]] FieldIndex getFieldIndex(const FieldNameType& field) const;
 
   /**
    * Insert a row of data by its key
@@ -407,7 +407,7 @@ public:
    * Get the name of the table
    * @return
    */
-  const std::string& name() const
+  [[nodiscard]] const std::string& name() const
   {
     return this->tableName;
   }
@@ -416,7 +416,7 @@ public:
    * Return whether the table is empty
    * @return
    */
-  bool empty() const
+  [[nodiscard]] bool empty() const
   {
     return this->data.empty();
   }
@@ -425,7 +425,7 @@ public:
    * Return the num of data stored in the table
    * @return
    */
-  size_t size() const
+  [[nodiscard]] size_t size() const
   {
     return this->data.size();
   }
@@ -434,7 +434,7 @@ public:
    * Return the fields in the table
    * @return
    */
-  const std::vector<FieldNameType>& field() const
+  [[nodiscard]] const std::vector<FieldNameType>& field() const
   {
     return this->fields;
   }
@@ -473,7 +473,7 @@ public:
    * Get a const begin iterator similar to the standard iterator
    * @return const begin iterator
    */
-  ConstIterator begin() const
+  [[nodiscard]] ConstIterator begin() const
   {
     return {data.cbegin(), this};
   }
@@ -482,7 +482,7 @@ public:
    * Get a const end iterator similar to the standard iterator
    * @return const end iterator
    */
-  ConstIterator end() const
+  [[nodiscard]] ConstIterator end() const
   {
     return {data.cend(), this};
   }

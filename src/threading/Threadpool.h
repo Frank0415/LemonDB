@@ -109,8 +109,8 @@ public:
     return ret;
   }
 
-  int getIdleThreadNum() const { return idleThreadNum.load(); }
-  size_t getThreadCount() const { return total_threads; }
+  [[nodiscard]] int getIdleThreadNum() const { return idleThreadNum.load(); }
+  [[nodiscard]] size_t getThreadCount() const { return total_threads; }
 };
 
 #endif // PROJECT_THREADPOOL_H

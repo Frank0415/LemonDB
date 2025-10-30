@@ -12,7 +12,7 @@ public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;
   std::string toString() override;
-  bool isWriter() const override
+  [[nodiscard]] bool isWriter() const override
   {
     return true;
   }

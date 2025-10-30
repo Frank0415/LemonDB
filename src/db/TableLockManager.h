@@ -36,17 +36,17 @@ public:
   TableLockManager(const TableLockManager &) = delete;
   TableLockManager &operator=(const TableLockManager &) = delete;
 
-  std::shared_lock<std::shared_mutex>
+  [[nodiscard]] std::shared_lock<std::shared_mutex>
   acquireRead(const std::string &table_name) {
     return std::shared_lock<std::shared_mutex>(getOrCreateLock(table_name));
   }
 
-  std::unique_lock<std::shared_mutex>
+  [[nodiscard]] std::unique_lock<std::shared_mutex>
   acquireWrite(const std::string &table_name) {
     return std::unique_lock<std::shared_mutex>(getOrCreateLock(table_name));
   }
 
-  static TableLockManager &getInstance() {
+  [[nodiscard]] static TableLockManager &getInstance() {
     static TableLockManager instance;
     return instance;
   }

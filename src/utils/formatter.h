@@ -17,7 +17,7 @@ inline std::string to_string(std::string_view value)
 
 inline std::string to_string(const char* value)
 {
-  return std::string(value);
+  return {value};
 }
 
 template <typename T> static inline std::string to_string(const std::vector<T>& vec)
@@ -68,7 +68,7 @@ inline std::string operator%(std::string format, const char* value)
 inline std::string operator""_f(const char* str, size_t size)
 {
   (void)size; // Avoid unused parameter warning
-  return std::string(str);
+  return {str};
 }
 
 #endif // SRC_FORMATTER_H

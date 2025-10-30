@@ -30,7 +30,7 @@ public:
     }
   }
 
-  int remaining() const { return total_ - completed_; }
+  [[nodiscard]] int remaining() const { return total_ - completed_; }
 };
 
 #endif // PROJECT_SCHED_H
