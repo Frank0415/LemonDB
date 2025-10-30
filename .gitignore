@@ -70,6 +70,7 @@
 !test/clangtidy.sh
 !test/cpplint.sh
 !test/cppcheck.sh
+!test/clangtidy_cleanup.sh
 !test/data
 !test/gtests
 !test/gtests/

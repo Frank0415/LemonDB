@@ -82,3 +82,4 @@ cd ..
 ./clangtidy.sh
 ./cpplint.sh
 ./cppcheck.sh
+./clangtidy_cleanup.sh
