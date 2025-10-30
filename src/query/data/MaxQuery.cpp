@@ -61,15 +61,15 @@ QueryResult::Ptr MaxQuery::execute()
         std::vector<Table::ValueType> maxValue(fieldId.size(),
                                                Table::ValueTypeMin); // each has its own max value
 
-        for (auto it = table.begin(); it != table.end(); ++it)
+        for (const auto& row : table)
         {
-          if (this->evalCondition(*it))
+          if (this->evalCondition(row))
           {
             found = true;
 
             for (size_t i = 0; i < fieldId.size(); ++i)
             {
-              maxValue[i] = std::max(maxValue[i], (*it)[fieldId[i]]);
+              maxValue[i] = std::max(maxValue[i], row[fieldId[i]]);
             }
           }
         }

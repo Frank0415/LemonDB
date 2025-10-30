@@ -55,11 +55,11 @@ private:
     }
   }
 
+public:
   // Deleted copy constructor and assignment operator
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
 
-public:
   static void initialize(size_t num_threads) {
     std::lock_guard<std::mutex> lock(instance_mutex);
     if (initialized) {

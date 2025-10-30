@@ -8,7 +8,7 @@
 #include "Query.h"
 #include "QueryBuilders.h"
 
-QueryParser::QueryParser() : first(nullptr), last(nullptr)
+QueryParser::QueryParser()
 {
 }
 
