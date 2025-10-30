@@ -1,7 +1,7 @@
 #ifndef PROJECT_THREADPOOL_H
 #define PROJECT_THREADPOOL_H
 
-#include <atomic>
+#include <s
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -60,7 +60,6 @@ public:
   ThreadPool(const ThreadPool &) = delete;
   ThreadPool &operator=(const ThreadPool &) = delete;
 
-public:
   static void
   initialize(size_t num_threads = std::thread::hardware_concurrency()) {
     std::lock_guard<std::mutex> lock(instance_mutex);

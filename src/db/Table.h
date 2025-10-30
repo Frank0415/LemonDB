@@ -76,12 +76,12 @@ private:
     }
 
     template <class ValueTypeContainer>
-    explicit Datum(const KeyType& key, const ValueTypeContainer& datum) : key(key), datum(datum)
+    explicit Datum(KeyType key, const ValueTypeContainer& datum) : key(std::move(key)), datum(datum)
     {
     }
 
-    explicit Datum(const KeyType& key, std::vector<ValueType>&& datum) noexcept
-        : key(key), datum(std::move(datum))
+    explicit Datum(KeyType key, std::vector<ValueType>&& datum) noexcept
+        : key(std::move(key)), datum(std::move(datum))
     {
     }
   };
@@ -506,7 +506,9 @@ Table::Table(const std::string& name, const FieldIDContainer& fields)
   for (const auto& fieldName : fields)
   {
     if (fieldName == "KEY")
+    {
       throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
+    }
     fieldMap.emplace(fieldName, index++);
   }
 }
