@@ -28,8 +28,9 @@ if [ "$usr" = "frank" ]; then
   )
 
   for group in "${!check_groups[@]}"; do
-    echo "Running $group checks..."
+    echo "Running $group checks..." >> "clang.${group}.tidy"
     for file in $files; do
+      echo "=== process file: $file ===" >> "clang.${group}.tidy"
       $TIDY "$file" -p="$compile_commands_path" \
       -checks="-*,${check_groups[$group]}" \
       --extra-arg=-D__clang_analyzer__ \
@@ -37,13 +38,14 @@ if [ "$usr" = "frank" ]; then
       --extra-arg-before=-x --extra-arg-before=c++ \
       -header-filter="^(\.\./src/.*|.*\\.h)$" \
       -- \
-      -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}' >> "clang.${group}.tidy"
+      -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}; /warnings generated/d; /Suppressed.*warnings/d; /Use -header-filter/d' >> "clang.${group}.tidy"
     done
   done
 else
   TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*,-google-readability-braces-around-statements'
 
   for file in $files; do
+    echo "=== process file: $file ==="
     $TIDY "$file" -p="$compile_commands_path" \
     -checks="$TIDY_CHECKS" \
     --extra-arg=-D__clang_analyzer__ \
@@ -51,7 +53,7 @@ else
     --extra-arg-before=-x --extra-arg-before=c++ \
     -header-filter="^(\.\./src/.*|.*\\.h)$" \
     -- \
-    -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}'
+    -Wsystem-headers 2>&1 | sed '/include\/c++/ {N;N;d;}; /warnings generated/d; /Suppressed.*warnings/d; /Use -header-filter/d'
   done
 fi
 
