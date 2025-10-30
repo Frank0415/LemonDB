@@ -506,9 +506,7 @@ Table::Table(const std::string& name, const FieldIDContainer& fields)
   for (const auto& fieldName : fields)
   {
     if (fieldName == "KEY")
-    {
       throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
-    }
     fieldMap.emplace(fieldName, index++);
   }
 }

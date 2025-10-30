@@ -24,7 +24,7 @@ if [ "$usr" = "frank" ]; then
     ["performance"]='performance-*'
     ["portability"]='portability-*'
     ["readability"]='readability-*'
-    ["google"]='google-*,-google-readability-braces-around-statements'
+    ["google"]='google-*'
   )
 
   for group in "${!check_groups[@]}"; do
@@ -41,7 +41,7 @@ if [ "$usr" = "frank" ]; then
     done
   done
 else
-  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*,-google-readability-braces-around-statements'
+  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*'
 
   for file in $files; do
     $TIDY "$file" -p="$compile_commands_path" \
