@@ -1,5 +1,5 @@
 echo "=== Running cppcheck ==="
 
-find ../src -name "*.h" -o -name "*.cpp" | xargs cppcheck --enable=all > cppcheck.log 2>&1
+find ../src -name "*.h" -o -name "*.cpp" | xargs cppcheck --enable=all
 
 echo "=== cppcheck complete ==="
