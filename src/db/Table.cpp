@@ -4,6 +4,7 @@
 
 #include "Table.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -12,6 +13,8 @@
 #include <utility>
 #include <vector>
 
+#include "../query/Query.h"
+#include "../threading/Threadpool.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
 
@@ -117,4 +120,101 @@ std::ostream& operator<<(std::ostream& out, const Table& table)
     buffer << "\n";
   }
   return out << buffer.str();
+}
+
+void Table::addQuery(Query *query) {
+    queryQueueMutex.lock();
+    if (query->isInstant() && !initialized && queryQueue.empty()) {
+        queryQueueMutex.unlock();
+        query->execute();
+        completeQuery();
+        return;
+    }
+    if (queryQueueCounter < 0 || !initialized) {
+        // writing, push back the query
+        queryQueue.push_back(query);
+        queryQueueMutex.unlock();
+        return;
+    }
+    // idle/reading
+    if (query->isWriter()) {
+        // add a writer or execute it if idle
+        if (queryQueueCounter == 0 && queryQueue.empty()) {
+            queryQueueCounter = -1;
+            queryQueueMutex.unlock();
+            ThreadPool::getInstance().submit([this, query]() {
+                query->execute();
+                completeQuery();
+            });
+        } else {
+            queryQueue.push_back(query);
+            queryQueueMutex.unlock();
+        }
+    } else {
+        if (queryQueueCounter >= 0 && queryQueue.empty()) {
+            // add a reader and execute it at once if queue is empty
+            ++queryQueueCounter;
+            queryQueueMutex.unlock();
+            ThreadPool::getInstance().submit([this, query]() {
+                query->execute();
+                completeQuery();
+            });
+        } else {
+            queryQueue.push_back(query);
+            queryQueueMutex.unlock();
+        }
+    }
+}
+
+void Table::completeQuery() {
+    queryQueueMutex.lock();
+    if (!queryQueue.empty() && !initialized && queryQueue.front()->isInstant()) {
+        queryQueueMutex.unlock();
+        auto *query = queryQueue.front();
+        queryQueue.pop_front();
+        queryQueueMutex.unlock();
+        query->execute();
+        completeQuery();
+        return;
+    }
+    if (!initialized) {
+        queryQueueMutex.unlock();
+        return;
+    }
+    if (queryQueueCounter <= 0) {
+        // writing or idle (should not happen), reset the counter
+        queryQueueCounter = 0;
+    } else {
+        --queryQueueCounter;
+    }
+    if (queryQueue.empty()) {
+        queryQueueMutex.unlock();
+        return;
+    }
+    if (queryQueueCounter == 0 && !queryQueue.empty() && queryQueue.front()->isWriter()) {
+        // if idle with a write query, execute it
+        queryQueueCounter = -1;
+        auto query = queryQueue.front();
+        queryQueue.pop_front();
+        queryQueueMutex.unlock();
+        ThreadPool::getInstance().submit([this, query]() {
+            query->execute();
+            completeQuery();
+        });
+    } else {
+        // if reading, execute all read query before next write query
+        decltype(queryQueue) list;
+        auto iter = std::find_if(queryQueue.begin(), queryQueue.end(), [](const Query *query) {
+            return query->isWriter();
+        });
+        list.splice(list.begin(), queryQueue, queryQueue.begin(), iter);
+        queryQueueCounter += static_cast<int>(list.size());
+        queryQueueMutex.unlock();
+        for (auto &item : list) {
+            ThreadPool::getInstance().submit([this, item]() {
+                item->execute();
+                completeQuery();
+            });
+        }
+    }
 }
