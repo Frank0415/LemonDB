@@ -5,10 +5,13 @@
 #ifndef PROJECT_DB_TABLE_H
 #define PROJECT_DB_TABLE_H
 
+#include <atomic>
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <list>
 #include <memory>
+#include <mutex>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -18,6 +21,7 @@
 
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
+#include "query/QueryResult.h"
 
 #define DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field)                                                  \
   try                                                                                              \
@@ -39,6 +43,41 @@
   {                                                                                                \
     throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));                        \
   }
+
+class Query
+{
+protected:
+  std::string targetTable;
+  int id = -1;
+
+public:
+  Query() = default;
+
+  explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
+  {
+  }
+
+  using Ptr = std::unique_ptr<Query>;
+
+  virtual QueryResult::Ptr execute() = 0;
+
+  virtual std::string toString() = 0;
+
+  virtual ~Query() = default;
+
+  // For thread safety: indicate if this query modifies data
+  [[nodiscard]] virtual bool isWriter() const
+  {
+    return false;
+  }
+
+  // For execution order: indicate if this query must execute immediately (not
+  // parallel) e.g., LOAD and QUIT must execute serially
+  [[nodiscard]] virtual bool isInstant() const
+  {
+    return false;
+  }
+};
 
 class Table
 {
@@ -101,6 +140,12 @@ private:
 
   /** The name of table */
   std::string tableName;
+
+private:
+  bool initialized = false;
+  std::list<Query *> queryQueue;
+  int queryQueueCounter = 0;
+  std::mutex queryQueueMutex;
 
 public:
   using Ptr = std::unique_ptr<Table>;
@@ -451,6 +496,18 @@ public:
     return result;
   }
 
+  void drop()
+  {
+    queryQueueCounter = 0;
+    fields.clear();
+    fieldMap.clear();
+    data.clear();
+    keyMap.clear();
+    queryQueueMutex.lock();
+    initialized = false;
+    queryQueueMutex.unlock();
+  }
+
   /**
    * Get a begin iterator similar to the standard iterator
    * @return begin iterator
@@ -494,6 +551,10 @@ public:
    * @return the origin ostream
    */
   friend std::ostream& operator<<(std::ostream& out, const Table& table);
+
+  void addQuery(Query *query);
+  void completeQuery();
+  [[nodiscard]] bool isInited() const { return initialized; }
 };
 
 std::ostream& operator<<(std::ostream& out, const Table& table);
