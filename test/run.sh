@@ -56,21 +56,23 @@ for test in "${TESTS[@]}"; do
     fi
     
     start=$(date +%s.%N)
-    ./lemondb < "queries/${test}.query" 2>/dev/null | diff -q - "stdout/${test}.out" >/dev/null 2>&1
+    ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
     end=$(date +%s.%N)
     elapsed=$(echo "$end - $start" | bc)
 
     echo "Test: ${test} completed in ${elapsed} seconds"
-
+    cnt=$(wc -l < "1.out")
     # Compare output
-    if [ $? -eq 0 ]; then
+    if diff -q "1.out" "stdout/${test}.out" > /dev/null 2>&1; then
         echo "PASS: ${test}"
         ((PASSED++))
     else
         echo "FAIL: ${test}"
         ((FAILED++))
-        # diff 1.out "test/data/stdout/${test}.out"
+        echo "Differences found:"
+        diff "1.out" "stdout/${test}.out" | head -50
     fi
+    rm -f "1.out"
 done
 
 echo "================="
