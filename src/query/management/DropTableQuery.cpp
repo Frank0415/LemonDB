@@ -9,6 +9,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -18,6 +19,7 @@ QueryResult::Ptr DropTableQuery::execute()
   Database& database = Database::getInstance();
   try
   {
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     database.dropTable(this->targetTable);
     return std::make_unique<SuccessMsgResult>(qname);
   }

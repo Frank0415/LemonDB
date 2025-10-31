@@ -10,6 +10,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../QueryResult.h"
 
@@ -17,6 +18,8 @@ QueryResult::Ptr LoadTableQuery::execute()
 {
   try
   {
+    // LOAD creates a new table, so we acquire write lock for the new table name
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     std::ifstream infile(this->fileName);
     if (!infile.is_open())
     {

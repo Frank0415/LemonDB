@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -16,6 +17,8 @@ QueryResult::Ptr CopyTableQuery::execute()
   try
   {
     auto& database = Database::getInstance();
+    auto srcLock = TableLockManager::getInstance().acquireRead(this->targetTable);
+    auto dstLock = TableLockManager::getInstance().acquireWrite(this->newTableName);
     auto& src = database[this->targetTable];
     bool targetExists = false;
     try

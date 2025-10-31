@@ -5,6 +5,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -15,6 +16,7 @@ QueryResult::Ptr TruncateTableQuery::execute()
   try
   {
     auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
     table.clear();
 

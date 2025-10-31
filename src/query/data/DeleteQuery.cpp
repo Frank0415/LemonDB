@@ -8,6 +8,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -25,6 +26,7 @@ QueryResult::Ptr DeleteQuery::execute()
   try
   {
     Database& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     Table::SizeType counter = 0;
     auto& table = database[this->targetTable];
     auto result = initCondition(table);
