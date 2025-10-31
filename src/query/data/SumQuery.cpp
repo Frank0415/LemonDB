@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "../../db/TableLockManager.h"
 #include "../../query/QueryResult.h"
 #include "../../query/data/SumQuery.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -41,7 +43,10 @@ QueryResult::Ptr SumQuery::execute()
       fids.emplace_back(table.getFieldIndex(f));
     }
 
-    std::vector<Table::ValueType> sums(fids.size(), 0);
+    const size_t num_fields = fids.size();
+    std::vector<Table::ValueType> sums(num_fields, 0);
+
+    // Try to use testKeyCondition optimization first
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool ok, Table::Object::Ptr&& obj)
                                                 {
@@ -51,25 +56,100 @@ QueryResult::Ptr SumQuery::execute()
                                                   }
                                                   if (obj)
                                                   {
-                                                    for (size_t i = 0; i < fids.size(); ++i)
+                                                    for (size_t i = 0; i < num_fields; ++i)
                                                     {
                                                       sums[i] += (*obj)[fids[i]];
                                                     }
                                                   }
                                                 });
-    if (!handled)
+    if (handled)
     {
+      return std::make_unique<SuccessMsgResult>(sums);
+    }
+
+    // Check if ThreadPool is available and has multiple threads
+    if (!ThreadPool::isInitialized())
+    {
+      // Single-threaded fallback
       for (auto it = table.begin(); it != table.end(); ++it)
       {
         if (this->evalCondition(*it))
         {
-          for (size_t i = 0; i < fids.size(); ++i)
+          for (size_t i = 0; i < num_fields; ++i)
           {
             sums[i] += (*it)[fids[i]];
           }
         }
       }
+      return std::make_unique<SuccessMsgResult>(sums);
     }
+
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < 2000)
+    {
+      // Single-threaded for small tables or single thread pool
+      for (auto it = table.begin(); it != table.end(); ++it)
+      {
+        if (this->evalCondition(*it))
+        {
+          for (size_t i = 0; i < num_fields; ++i)
+          {
+            sums[i] += (*it)[fids[i]];
+          }
+        }
+      }
+      return std::make_unique<SuccessMsgResult>(sums);
+    }
+
+    // Multi-threaded execution
+    const size_t chunk_size = 2000;
+
+    // Reset sums for multi-threaded accumulation
+    std::fill(sums.begin(), sums.end(), 0);
+
+    std::vector<std::future<std::vector<Table::ValueType>>> futures;
+    futures.reserve((table.size() + chunk_size - 1) / chunk_size);
+
+    auto iterator = table.begin();
+    while (iterator != table.end())
+    {
+      auto chunk_begin = iterator;
+      size_t count = 0;
+      while (iterator != table.end() && count < chunk_size)
+      {
+        ++iterator;
+        ++count;
+      }
+      auto chunk_end = iterator;
+
+      futures.push_back(pool.submit(
+          [this, fids, chunk_begin, chunk_end, num_fields]()
+          {
+            std::vector<Table::ValueType> local_sums(num_fields, 0);
+            for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+            {
+              if (this->evalCondition(*iter))
+              {
+                for (size_t i = 0; i < num_fields; ++i)
+                {
+                  local_sums[i] += (*iter)[fids[i]];
+                }
+              }
+            }
+            return local_sums;
+          }));
+    }
+
+    // Combine results from all threads
+    for (auto& future : futures)
+    {
+      auto local_sums = future.get();
+      for (size_t i = 0; i < num_fields; ++i)
+      {
+        sums[i] += local_sums[i];
+      }
+    }
+
     return std::make_unique<SuccessMsgResult>(sums);
   }
   catch (const TableNameNotFound&)
