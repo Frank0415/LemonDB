@@ -10,6 +10,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -19,6 +20,7 @@ QueryResult::Ptr SelectQuery::execute()
   try
   {
     auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     auto& table = database[this->targetTable];
     if (this->operands.empty())
     {

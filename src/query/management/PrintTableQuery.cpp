@@ -9,6 +9,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -18,6 +19,7 @@ QueryResult::Ptr PrintTableQuery::execute()
   const Database& database = Database::getInstance();
   try
   {
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     const auto& table = database[this->targetTable];
     std::cout << "================\n";
     std::cout << "TABLE = ";

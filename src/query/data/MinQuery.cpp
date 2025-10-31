@@ -10,6 +10,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -25,6 +26,7 @@ QueryResult::Ptr MinQuery::execute()
   Database& database = Database::getInstance();
   try
   {
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     auto& table = database[this->targetTable];
 
     // transform into its own Id, avoid lookups in map everytime

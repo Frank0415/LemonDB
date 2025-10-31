@@ -6,6 +6,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -24,6 +25,7 @@ QueryResult::Ptr CountQuery::execute()
 
     // Get a reference to the database singleton instance
     Database& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     // Access the target table using the table name
     Table& table = database[this->targetTable];
 

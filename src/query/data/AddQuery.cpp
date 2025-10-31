@@ -7,6 +7,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -22,6 +23,7 @@ QueryResult::Ptr AddQuery::execute()
           qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
     }
     auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
 
     auto result = initCondition(table);

@@ -14,6 +14,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -30,6 +31,7 @@ QueryResult::Ptr InsertQuery::execute()
   Database& database = Database::getInstance();
   try
   {
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
     auto& key = this->operands.front();
     std::vector<Table::ValueType> data;

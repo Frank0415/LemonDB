@@ -6,6 +6,7 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -22,6 +23,7 @@ QueryResult::Ptr SwapQuery::execute()
   try
   {
     Database& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
     if (operands[0] == "KEY" || operands[1] == "KEY")
     {
