@@ -188,16 +188,23 @@ protected:
   }
 };
 
-class ListenResult : public SucceededQueryResult {
+class ListenResult : public SucceededQueryResult
+{
   const std::string listen_name;
 
 public:
-  bool display() override { return true; }
+  bool display() override
+  {
+    return true;
+  }
 
-  explicit ListenResult(std::string name) : listen_name(std::move(name)) {}
+  explicit ListenResult(std::string name) : listen_name(std::move(name))
+  {
+  }
 
 protected:
-  std::ostream &output(std::ostream &os) const override {
+  std::ostream& output(std::ostream& os) const override
+  {
     os << "ANSWER = ( listening from " << listen_name << " )\n";
     return os;
   }
