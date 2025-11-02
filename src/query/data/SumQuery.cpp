@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
-#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -11,8 +10,6 @@
 #include "../../db/Database.h"
 #include "../../db/Table.h"
 #include "../../db/TableLockManager.h"
-#include "../../query/QueryResult.h"
-#include "../../query/data/SumQuery.h"
 #include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
@@ -20,137 +17,44 @@
 
 QueryResult::Ptr SumQuery::execute()
 {
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
 
   try
   {
+    // Validate operands
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr)
+    {
+      return validation_result;
+    }
+
     auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto& table = db[this->targetTable];
-    if (this->operands.empty())
-    {
-      return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
-    }
-    // Check if any operand is "KEY" using std::any_of
-    if (std::any_of(this->operands.begin(), this->operands.end(),
-                    [](const auto& f) { return f == "KEY"; }))
-    {
-      return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
-    }
-    std::vector<Table::FieldIndex> fids;
-    fids.reserve(this->operands.size());
-    for (const auto& f : this->operands)
-    {
-      fids.emplace_back(table.getFieldIndex(f));
-    }
+    auto& table = database[this->targetTable];
 
-    const size_t num_fields = fids.size();
-    std::vector<Table::ValueType> sums(num_fields, 0);
+    // Get field indices
+    auto fids = getFieldIndices(table);
 
-    // Try to use testKeyCondition optimization first
-    const bool handled = this->testKeyCondition(table,
-                                                [&](bool ok, Table::Object::Ptr&& obj)
-                                                {
-                                                  if (!ok)
-                                                  {
-                                                    return;
-                                                  }
-                                                  if (obj)
-                                                  {
-                                                    for (size_t i = 0; i < num_fields; ++i)
-                                                    {
-                                                      sums[i] += (*obj)[fids[i]];
-                                                    }
-                                                  }
-                                                });
-    if (handled)
+    // Try key condition optimization first
+    auto key_result = executeKeyConditionOptimization(table, fids);
+    if (key_result != nullptr)
     {
-      return std::make_unique<SuccessMsgResult>(sums);
+      return key_result;
     }
 
     // Check if ThreadPool is available and has multiple threads
     if (!ThreadPool::isInitialized())
     {
-      // Single-threaded fallback
-      for (auto it = table.begin(); it != table.end(); ++it)
-      {
-        if (this->evalCondition(*it))
-        {
-          for (size_t i = 0; i < num_fields; ++i)
-          {
-            sums[i] += (*it)[fids[i]];
-          }
-        }
-      }
-      return std::make_unique<SuccessMsgResult>(sums);
+      return executeSingleThreaded(table, fids);
     }
 
     ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < 2000)
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
-      // Single-threaded for small tables or single thread pool
-      for (auto it = table.begin(); it != table.end(); ++it)
-      {
-        if (this->evalCondition(*it))
-        {
-          for (size_t i = 0; i < num_fields; ++i)
-          {
-            sums[i] += (*it)[fids[i]];
-          }
-        }
-      }
-      return std::make_unique<SuccessMsgResult>(sums);
+      return executeSingleThreaded(table, fids);
     }
 
     // Multi-threaded execution
-    const size_t chunk_size = 2000;
-
-    // Reset sums for multi-threaded accumulation
-    std::fill(sums.begin(), sums.end(), 0);
-
-    std::vector<std::future<std::vector<Table::ValueType>>> futures;
-    futures.reserve((table.size() + chunk_size - 1) / chunk_size);
-
-    auto iterator = table.begin();
-    while (iterator != table.end())
-    {
-      auto chunk_begin = iterator;
-      size_t count = 0;
-      while (iterator != table.end() && count < chunk_size)
-      {
-        ++iterator;
-        ++count;
-      }
-      auto chunk_end = iterator;
-
-      futures.push_back(pool.submit(
-          [this, fids, chunk_begin, chunk_end, num_fields]()
-          {
-            std::vector<Table::ValueType> local_sums(num_fields, 0);
-            for (auto iter = chunk_begin; iter != chunk_end; ++iter)
-            {
-              if (this->evalCondition(*iter))
-              {
-                for (size_t i = 0; i < num_fields; ++i)
-                {
-                  local_sums[i] += (*iter)[fids[i]];
-                }
-              }
-            }
-            return local_sums;
-          }));
-    }
-
-    // Combine results from all threads
-    for (auto& future : futures)
-    {
-      auto local_sums = future.get();
-      for (size_t i = 0; i < num_fields; ++i)
-      {
-        sums[i] += local_sums[i];
-      }
-    }
-
-    return std::make_unique<SuccessMsgResult>(sums);
+    return executeMultiThreaded(table, fids);
   }
   catch (const TableNameNotFound&)
   {
@@ -174,4 +78,29 @@ QueryResult::Ptr SumQuery::execute()
 std::string SumQuery::toString()
 {
   return "QUERY = SUM \"" + this->targetTable + "\"";
+}
+
+QueryResult::Ptr SumQuery::validateOperands() const
+{
+  if (this->operands.empty())
+  {
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
+  }
+  if (std::any_of(this->operands.begin(), this->operands.end(),
+                  [](const auto& field) { return field == "KEY"; }))
+  {
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
+  }
+  return nullptr;
+}
+
+std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> fids;
+  fids.reserve(this->operands.size());
+  for (const auto& field : this->operands)
+  {
+    fids.emplace_back(table.getFieldIndex(field));
+  }
+  return fids;
 }
