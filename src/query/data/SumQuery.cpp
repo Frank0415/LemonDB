@@ -15,7 +15,7 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-QueryResult::Ptr SumQuery::execute()
+[[nodiscard]] QueryResult::Ptr SumQuery::execute()
 {
   Database& database = Database::getInstance();
 
@@ -75,12 +75,12 @@ QueryResult::Ptr SumQuery::execute()
   }
 }
 
-std::string SumQuery::toString()
+[[nodiscard]] std::string SumQuery::toString()
 {
   return "QUERY = SUM \"" + this->targetTable + "\"";
 }
 
-QueryResult::Ptr SumQuery::validateOperands() const
+[[nodiscard]] QueryResult::Ptr SumQuery::validateOperands() const
 {
   if (this->operands.empty())
   {
@@ -94,7 +94,7 @@ QueryResult::Ptr SumQuery::validateOperands() const
   return nullptr;
 }
 
-std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) const
+[[nodiscard]] std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->operands.size());
@@ -105,7 +105,7 @@ std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) con
   return fids;
 }
 
-QueryResult::Ptr
+[[nodiscard]] QueryResult::Ptr
 SumQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   const size_t num_fields = fids.size();
@@ -130,8 +130,8 @@ SumQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table:
   return nullptr;
 }
 
-QueryResult::Ptr SumQuery::executeSingleThreaded(Table& table,
-                                                 const std::vector<Table::FieldIndex>& fids)
+[[nodiscard]] QueryResult::Ptr
+SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
@@ -149,8 +149,8 @@ QueryResult::Ptr SumQuery::executeSingleThreaded(Table& table,
   return std::make_unique<SuccessMsgResult>(sums);
 }
 
-QueryResult::Ptr SumQuery::executeMultiThreaded(Table& table,
-                                                const std::vector<Table::FieldIndex>& fids)
+[[nodiscard]] QueryResult::Ptr
+SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = 2000;
   ThreadPool& pool = ThreadPool::getInstance();
