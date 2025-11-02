@@ -5,7 +5,6 @@
 #ifndef PROJECT_DB_TABLE_H
 #define PROJECT_DB_TABLE_H
 
-#include <atomic>
 #include <cstddef>
 #include <iterator>
 #include <limits>
@@ -169,8 +168,8 @@ public:
   public:
     using Ptr = std::unique_ptr<ObjectImpl>;
 
-    ObjectImpl(Iterator datumIt, const Table* table_ptr)
-        : it(datumIt), table(const_cast<Table*>(table_ptr))
+    ObjectImpl(Iterator datumIt, Table* table_ptr)
+        : it(datumIt), table(table_ptr)
     {
     }
 
@@ -363,12 +362,12 @@ public:
   using ConstIterator = IteratorImpl<ConstObject, decltype(data.cbegin())>;
 
 private:
-  static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)
+  static ConstObject::Ptr createProxy(ConstDataIterator iterator, Table* table)
   {
     return std::make_unique<ConstObject>(iterator, table);
   }
 
-  static Object::Ptr createProxy(DataIterator iterator, const Table* table)
+  static Object::Ptr createProxy(DataIterator iterator, Table* table)
   {
     return std::make_unique<Object>(iterator, table);
   }
