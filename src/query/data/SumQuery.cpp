@@ -104,3 +104,29 @@ std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) con
   }
   return fids;
 }
+
+QueryResult::Ptr
+SumQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> sums(num_fields, 0);
+
+  const bool handled = this->testKeyCondition(table,
+                                              [&](bool success, Table::Object::Ptr obj)
+                                              {
+                                                if (!success || !obj)
+                                                {
+                                                  return;
+                                                }
+                                                for (size_t i = 0; i < num_fields; ++i)
+                                                {
+                                                  sums[i] += (*obj)[fids[i]];
+                                                }
+                                              });
+  if (handled)
+  {
+    return std::make_unique<SuccessMsgResult>(sums);
+  }
+  return nullptr;
+}
+
