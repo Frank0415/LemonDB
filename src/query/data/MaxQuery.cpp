@@ -40,12 +40,6 @@ QueryResult::Ptr MaxQuery::execute()
 
     auto fieldId = getFieldIndices(table);
 
-    auto keyOptResult = executeKeyConditionOptimization(table, fieldId);
-    if (keyOptResult)
-    {
-      return keyOptResult;
-    }
-
     if (!ThreadPool::isInitialized())
     {
       return executeSingleThreaded(table, fieldId);
@@ -114,32 +108,6 @@ std::string MaxQuery::toString()
   return fieldId;
 }
 
-[[nodiscard]] QueryResult::Ptr
-MaxQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids)
-{
-  const size_t num_fields = fids.size();
-  std::vector<Table::ValueType> maxValue(num_fields, Table::ValueTypeMin);
-  bool found = false;
-  const bool handled = this->testKeyCondition(table,
-                                              [&](bool success, Table::Object::Ptr obj)
-                                              {
-                                                if (!success || !obj)
-                                                {
-                                                  return;
-                                                }
-                                                found = true;
-                                                for (size_t i = 0; i < num_fields; ++i)
-                                                {
-                                                  maxValue[i] =
-                                                      std::max(maxValue[i], (*obj)[fids[i]]);
-                                                }
-                                              });
-  if (found)
-  {
-    return std::make_unique<SuccessMsgResult>(maxValue);
-  }
-  return std::make_unique<NullQueryResult>();
-}
 
 [[nodiscard]] QueryResult::Ptr
 MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)

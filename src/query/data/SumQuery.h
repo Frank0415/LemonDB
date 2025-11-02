@@ -18,9 +18,6 @@ private:
 
   [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
 
-  [[nodiscard]] QueryResult::Ptr
-  executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids);
-
   [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
                                                        const std::vector<Table::FieldIndex>& fids);
 

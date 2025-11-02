@@ -39,14 +39,7 @@
 
     // Get field indices
     auto fids = getFieldIndices(table);
-
-    // Try key condition optimization first
-    auto key_result = executeKeyConditionOptimization(table, fids);
-    if (key_result != nullptr)
-    {
-      return key_result;
-    }
-
+    
     // Check if ThreadPool is available and has multiple threads
     if (!ThreadPool::isInitialized())
     {
@@ -109,31 +102,6 @@
     fids.emplace_back(table.getFieldIndex(field));
   }
   return fids;
-}
-
-[[nodiscard]] QueryResult::Ptr
-SumQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids)
-{
-  const size_t num_fields = fids.size();
-  std::vector<Table::ValueType> sums(num_fields, 0);
-
-  const bool handled = this->testKeyCondition(table,
-                                              [&](bool success, Table::Object::Ptr obj)
-                                              {
-                                                if (!success || !obj)
-                                                {
-                                                  return;
-                                                }
-                                                for (size_t i = 0; i < num_fields; ++i)
-                                                {
-                                                  sums[i] += (*obj)[fids[i]];
-                                                }
-                                              });
-  if (handled)
-  {
-    return std::make_unique<SuccessMsgResult>(sums);
-  }
-  return nullptr;
 }
 
 [[nodiscard]] QueryResult::Ptr
