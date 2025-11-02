@@ -34,14 +34,7 @@ QueryResult::Ptr MinQuery::execute()
 
     try
     {
-      for (const auto& operand : this->operands)
-      {
-        if (operand == "KEY")
-        {
-          throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
-        }
-        fieldId.push_back(table.getFieldIndex(operand));
-      }
+      fieldId = getFieldIndices(table);
     }
     catch (const TableFieldNotFound& e)
     {
@@ -123,4 +116,28 @@ QueryResult::Ptr MinQuery::execute()
 std::string MinQuery::toString()
 {
   return "QUERY = MIN " + this->targetTable + "\"";
+}
+
+[[nodiscard]] QueryResult::Ptr MinQuery::validateOperands() const
+{
+  if (this->operands.empty())
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+                                            "No operand (? operands)."_f % operands.size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> MinQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> fieldId;
+  for (const auto& operand : this->operands)
+  {
+    if (operand == "KEY")
+    {
+      throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
+    }
+    fieldId.push_back(table.getFieldIndex(operand));
+  }
+  return fieldId;
 }

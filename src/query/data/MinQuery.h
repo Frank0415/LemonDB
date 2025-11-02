@@ -4,10 +4,15 @@
 #include <string>
 
 #include "../Query.h"
+#include "db/Table.h"
 
 class MinQuery : public ComplexQuery
 {
   static constexpr const char* qname = "MIN";
+
+private:
+  [[nodiscard]] QueryResult::Ptr validateOperands() const;
+  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
 
 public:
   using ComplexQuery::ComplexQuery;
