@@ -32,6 +32,12 @@ QueryResult::Ptr MaxQuery::execute()
 
     auto fieldId = getFieldIndices(table);
 
+    auto keyOptResult = executeKeyConditionOptimization(table, fieldId);
+    if (keyOptResult)
+    {
+      return keyOptResult;
+    }
+
     auto result = initCondition(table);
     if (result.second)
     {
@@ -98,4 +104,45 @@ std::string MaxQuery::toString()
                                             "No operand (? operands)."_f % operands.size());
   }
   return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> MaxQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> fieldId;
+  for (const auto& operand : this->operands)
+  {
+    if (operand == "KEY")
+    {
+      throw IllFormedQueryCondition("MAX operation not supported on KEY field.");
+    }
+    fieldId.push_back(table.getFieldIndex(operand));
+  }
+  return fieldId;
+}
+
+[[nodiscard]] QueryResult::Ptr
+MaxQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> maxValue(num_fields, Table::ValueTypeMin);
+  bool found = false;
+  const bool handled = this->testKeyCondition(table,
+                                              [&](bool success, Table::Object::Ptr obj)
+                                              {
+                                                if (!success || !obj)
+                                                {
+                                                  return;
+                                                }
+                                                found = true;
+                                                for (size_t i = 0; i < num_fields; ++i)
+                                                {
+                                                  maxValue[i] =
+                                                      std::max(maxValue[i], (*obj)[fids[i]]);
+                                                }
+                                              });
+  if (found)
+  {
+    return std::make_unique<SuccessMsgResult>(maxValue);
+  }
+  return std::make_unique<NullQueryResult>();
 }
