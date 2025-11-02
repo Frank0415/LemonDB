@@ -141,13 +141,14 @@ private:
   /** The name of table */
   std::string tableName;
 
-private:
   bool initialized = false;
   std::list<Query *> queryQueue;
   int queryQueueCounter = 0;
   std::mutex queryQueueMutex;
 
+
 public:
+  static size_t splitsize();
   using Ptr = std::unique_ptr<Table>;
 
   /**
