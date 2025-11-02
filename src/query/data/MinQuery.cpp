@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -140,4 +141,90 @@ std::string MinQuery::toString()
     fieldId.push_back(table.getFieldIndex(operand));
   }
   return fieldId;
+}
+
+[[nodiscard]] QueryResult::Ptr
+MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  bool found = false;
+  std::vector<Table::ValueType> minValue(fids.size(),
+                                         Table::ValueTypeMax); // each has its own min value
+
+  for (const auto& row : table)
+  {
+    if (this->evalCondition(row))
+    {
+      found = true;
+
+      for (size_t i = 0; i < fids.size(); ++i)
+      {
+        minValue[i] = std::min(minValue[i], row[fids[i]]);
+      }
+    }
+  }
+
+  if (!found)
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(minValue);
+}
+
+[[nodiscard]] QueryResult::Ptr
+MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> minValues(num_fields, Table::ValueTypeMax);
+
+  // Create chunks and submit tasks
+  std::vector<std::future<std::vector<Table::ValueType>>> futures;
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, fids, chunk_begin, chunk_end, num_fields]()
+        {
+          std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
+          for (auto it = chunk_begin; it != chunk_end; ++it)
+          {
+            if (this->evalCondition(*it))
+            {
+              for (size_t i = 0; i < num_fields; ++i)
+              {
+                local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+              }
+            }
+          }
+          return local_min;
+        }));
+  }
+  bool any_found = false;
+  for (auto& future : futures)
+  {
+    auto local_min = future.get();
+    for (size_t i = 0; i < num_fields; ++i)
+    {
+      if (!any_found && local_min[i] != Table::ValueTypeMax)
+      {
+        any_found = true;
+      }
+      minValues[i] = std::min(minValues[i], local_min[i]);
+    }
+  }
+  if (!any_found)
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(minValues);
 }
