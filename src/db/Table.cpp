@@ -245,9 +245,3 @@ void Table::completeQuery()
     }
   }
 }
-
-size_t Table::splitsize()
-{
-  const size_t part = 2000;
-  return part;
-}

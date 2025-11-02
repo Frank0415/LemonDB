@@ -11,10 +11,10 @@
 #include "db/Database.h"
 #include "db/Table.h"
 #include "db/TableLockManager.h"
-#include "utils/formatter.h"
-#include "utils/uexception.h"
 #include "query/QueryResult.h"
 #include "threading/Threadpool.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
 
 QueryResult::Ptr MaxQuery::execute()
 {
@@ -31,6 +31,13 @@ QueryResult::Ptr MaxQuery::execute()
     auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     auto& table = database[this->targetTable];
 
+    auto result = initCondition(table);
+
+    if (!result.second)
+    {
+      return std::make_unique<NullQueryResult>();
+    }
+
     auto fieldId = getFieldIndices(table);
 
     auto keyOptResult = executeKeyConditionOptimization(table, fieldId);
@@ -39,42 +46,18 @@ QueryResult::Ptr MaxQuery::execute()
       return keyOptResult;
     }
 
-    if (!ThreadPool::isInitialized()) {
-        return executeSingleThreaded(table, fieldId);
+    if (!ThreadPool::isInitialized())
+    {
+      return executeSingleThreaded(table, fieldId);
     }
 
     ThreadPool& pool = ThreadPool::getInstance();
 
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) {
-        return executeSingleThreaded(table, fieldId);
-    }
-
-    auto result = initCondition(table);
-    if (result.second)
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
-      bool found = false;
-      std::vector<Table::ValueType> maxValue(fieldId.size(),
-                                             Table::ValueTypeMin); // each has its own max value
-
-      for (const auto& row : table)
-      {
-        if (this->evalCondition(row))
-        {
-          found = true;
-
-          for (size_t i = 0; i < fieldId.size(); ++i)
-          {
-            maxValue[i] = std::max(maxValue[i], row[fieldId[i]]);
-          }
-        }
-      }
-
-      if (!found)
-      {
-        return std::make_unique<NullQueryResult>();
-      }
-      return std::make_unique<SuccessMsgResult>(maxValue);
+      return executeSingleThreaded(table, fieldId);
     }
+
     return std::make_unique<NullQueryResult>();
   }
   catch (const TableNameNotFound& e)
@@ -161,8 +144,28 @@ MaxQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table:
 [[nodiscard]] QueryResult::Ptr
 MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
-  // Single-threaded execution logic
-  return nullptr;
+  bool found = false;
+  std::vector<Table::ValueType> maxValue(fids.size(),
+                                         Table::ValueTypeMin); // each has its own max value
+
+  for (const auto& row : table)
+  {
+    if (this->evalCondition(row))
+    {
+      found = true;
+
+      for (size_t i = 0; i < fids.size(); ++i)
+      {
+        maxValue[i] = std::max(maxValue[i], row[fids[i]]);
+      }
+    }
+  }
+
+  if (!found)
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(maxValue);
 }
 
 [[nodiscard]] QueryResult::Ptr

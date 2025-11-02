@@ -146,7 +146,12 @@ private:
   std::mutex queryQueueMutex;
 
 public:
-  static size_t splitsize();
+  static constexpr size_t splitsize()
+  {
+    constexpr size_t part = 2000;
+    return part;
+  }
+  
   using Ptr = std::unique_ptr<Table>;
 
   /**

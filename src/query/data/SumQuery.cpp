@@ -31,6 +31,12 @@
     auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     auto& table = database[this->targetTable];
 
+    auto result = initCondition(table);
+    if (!result.second)
+    {
+      return std::make_unique<NullQueryResult>();
+    }
+
     // Get field indices
     auto fids = getFieldIndices(table);
 
@@ -152,7 +158,7 @@ SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 [[nodiscard]] QueryResult::Ptr
 SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
-  constexpr size_t CHUNK_SIZE = 2000;
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
   ThreadPool& pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
