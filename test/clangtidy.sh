@@ -24,7 +24,7 @@ if [[ "$usr" == "frank" || "$usr" == "ve482" ]]; then
     ["performance"]='performance-*'
     ["portability"]='portability-*'
     ["readability"]='readability-*'
-    ["google"]='google-*'
+    ["google"]='google-*,-google-objc-function-naming'
   )
 
   for group in "${!check_groups[@]}"; do

@@ -9,7 +9,8 @@ Checks: >
   performance-*,
   portability-*,
   readability-*,
-  google-*
+  google-*,
+  -google-objc-function-naming
 WarningsAsErrors: ''
 HeaderFilterRegex: '^(src|tests)/'
 CheckOptions:
