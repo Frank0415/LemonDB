@@ -51,7 +51,7 @@ QueryResult::Ptr MaxQuery::execute()
     {
       return executeSingleThreaded(table, fieldId);
     }
-    executeMultiThreaded(table, fieldId);
+    return executeMultiThreaded(table, fieldId);
 
     return std::make_unique<NullQueryResult>();
   }
