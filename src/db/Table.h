@@ -141,10 +141,9 @@ private:
   std::string tableName;
 
   bool initialized = false;
-  std::list<Query *> queryQueue;
+  std::list<Query*> queryQueue;
   int queryQueueCounter = 0;
   std::mutex queryQueueMutex;
-
 
 public:
   static size_t splitsize();
@@ -168,8 +167,7 @@ public:
   public:
     using Ptr = std::unique_ptr<ObjectImpl>;
 
-    ObjectImpl(Iterator datumIt, Table* table_ptr)
-        : it(datumIt), table(table_ptr)
+    ObjectImpl(Iterator datumIt, Table* table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
@@ -582,9 +580,12 @@ public:
    */
   friend std::ostream& operator<<(std::ostream& out, const Table& table);
 
-  void addQuery(Query *query);
+  void addQuery(Query* query);
   void completeQuery();
-  [[nodiscard]] bool isInited() const { return initialized; }
+  [[nodiscard]] bool isInited() const
+  {
+    return initialized;
+  }
 };
 
 std::ostream& operator<<(std::ostream& out, const Table& table);
