@@ -34,12 +34,14 @@
     auto result = initCondition(table);
     if (!result.second)
     {
-      return std::make_unique<NullQueryResult>();
+      const size_t num_fields = getFieldIndices(table).size();
+      std::vector<Table::ValueType> sums(num_fields, 0);
+      return std::make_unique<SuccessMsgResult>(sums);
     }
 
     // Get field indices
     auto fids = getFieldIndices(table);
-    
+
     // Check if ThreadPool is available and has multiple threads
     if (!ThreadPool::isInitialized())
     {

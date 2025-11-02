@@ -51,6 +51,7 @@ QueryResult::Ptr MaxQuery::execute()
     {
       return executeSingleThreaded(table, fieldId);
     }
+    executeMultiThreaded(table, fieldId);
 
     return std::make_unique<NullQueryResult>();
   }
@@ -108,7 +109,6 @@ std::string MaxQuery::toString()
   return fieldId;
 }
 
-
 [[nodiscard]] QueryResult::Ptr
 MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
@@ -139,6 +139,58 @@ MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 [[nodiscard]] QueryResult::Ptr
 MaxQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
-  // Multi-threaded execution logic
-  return nullptr;
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> maxValues(num_fields, Table::ValueTypeMin);
+
+  // Create chunks and submit tasks
+  std::vector<std::future<std::vector<Table::ValueType>>> futures;
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, fids, chunk_begin, chunk_end, num_fields]()
+        {
+          std::vector<Table::ValueType> local_max(num_fields, Table::ValueTypeMin);
+          for (auto it = chunk_begin; it != chunk_end; ++it)
+          {
+            if (this->evalCondition(*it))
+            {
+              for (size_t i = 0; i < num_fields; ++i)
+              {
+                local_max[i] = std::max(local_max[i], (*it)[fids[i]]);
+              }
+            }
+          }
+          return local_max;
+        }));
+  }
+  bool any_found = false;
+  for (auto& future : futures)
+  {
+    auto local_max = future.get();
+    for (size_t i = 0; i < num_fields; ++i)
+    {
+      if (!any_found && local_max[i] != Table::ValueTypeMin)
+      {
+        any_found = true;
+      }
+      maxValues[i] = std::max(maxValues[i], local_max[i]);
+    }
+  }
+  if (!any_found)
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(maxValues);
 }
