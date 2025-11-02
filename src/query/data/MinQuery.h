@@ -4,7 +4,6 @@
 #include <string>
 
 #include "../Query.h"
-#include "db/Table.h"
 
 class MinQuery : public ComplexQuery
 {
