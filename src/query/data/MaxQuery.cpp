@@ -8,12 +8,13 @@
 #include <string>
 #include <vector>
 
-#include "../../db/Database.h"
-#include "../../db/Table.h"
-#include "../../db/TableLockManager.h"
-#include "../../utils/formatter.h"
-#include "../../utils/uexception.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/Table.h"
+#include "db/TableLockManager.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
+#include "query/QueryResult.h"
+#include "threading/Threadpool.h"
 
 QueryResult::Ptr MaxQuery::execute()
 {
@@ -36,6 +37,16 @@ QueryResult::Ptr MaxQuery::execute()
     if (keyOptResult)
     {
       return keyOptResult;
+    }
+
+    if (!ThreadPool::isInitialized()) {
+        return executeSingleThreaded(table, fieldId);
+    }
+
+    ThreadPool& pool = ThreadPool::getInstance();
+
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) {
+        return executeSingleThreaded(table, fieldId);
     }
 
     auto result = initCondition(table);
@@ -145,4 +156,18 @@ MaxQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table:
     return std::make_unique<SuccessMsgResult>(maxValue);
   }
   return std::make_unique<NullQueryResult>();
+}
+
+[[nodiscard]] QueryResult::Ptr
+MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  // Single-threaded execution logic
+  return nullptr;
+}
+
+[[nodiscard]] QueryResult::Ptr
+MaxQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  // Multi-threaded execution logic
+  return nullptr;
 }
