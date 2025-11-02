@@ -130,3 +130,76 @@ SumQuery::executeKeyConditionOptimization(Table& table, const std::vector<Table:
   return nullptr;
 }
 
+QueryResult::Ptr SumQuery::executeSingleThreaded(Table& table,
+                                                 const std::vector<Table::FieldIndex>& fids)
+{
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> sums(num_fields, 0);
+
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      for (size_t i = 0; i < num_fields; ++i)
+      {
+        sums[i] += (*it)[fids[i]];
+      }
+    }
+  }
+  return std::make_unique<SuccessMsgResult>(sums);
+}
+
+QueryResult::Ptr SumQuery::executeMultiThreaded(Table& table,
+                                                const std::vector<Table::FieldIndex>& fids)
+{
+  constexpr size_t CHUNK_SIZE = 2000;
+  ThreadPool& pool = ThreadPool::getInstance();
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> sums(num_fields, 0);
+
+  // Create chunks and submit tasks
+  std::vector<std::future<std::vector<Table::ValueType>>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, fids, chunk_begin, chunk_end, num_fields]()
+        {
+          std::vector<Table::ValueType> local_sums(num_fields, 0);
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          {
+            if (this->evalCondition(*iter))
+            {
+              for (size_t i = 0; i < num_fields; ++i)
+              {
+                local_sums[i] += (*iter)[fids[i]];
+              }
+            }
+          }
+          return local_sums;
+        }));
+  }
+
+  // Combine results from all threads
+  for (auto& future : futures)
+  {
+    auto local_sums = future.get();
+    for (size_t i = 0; i < num_fields; ++i)
+    {
+      sums[i] += local_sums[i];
+    }
+  }
+
+  return std::make_unique<SuccessMsgResult>(sums);
+}
