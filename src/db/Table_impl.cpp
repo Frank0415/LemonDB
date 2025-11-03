@@ -32,3 +32,40 @@ size_t Table::clear()
   keyMap.clear();
   return result;
 }
+
+void Table::drop()
+{
+  queryQueueCounter = 0;
+  fields.clear();
+  fieldMap.clear();
+  data.clear();
+  keyMap.clear();
+  queryQueueMutex.lock();
+  initialized = false;
+  queryQueueMutex.unlock();
+}
+
+Table::Iterator Table::begin()
+{
+  return {data.begin(), this};
+}
+
+Table::Iterator Table::end()
+{
+  return {data.end(), this};
+}
+
+Table::ConstIterator Table::begin() const
+{
+  return {data.cbegin(), this};
+}
+
+Table::ConstIterator Table::end() const
+{
+  return {data.cend(), this};
+}
+
+bool Table::isInited() const
+{
+  return initialized;
+}
