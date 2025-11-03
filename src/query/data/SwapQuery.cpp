@@ -1,21 +1,21 @@
 #include "SwapQuery.h"
 
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 #include "db/Table.h"
-#include "threading/Threadpool.h"
 
 QueryResult::Ptr SwapQuery::execute()
 {
-
   try
   {
     auto validation_result = validateOperands();
@@ -28,10 +28,17 @@ QueryResult::Ptr SwapQuery::execute()
     Database& database = Database::getInstance();
     auto& table = database[this->targetTable];
 
+    auto result = initCondition(table);
+    if (!result.second)
+    {
+      return std::make_unique<RecordCountResult>(0);
+    }
+
     const auto fids = getFieldIndices(table);
     auto field_index_1 = fids.first;
     auto field_index_2 = fids.second;
 
+    // Try KEY condition optimization first
     Table::SizeType counter = 0;
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool success, Table::Object::Ptr obj)
@@ -49,10 +56,12 @@ QueryResult::Ptr SwapQuery::execute()
                                                   }
                                                 });
 
-    if (handled) {
-        return std::make_unique<RecordCountResult>(static_cast<int>(counter));
+    if (handled)
+    {
+      return std::make_unique<RecordCountResult>(static_cast<int>(counter));
     }
 
+    // Use ThreadPool if available
     if (!ThreadPool::isInitialized())
     {
       return executeSingleThreaded(table, field_index_1, field_index_2);
