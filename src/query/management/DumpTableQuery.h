@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "../Query.h"
+#include "query/Query.h"
 
 class DumpTableQuery : public Query
 {
