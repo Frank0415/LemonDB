@@ -108,3 +108,49 @@ std::string CountQuery::toString()
 
   return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(record_count) + "\n");
 }
+
+[[nodiscard]] QueryResult::Ptr CountQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  int total_count = 0;
+
+  // Create chunks and submit tasks
+  std::vector<std::future<int>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_begin, chunk_end]()
+        {
+          int local_count = 0;
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          {
+            if (this->evalCondition(*iter))
+            {
+              local_count++;
+            }
+          }
+          return local_count;
+        }));
+  }
+
+  // Combine results from all threads
+  for (auto& future : futures)
+  {
+    total_count += future.get();
+  }
+
+  return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(total_count) + "\n");
+}
