@@ -48,7 +48,7 @@ public:
 
   void setNext(QueryBuilder::Ptr&& builder) final
   {
-    (void)builder;
+    (void)std::move(builder);
   }
 
   void clear() override
@@ -60,10 +60,16 @@ public:
 
 class BasicQueryBuilder : public QueryBuilder
 {
-protected:
+private:
   QueryBuilder::Ptr nextBuilder;
 
 public:
+  // Helper method for derived classes to access nextBuilder
+  [[nodiscard]] QueryBuilder::Ptr& getNextBuilder()
+  {
+    return nextBuilder;
+  }
+
   void setNext(Ptr&& builder) override
   {
     nextBuilder = std::move(builder);
