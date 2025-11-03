@@ -5,9 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "../../db/Table.h"
-#include "../Query.h"
-#include "../QueryResult.h"
+#include "db/Table.h"
+#include "query/QueryResult.h"
 
 class CopyTableQuery : public Query
 {

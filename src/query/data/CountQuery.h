@@ -2,7 +2,6 @@
 #define PROJECT_COUNTQUERY_H
 
 #include <string>
-#include <vector>
 
 #include "../../db/Table.h"
 #include "../Query.h"

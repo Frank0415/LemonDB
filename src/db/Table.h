@@ -188,17 +188,14 @@ public:
 
     /** Not const because key can be updated */
     Iterator it;
-    mutable Table* table;
+    // Use const Table* for const VType, Table* for non-const VType
+    using TablePtrType = std::conditional_t<std::is_const_v<VType>, const Table*, Table*>;
+    TablePtrType table;
 
   public:
     using Ptr = std::unique_ptr<ObjectImpl>;
 
-    ObjectImpl(Iterator datumIt, Table* table_ptr) : it(datumIt), table(table_ptr)
-    {
-    }
-
-    ObjectImpl(Iterator datumIt, const Table* table_ptr)
-        : it(datumIt), table(const_cast<Table*>(table_ptr))
+    ObjectImpl(Iterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
@@ -312,10 +309,12 @@ public:
     friend class Table;
 
     DatumIterator it;
-    const Table* table = nullptr;
+    // Use const Table* for ConstObject, Table* for Object
+    using TablePtrType = typename ObjType::TablePtrType;
+    TablePtrType table = nullptr;
 
   public:
-    IteratorImpl(DatumIterator datumIt, const Table* table_ptr) : it(datumIt), table(table_ptr)
+    IteratorImpl(DatumIterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
@@ -447,17 +446,6 @@ private:
   static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)
   {
     return std::make_unique<ConstObject>(iterator, table);
-  }
-
-  static ConstObject::Ptr createProxy(ConstDataIterator iterator, Table* table)
-  {
-    return std::make_unique<ConstObject>(iterator, table);
-  }
-
-  static Object::Ptr createProxy(DataIterator iterator, const Table* table)
-  {
-    // For non-const iterators, we still accept const Table* since the iterator itself is not const
-    return std::make_unique<Object>(iterator, const_cast<Table*>(table));
   }
 
   static Object::Ptr createProxy(DataIterator iterator, Table* table)
