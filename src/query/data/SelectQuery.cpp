@@ -179,3 +179,68 @@ SelectQuery::executeSingleThreaded(const Table& table,
 
   return std::make_unique<TextRowsResult>(buffer.str());
 }
+
+[[nodiscard]] QueryResult::Ptr
+SelectQuery::executeMultiThreaded(const Table& table,
+                                  const std::vector<Table::FieldIndex>& fieldIds)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<std::map<std::string, std::vector<Table::ValueType>>>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_begin, chunk_end, &fieldIds]()
+        {
+          std::map<std::string, std::vector<Table::ValueType>> local_rows;
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          {
+            if (this->evalCondition(*iter))
+            {
+              std::vector<Table::ValueType> values;
+              values.reserve(fieldIds.size());
+              for (const auto& field_id : fieldIds)
+              {
+                values.emplace_back((*iter)[field_id]);
+              }
+              local_rows.emplace(iter->key(), std::move(values));
+            }
+          }
+          return local_rows;
+        }));
+  }
+
+  // Merge all results into sorted map
+  std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
+  for (auto& future : futures)
+  {
+    auto local_rows = future.get();
+    sorted_rows.insert(local_rows.begin(), local_rows.end());
+  }
+
+  // Output in KEY order (already sorted by map)
+  std::ostringstream buffer;
+  for (const auto& [key, values] : sorted_rows)
+  {
+    buffer << "( " << key;
+    for (const auto& value : values)
+    {
+      buffer << " " << value;
+    }
+    buffer << " )\n";
+  }
+
+  return std::make_unique<TextRowsResult>(buffer.str());
+}
