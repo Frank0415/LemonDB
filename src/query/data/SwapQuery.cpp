@@ -11,6 +11,7 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 #include "db/Table.h"
+#include "threading/Threadpool.h"
 
 QueryResult::Ptr SwapQuery::execute()
 {
@@ -31,34 +32,29 @@ QueryResult::Ptr SwapQuery::execute()
     auto field_index_1 = fids.first;
     auto field_index_2 = fids.second;
 
-    Table::SizeType counter = 0;
-    const bool handled = this->testKeyCondition(table,
-                                                [&](bool success, Table::Object::Ptr obj)
-                                                {
-                                                  if (!success)
-                                                  {
-                                                    return;
-                                                  }
-                                                  if (obj)
-                                                  {
-                                                    auto tmp = (*obj)[field_index_1];
-                                                    (*obj)[field_index_1] = (*obj)[field_index_2];
-                                                    (*obj)[field_index_2] = tmp;
-                                                    ++counter;
-                                                  }
-                                                });
-
-    if (!handled)
+    if (!ThreadPool::isInitialized())
     {
-      for (auto it = table.begin(); it != table.end(); ++it)
+      return executeSingleThreaded(table, field_index_1, field_index_2);
+    }
+
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    {
+      return executeSingleThreaded(table, field_index_1, field_index_2);
+    }
+
+    return executeMultiThreaded(table, field_index_1, field_index_2);
+
+    Table::SizeType counter = 0;
+
+    for (auto it = table.begin(); it != table.end(); ++it)
+    {
+      if (this->evalCondition(*it))
       {
-        if (this->evalCondition(*it))
-        {
-          auto tmp = (*it)[field_index_1];
-          (*it)[field_index_1] = (*it)[field_index_2];
-          (*it)[field_index_2] = tmp;
-          ++counter;
-        }
+        auto tmp = (*it)[field_index_1];
+        (*it)[field_index_1] = (*it)[field_index_2];
+        (*it)[field_index_2] = tmp;
+        ++counter;
       }
     }
     return std::make_unique<RecordCountResult>(static_cast<int>(counter));
