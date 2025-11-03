@@ -27,7 +27,9 @@ QueryResult::Ptr SwapQuery::execute()
     Database& database = Database::getInstance();
     auto& table = database[this->targetTable];
 
-    const auto [field_index_1, field_index_2] = getFieldIndices(table);
+    const auto fids = getFieldIndices(table);
+    auto field_index_1 = fids.first;
+    auto field_index_2 = fids.second;
 
     Table::SizeType counter = 0;
     const bool handled = this->testKeyCondition(table,
@@ -105,4 +107,16 @@ SwapQuery::getFieldIndices(Table& table) const
                                            "Ill-formed query: KEY cannot be swapped.");
   }
   return {table.getFieldIndex(operands[0]), table.getFieldIndex(operands[1])};
+}
+
+[[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
+                                                     const Table::FieldIndex& field_index_1,
+                                                     const Table::FieldIndex& field_index_2)
+{
+}
+
+[[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
+                                                    const Table::FieldIndex& field_index_1,
+                                                    const Table::FieldIndex& field_index_2)
+{
 }
