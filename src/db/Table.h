@@ -22,26 +22,6 @@
 #include "../utils/uexception.h"
 #include "query/QueryResult.h"
 
-#define DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field)                                                  \
-  try                                                                                              \
-  {                                                                                                \
-    auto& index = table->fieldMap.at(field);                                                       \
-    return it->datum.at(index);                                                                    \
-  }                                                                                                \
-  catch (const std::out_of_range& e)                                                               \
-  {                                                                                                \
-    throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));                     \
-  }
-
-#define DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index)                                                 \
-  try                                                                                              \
-  {                                                                                                \
-    return it->datum.at(index);                                                                    \
-  }                                                                                                \
-  catch (const std::out_of_range& e)                                                               \
-  {                                                                                                \
-    throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));                        \
-  }
 
 class Query
 {
@@ -151,7 +131,7 @@ public:
     constexpr size_t part = 2000;
     return part;
   }
-  
+
   using Ptr = std::unique_ptr<Table>;
 
   /**
@@ -213,22 +193,52 @@ public:
      */
     VType& operator[](const FieldNameType& field) const
     {
-      DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
+      try
+      {
+        auto& index = table->fieldMap.at(field);
+        return it->datum.at(index);
+      }
+      catch (const std::out_of_range& e)
+      {
+        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));
+      }
     }
 
     VType& operator[](const FieldIndex& index) const
     {
-      DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
+      try
+      {
+        return it->datum.at(index);
+      }
+      catch (const std::out_of_range& e)
+      {
+        throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));
+      }
     }
 
     [[nodiscard]] VType& get(const FieldNameType& field) const
     {
-      DBTABLE_ACCESS_WITH_NAME_EXCEPTION(field);
+      try
+      {
+        auto& index = table->fieldMap.at(field);
+        return it->datum.at(index);
+      }
+      catch (const std::out_of_range& e)
+      {
+        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));
+      }
     }
 
     [[nodiscard]] VType& get(const FieldIndex& index) const
     {
-      DBTABLE_ACCESS_WITH_INDEX_EXCEPTION(index);
+      try
+      {
+        return it->datum.at(index);
+      }
+      catch (const std::out_of_range& e)
+      {
+        throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));
+      }
     }
   };
 
@@ -476,9 +486,9 @@ public:
    * Set the name of the table
    * @param name
    */
-  void setName(std::string name)
+  void setName(const std::string& name)
   {
-    this->tableName = std::move(name);
+    this->tableName = name;
   }
 
   /**

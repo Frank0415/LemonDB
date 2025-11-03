@@ -9,9 +9,6 @@
 
 class TableLockManager
 {
-  TableLockManager(TableLockManager&&) = delete;
-  TableLockManager& operator=(TableLockManager&&) = delete;
-
 private:
   std::unordered_map<std::string, std::unique_ptr<std::shared_mutex>> lock_map_;
   mutable std::shared_mutex map_mutex_;
@@ -40,6 +37,8 @@ private:
   }
 
 public:
+  TableLockManager(TableLockManager&&) = delete;
+  TableLockManager& operator=(TableLockManager&&) = delete;
   TableLockManager(const TableLockManager&) = delete;
   TableLockManager& operator=(const TableLockManager&) = delete;
 
