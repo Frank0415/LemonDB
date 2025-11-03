@@ -28,8 +28,8 @@ QueryResult::Ptr SelectQuery::execute()
     }
 
     auto& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     auto fieldIds = getFieldIndices(table);
     auto result = initCondition(table);
@@ -80,29 +80,29 @@ QueryResult::Ptr SelectQuery::execute()
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string SelectQuery::toString()
 {
-  return "QUERY = SELECT \"" + this->targetTable + "\"";
+  return "QUERY = SELECT \"" + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr SelectQuery::validateOperands() const
 {
   if (this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Invalid operands.");
   }
   return nullptr;
 }
