@@ -28,15 +28,17 @@ struct Args
   std::int64_t threads = 0;
 };
 
-void parseArgs(int argc, char* argv[], Args& args)
+void parseArgs(int argc, char** argv, Args& args)
 {
-  const option longOpts[] = {{"listen", required_argument, nullptr, 'l'},
-                             {"threads", required_argument, nullptr, 't'},
-                             {nullptr, no_argument, nullptr, 0}};
-  const char* shortOpts = "l:t:";
+  // Use std::array to avoid C-style array decay and allow safe indexing
+  const std::array<option, 3> longOpts = {{{"listen", required_argument, nullptr, 'l'},
+                                           {"threads", required_argument, nullptr, 't'},
+                                           {nullptr, no_argument, nullptr, 0}}};
+
+  const std::string shortOpts = "l:t:";
   int opt = 0;
   int longIndex = 0;
-  while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
+  while ((opt = getopt_long(argc, argv, shortOpts.c_str(), longOpts.data(), &longIndex)) != -1)
   {
     if (opt == 'l')
     {
@@ -49,7 +51,24 @@ void parseArgs(int argc, char* argv[], Args& args)
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
+      // longIndex may be out of range for unknown options, guard access
+      const char* optName = nullptr;
+      if (longIndex >= 0 && static_cast<size_t>(longIndex) < longOpts.size())
+      {
+        const auto* const iter_begin = longOpts.begin();
+        const auto* iter = iter_begin;
+        using diff_t = std::iterator_traits<decltype(longOpts.begin())>::difference_type;
+        std::advance(iter, static_cast<diff_t>(longIndex));
+        optName = iter->name;
+      }
+      if (optName != nullptr)
+      {
+        std::cerr << "lemondb: warning: unknown argument " << optName << '\n';
+      }
+      else
+      {
+        std::cerr << "lemondb: warning: unknown argument" << '\n';
+      }
     }
   }
 }
