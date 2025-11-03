@@ -14,6 +14,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -22,18 +23,27 @@
 #include "../utils/uexception.h"
 #include "query/QueryResult.h"
 
-
 class Query
 {
-// private:
-//   int id = -1;
+  // private:
+  //   int id = -1;
 
-protected:
+private:
   std::string targetTable;
-
 
 public:
   Query() = default;
+
+  [[nodiscard]] std::string& targetTableRef()
+  {
+    return targetTable;
+  }
+
+  // Const overload so const member functions can access target table name
+  [[nodiscard]] const std::string& targetTableRef() const
+  {
+    return targetTable;
+  }
 
   explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
   {
@@ -74,13 +84,15 @@ public:
 
 private:
   /** A row in the table */
-  struct Datum
+  class Datum
   {
+  private:
     /** Unique key of this datum */
     KeyType key;
     /** The values in the order of fields */
     std::vector<ValueType> datum;
 
+  public:
     Datum() = default;
 
     // By declaring all 5 special member functions, we adhere to the Rule of
@@ -104,6 +116,32 @@ private:
     explicit Datum(KeyType key, std::vector<ValueType>&& datum) noexcept
         : key(std::move(key)), datum(std::move(datum))
     {
+    }
+
+    // Accessors so outer code need not access members directly
+    [[nodiscard]] const KeyType& keyConstRef() const noexcept
+    {
+      return key;
+    }
+
+    [[nodiscard]] KeyType& keyRef() noexcept
+    {
+      return key;
+    }
+
+    void setKey(KeyType newKey) noexcept
+    {
+      key = std::move(newKey);
+    }
+
+    [[nodiscard]] const std::vector<ValueType>& datumConstRef() const noexcept
+    {
+      return datum;
+    }
+
+    [[nodiscard]] std::vector<ValueType>& datumRef() noexcept
+    {
+      return datum;
     }
   };
 
@@ -165,27 +203,36 @@ public:
     }
 
     ObjectImpl(const ObjectImpl&) = default;
-
     ObjectImpl(ObjectImpl&&) noexcept = default;
-
     ObjectImpl& operator=(const ObjectImpl&) = default;
-
     ObjectImpl& operator=(ObjectImpl&&) noexcept = default;
-
     ~ObjectImpl() = default;
 
     [[nodiscard]] const KeyType& key() const
     {
-      return it->key;
+      return it->keyConstRef();
+    }
+
+    // Helper to obtain the correct datum reference type depending on VType
+    template <typename T = VType> auto& datumAccess() const
+    {
+      if constexpr (std::is_const_v<T>)
+      {
+        return it->datumConstRef();
+      }
+      else
+      {
+        return it->datumRef();
+      }
     }
 
     void setKey(KeyType key)
     {
-      auto keyMapIt = table->keyMap.find(it->key);
+      auto keyMapIt = table->keyMap.find(it->keyConstRef());
       auto dataIt = std::move(keyMapIt->second);
       table->keyMap.erase(keyMapIt);
       table->keyMap.emplace(key, std::move(dataIt));
-      it->key = std::move(key);
+      it->setKey(std::move(key));
     }
 
     /**
@@ -199,7 +246,7 @@ public:
       try
       {
         auto& index = table->fieldMap.at(field);
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -211,7 +258,7 @@ public:
     {
       try
       {
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -224,7 +271,7 @@ public:
       try
       {
         auto& index = table->fieldMap.at(field);
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -236,7 +283,7 @@ public:
     {
       try
       {
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -251,7 +298,7 @@ public:
   /**
    * A proxy class that provides iteration on the table
    * @tparam ObjType
-   * @tparam DatumIterator
+          return datumAccess().at(index);
    */
   template <typename ObjType, typename DatumIterator> class IteratorImpl
   {

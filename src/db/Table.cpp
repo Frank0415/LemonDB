@@ -39,7 +39,7 @@ void Table::duplicateKeyData(const Table::KeyType& key)
 {
   Table::KeyType copyKey(key);
   copyKey.append("_copy");
-  std::vector<ValueType> copyData = ((*this)[key])->it->datum;
+  std::vector<ValueType> copyData = ((*this)[key])->it->datumRef();
   this->insertByIndex(copyKey, std::move(copyData));
 }
 
@@ -77,7 +77,7 @@ void Table::deleteByIndex(const KeyType& key)
   {
     Datum& lastDatum = this->data.back();
     // Save the key before moving
-    const KeyType lastKey = lastDatum.key;
+    const KeyType lastKey = lastDatum.keyConstRef();
     this->data[index] = std::move(lastDatum);
     this->keyMap[lastKey] = index;
   }
@@ -111,10 +111,10 @@ std::ostream& operator<<(std::ostream& out, const Table& table)
   auto numFields = table.fields.size();
   for (const auto& datum : table.data)
   {
-    buffer << std::setw(width) << datum.key;
+    buffer << std::setw(width) << datum.keyConstRef();
     for (decltype(numFields) i = 0; i < numFields; ++i)
     {
-      buffer << std::setw(width) << datum.datum[i];
+      buffer << std::setw(width) << datum.datumConstRef()[i];
     }
     buffer << "\n";
   }
