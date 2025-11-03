@@ -14,6 +14,7 @@
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
 #include "db/Database.h"
+#include "db/QueryBase.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -24,7 +25,6 @@
 #include "management/TruncateTableQuery.h"
 #include "utils/formatter.h"
 #include "utils/uexception.h"
-#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -42,7 +42,6 @@ void Throwhelper(std::vector<std::string>::const_iterator iterator,
   }
 }
 } // namespace
-
 
 Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {

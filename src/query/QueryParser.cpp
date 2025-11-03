@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "QueryBuilders.h"
+#include "db/QueryBase.h"
 #include "utils/uexception.h"
 
 QueryParser::QueryParser() = default;

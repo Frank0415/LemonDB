@@ -17,7 +17,7 @@
 #include <utility>
 
 #include "db/Database.h"
-#include "db/Table.h"
+#include "db/QueryBase.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
 #include "threading/Collector.h"

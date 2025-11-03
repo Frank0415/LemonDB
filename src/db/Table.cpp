@@ -16,6 +16,7 @@
 #include "../threading/Threadpool.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
+#include "db/QueryBase.h"
 
 Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 {
@@ -92,9 +93,8 @@ Table::Object::Ptr Table::operator[](const Table::KeyType& key)
     // not found
     return nullptr;
   }
-  return createProxy(data.begin() +
-                         static_cast<std::vector<Datum>::difference_type>(iterator->second),
-                     this);
+  return createProxy(
+      data.begin() + static_cast<std::vector<Datum>::difference_type>(iterator->second), this);
 }
 
 std::ostream& operator<<(std::ostream& out, const Table& table)

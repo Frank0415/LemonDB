@@ -1,5 +1,5 @@
 #include "Collector.h"
-#include "db/Table.h"
+#include "db/QueryBase.h"
 #include "query/QueryResult.h"
 #include <cstddef>
 #include <exception>
