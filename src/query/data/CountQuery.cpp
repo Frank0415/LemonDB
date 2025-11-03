@@ -83,7 +83,7 @@ std::string CountQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr CountQuery::validateOperands() const
 {
-  if (!this->operands.empty())
+  if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
                                             "COUNT query does not take any operands.");

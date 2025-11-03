@@ -23,20 +23,20 @@ QueryResult::Ptr InsertQuery::execute()
 {
   const int DECIMAL_BASE = 10;
   using std::string_literals::operator""s;
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "No operand (? operands)."_f % operands.size());
+                                            "No operand (? operands)."_f % getOperands().size());
   }
   Database& database = Database::getInstance();
   try
   {
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
-    auto& key = this->operands.front();
+    auto& key = this->getOperands().front();
     std::vector<Table::ValueType> data;
-    data.reserve(this->operands.size() - 1);
-    for (auto it = ++this->operands.begin(); it != this->operands.end(); ++it)
+    data.reserve(this->getOperands().size() - 1);
+    for (auto it = ++this->getOperands().begin(); it != this->getOperands().end(); ++it)
     {
       data.emplace_back(strtol(it->c_str(), nullptr, DECIMAL_BASE));
     }

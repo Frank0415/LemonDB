@@ -86,10 +86,10 @@ std::string AddQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr AddQuery::validateOperands() const
 {
-  if (this->operands.size() < 2)
+  if (this->getOperands().size() < 2)
   {
     return std::make_unique<ErrorMsgResult>(
-        qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+        qname, this->targetTable, "Invalid number of operands (? operands)."_f % getOperands().size());
   }
   return nullptr;
 }
@@ -97,8 +97,8 @@ std::string AddQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> AddQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> indices;
-  indices.reserve(this->operands.size());
-  for (const auto& operand : this->operands)
+  indices.reserve(this->getOperands().size());
+  for (const auto& operand : this->getOperands())
   {
     indices.push_back(table.getFieldIndex(operand));
   }
@@ -118,7 +118,7 @@ AddQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
     }
     // perform ADD operation
     int sum = 0;
-    for (size_t i = 0; i < this->operands.size() - 1; ++i)
+    for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
     {
       sum += (*it)[fids[i]];
     }
@@ -159,7 +159,7 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
             }
             // perform ADD operation
             int sum = 0;
-            for (size_t i = 0; i < this->operands.size() - 1; ++i)
+            for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
             {
               sum += (*it)[fids[i]];
             }
