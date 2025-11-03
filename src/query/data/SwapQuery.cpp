@@ -32,6 +32,27 @@ QueryResult::Ptr SwapQuery::execute()
     auto field_index_1 = fids.first;
     auto field_index_2 = fids.second;
 
+    Table::SizeType counter = 0;
+    const bool handled = this->testKeyCondition(table,
+                                                [&](bool success, Table::Object::Ptr obj)
+                                                {
+                                                  if (!success)
+                                                  {
+                                                    return;
+                                                  }
+                                                  if (obj)
+                                                  {
+                                                    auto tmp = (*obj)[field_index_1];
+                                                    (*obj)[field_index_1] = (*obj)[field_index_2];
+                                                    (*obj)[field_index_2] = tmp;
+                                                    ++counter;
+                                                  }
+                                                });
+
+    if (handled) {
+        return std::make_unique<RecordCountResult>(static_cast<int>(counter));
+    }
+
     if (!ThreadPool::isInitialized())
     {
       return executeSingleThreaded(table, field_index_1, field_index_2);
@@ -146,4 +167,10 @@ SwapQuery::getFieldIndices(Table& table) const
           return local_counter;
         }));
   }
+  Table::SizeType counter = 0;
+  for (auto& future : futures)
+  {
+    counter += future.get();
+  }
+  return std::make_unique<RecordCountResult>(static_cast<int>(counter));
 }
