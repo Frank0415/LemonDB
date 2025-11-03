@@ -21,17 +21,19 @@
 QueryResult::Ptr UpdateQuery::execute()
 {
   using std::string_literals::operator""s;
-  if (this->operands.size() != 2)
-  {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "Invalid number of operands (? operands)."_f %
-                                                operands.size());
-  }
-  Database& database = Database::getInstance();
+
   try
   {
+    auto validationResult = validateOperands();
+    if (validationResult != nullptr)
+    {
+      return validationResult;
+    }
+
+    Database& database = Database::getInstance();
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
+
     if (this->operands[0] == "KEY")
     {
       this->keyValue = this->operands[1];
@@ -43,27 +45,25 @@ QueryResult::Ptr UpdateQuery::execute()
       this->fieldValue =
           static_cast<Table::ValueType>(strtol(this->operands[1].c_str(), nullptr, decimal_base));
     }
+
     auto result = initCondition(table);
-    Table::SizeType counter = 0;
-    if (result.second)
+    if (!result.second)
     {
-      for (auto it = table.begin(); it != table.end(); ++it)
-      {
-        if (this->evalCondition(*it))
-        {
-          if (this->keyValue.empty())
-          {
-            (*it)[this->fieldId] = this->fieldValue;
-          }
-          else
-          {
-            it->setKey(this->keyValue);
-          }
-          ++counter;
-        }
-      }
+      return std::make_unique<RecordCountResult>(0);
     }
-    return std::make_unique<RecordCountResult>(counter);
+
+    if (!ThreadPool::isInitialized())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    return executeMultiThreaded(table);
   }
   catch (const TableNameNotFound& e)
   {
@@ -121,4 +121,55 @@ std::string UpdateQuery::toString()
     }
   }
   return std::make_unique<RecordCountResult>(counter);
+}
+
+[[nodiscard]] QueryResult::Ptr UpdateQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<Table::SizeType>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_start = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_start, chunk_end]()
+        {
+          Table::SizeType local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it)
+          {
+            if (this->evalCondition(*it))
+            {
+              if (this->keyValue.empty())
+              {
+                (*it)[this->fieldId] = this->fieldValue;
+              }
+              else
+              {
+                it->setKey(this->keyValue);
+              }
+              ++local_count;
+            }
+          }
+          return local_count;
+        }));
+  }
+
+  // Wait for all tasks to complete and aggregate results
+  Table::SizeType total_count = 0;
+  for (auto& future : futures)
+  {
+    total_count += future.get();
+  }
+  return std::make_unique<RecordCountResult>(total_count);
 }
