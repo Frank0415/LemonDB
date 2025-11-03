@@ -18,6 +18,13 @@ class UpdateQuery : public ComplexQuery
   Table::FieldIndex fieldId = 0;
   Table::KeyType keyValue;
 
+private:
+  [[nodiscard]] QueryResult::Ptr validateOperands() const;
+
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
+
 public:
   UpdateQuery(std::string table,
               std::vector<std::string> operands,
@@ -30,7 +37,10 @@ public:
 
   std::string toString() override;
 
-  [[nodiscard]] bool isWriter() const override { return true; }
+  [[nodiscard]] bool isWriter() const override
+  {
+    return true;
+  }
 };
 
 #endif // PROJECT_UPDATEQUERY_H
