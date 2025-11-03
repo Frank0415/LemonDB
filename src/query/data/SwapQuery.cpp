@@ -101,11 +101,11 @@ std::string SwapQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr SwapQuery::validateOperands() const
 {
-  if (this->operands.size() != 2)
+  if (this->getOperands().size() != 2)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
   return nullptr;
 }
@@ -113,12 +113,12 @@ std::string SwapQuery::toString()
 [[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
 SwapQuery::getFieldIndices(Table& table) const
 {
-  if (operands[0] == "KEY" || operands[1] == "KEY")
+  if (getOperands()[0] == "KEY" || getOperands()[1] == "KEY")
   {
     throw std::make_unique<ErrorMsgResult>(qname, this->targetTable,
                                            "Ill-formed query: KEY cannot be swapped.");
   }
-  return {table.getFieldIndex(operands[0]), table.getFieldIndex(operands[1])};
+  return {table.getFieldIndex(getOperands()[0]), table.getFieldIndex(getOperands()[1])};
 }
 
 [[nodiscard]] QueryResult::Ptr SwapQuery::executeSingleThreaded(
