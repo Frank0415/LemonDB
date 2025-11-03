@@ -93,7 +93,7 @@ Table::Object::Ptr Table::operator[](const Table::KeyType& key)
     return nullptr;
   }
   return createProxy(data.begin() +
-                         static_cast<std::vector<Table::Datum>::difference_type>(iterator->second),
+                         static_cast<std::vector<Datum>::difference_type>(iterator->second),
                      this);
 }
 
@@ -244,24 +244,4 @@ void Table::completeQuery()
           });
     }
   }
-}
-
-void Table::setName(const std::string& name)
-{
-  this->tableName = name;
-}
-
-const std::string& Table::name() const
-{
-  return this->tableName;
-}
-
-bool Table::empty() const
-{
-  return this->data.empty();
-}
-
-size_t Table::size() const
-{
-  return this->data.size();
 }
