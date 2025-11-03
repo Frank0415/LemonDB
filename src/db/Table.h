@@ -524,106 +524,63 @@ public:
    * Set the name of the table
    * @param name
    */
-  void setName(const std::string& name)
-  {
-    this->tableName = name;
-  }
+  void setName(const std::string& name);
 
   /**
    * Get the name of the table
    * @return
    */
-  [[nodiscard]] const std::string& name() const
-  {
-    return this->tableName;
-  }
+  [[nodiscard]] const std::string& name() const;
 
   /**
    * Return whether the table is empty
    * @return
    */
-  [[nodiscard]] bool empty() const
-  {
-    return this->data.empty();
-  }
+  [[nodiscard]] bool empty() const;
 
   /**
    * Return the num of data stored in the table
    * @return
    */
-  [[nodiscard]] size_t size() const
-  {
-    return this->data.size();
-  }
+  [[nodiscard]] size_t size() const;
 
   /**
    * Return the fields in the table
    * @return
    */
-  [[nodiscard]] const std::vector<FieldNameType>& field() const
-  {
-    return this->fields;
-  }
+  [[nodiscard]] const std::vector<FieldNameType>& field() const;
 
   /**
    * Clear all content in the table
    * @return rows affected
    */
-  size_t clear()
-  {
-    auto result = keyMap.size();
-    data.clear();
-    keyMap.clear();
-    return result;
-  }
+  size_t clear();
 
-  void drop()
-  {
-    queryQueueCounter = 0;
-    fields.clear();
-    fieldMap.clear();
-    data.clear();
-    keyMap.clear();
-    queryQueueMutex.lock();
-    initialized = false;
-    queryQueueMutex.unlock();
-  }
+  void drop();
 
   /**
    * Get a begin iterator similar to the standard iterator
    * @return begin iterator
    */
-  Iterator begin()
-  {
-    return {data.begin(), this};
-  }
+  Iterator begin();
 
   /**
    * Get a end iterator similar to the standard iterator
    * @return end iterator
    */
-  Iterator end()
-  {
-    return {data.end(), this};
-  }
+  Iterator end();
 
   /**
    * Get a const begin iterator similar to the standard iterator
    * @return const begin iterator
    */
-  [[nodiscard]] ConstIterator begin() const
-  {
-    return {data.cbegin(), this};
-  }
+  [[nodiscard]] ConstIterator begin() const;
 
   /**
    * Get a const end iterator similar to the standard iterator
    * @return const end iterator
    */
-  [[nodiscard]] ConstIterator end() const
-  {
-    return {data.cend(), this};
-  }
+  [[nodiscard]] ConstIterator end() const;
 
   /**
    * Overload the << operator for complete print of the table
@@ -635,10 +592,7 @@ public:
 
   void addQuery(Query* query);
   void completeQuery();
-  [[nodiscard]] bool isInited() const
-  {
-    return initialized;
-  }
+  [[nodiscard]] bool isInited() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Table& table);
