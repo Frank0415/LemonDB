@@ -128,11 +128,13 @@ int main(int argc, char* argv[])
   std::istream* input = &std::cin;
   if (!parsedArgs.listen.empty())
   {
-    fin.open(parsedArgs.listen);
+    // Construct a new ifstream and assign to fin to ensure all internal
+    // members are properly initialized (avoids MSan use-of-uninitialized warnings).
+    fin = std::ifstream(parsedArgs.listen);
     if (!fin.is_open())
     {
       std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
-      exit(-1);
+      std::exit(-1);
     }
     input = &fin;
   }
