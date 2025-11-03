@@ -94,7 +94,7 @@ public:
 
 class ComplexQueryBuilder : public BasicQueryBuilder
 {
-protected:
+private:
   std::string targetTable;
   std::vector<std::string> operandToken;
   std::vector<QueryCondition> conditionToken;
