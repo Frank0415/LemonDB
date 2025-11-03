@@ -112,3 +112,34 @@ std::string SelectQuery::toString()
 {
   return "QUERY = SELECT \"" + this->targetTable + "\"";
 }
+
+[[nodiscard]] QueryResult::Ptr SelectQuery::validateOperands() const
+{
+  if (this->operands.empty())
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> SelectQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<std::string> fieldsOrder;
+  fieldsOrder.reserve(this->operands.size() + 1);
+  fieldsOrder.emplace_back("KEY");
+  for (const auto& field : this->operands)
+  {
+    if (field != "KEY")
+    {
+      fieldsOrder.emplace_back(field);
+    }
+  }
+
+  std::vector<Table::FieldIndex> fieldIds;
+  fieldIds.reserve(fieldsOrder.size() - 1);
+  for (size_t i = 1; i < fieldsOrder.size(); ++i)
+  {
+    fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
+  }
+  return fieldIds;
+}
