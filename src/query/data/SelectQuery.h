@@ -1,6 +1,8 @@
 #ifndef PROJECT_SELECT_QUERY_H
 #define PROJECT_SELECT_QUERY_H
+#include <map>
 #include <string>
+#include <vector>
 
 #include "../Query.h"
 #include "../QueryResult.h"
@@ -8,6 +10,17 @@
 class SelectQuery : public ComplexQuery
 {
   static constexpr const char* qname = "SELECT";
+
+private:
+  [[nodiscard]] QueryResult::Ptr validateOperands() const;
+
+  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(
+      const Table& table, const std::vector<Table::FieldIndex>& fieldIds);
+
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(
+      const Table& table, const std::vector<Table::FieldIndex>& fieldIds);
 
 public:
   using ComplexQuery::ComplexQuery;
