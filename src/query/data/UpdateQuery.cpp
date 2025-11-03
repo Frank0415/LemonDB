@@ -31,8 +31,8 @@ QueryResult::Ptr UpdateQuery::execute()
     }
 
     Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     if (this->getOperands()[0] == "KEY")
     {
@@ -67,35 +67,35 @@ QueryResult::Ptr UpdateQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string UpdateQuery::toString()
 {
-  return "QUERY = UPDATE " + this->targetTable + "\"";
+  return "QUERY = UPDATE " + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
 {
   if (this->getOperands().size() != 2)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
                                                 getOperands().size());
   }

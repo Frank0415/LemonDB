@@ -19,13 +19,13 @@ QueryResult::Ptr DropTableQuery::execute()
   Database& database = Database::getInstance();
   try
   {
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    database.dropTable(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    database.dropTable(this->targetTableRef());
     return std::make_unique<SuccessMsgResult>(qname);
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const std::exception& e)
   {
@@ -35,5 +35,5 @@ QueryResult::Ptr DropTableQuery::execute()
 
 std::string DropTableQuery::toString()
 {
-  return "QUERY = DROP, Table = \"" + targetTable + "\"";
+  return "QUERY = DROP, Table = \"" + targetTableRef() + "\"";
 }
