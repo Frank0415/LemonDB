@@ -42,8 +42,8 @@ QueryResult::Ptr UpdateQuery::execute()
     {
       constexpr int decimal_base = 10;
       this->fieldId = table.getFieldIndex(this->getOperands()[0]);
-      this->fieldValue =
-          static_cast<Table::ValueType>(strtol(this->getOperands()[1].c_str(), nullptr, decimal_base));
+      this->fieldValue = static_cast<Table::ValueType>(
+          strtol(this->getOperands()[1].c_str(), nullptr, decimal_base));
     }
 
     auto result = initCondition(table);

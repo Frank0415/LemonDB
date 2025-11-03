@@ -110,8 +110,9 @@ std::string DuplicateQuery::toString()
 {
   if (!this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(
-        qname, this->targetTable, "Invalid number of operands (? operands)."_f % getOperands().size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Invalid number of operands (? operands)."_f %
+                                                getOperands().size());
   }
   return nullptr;
 }

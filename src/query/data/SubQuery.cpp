@@ -83,8 +83,9 @@ std::string SubQuery::toString()
 {
   if (this->getOperands().size() < 2)
   {
-    return std::make_unique<ErrorMsgResult>(
-        qname, this->targetTable, "Invalid number of operands (? operands)."_f % getOperands().size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "Invalid number of operands (? operands)."_f %
+                                                getOperands().size());
   }
   return nullptr;
 }
