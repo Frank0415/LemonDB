@@ -21,8 +21,17 @@ QueryResult::Ptr CopyTableQuery::execute()
   {
     auto& database = Database::getInstance();
     auto srcLock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto dstLock = TableLockManager::getInstance().acquireWrite(this->newTableName);
     auto& src = database[this->targetTable];
+
+    // Validate source table
+    auto validation_result = validateSourceTable(src);
+    if (validation_result != nullptr)
+    {
+      return validation_result;
+    }
+
+    // Check if target table already exists
+    auto dstLock = TableLockManager::getInstance().acquireWrite(this->newTableName);
     bool targetExists = false;
     try
     {
@@ -39,17 +48,34 @@ QueryResult::Ptr CopyTableQuery::execute()
       return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Target table name exists");
     }
 
+    // Get field names
     const std::vector<std::string> fields = src.field();
-    auto dup = std::make_unique<Table>(this->newTableName, fields);
-    for (const auto& obj : src)
+
+    // Collect data from source table
+    std::vector<RowData> collected_rows;
+    if (!ThreadPool::isInitialized())
     {
-      std::vector<Table::ValueType> row;
-      row.reserve(fields.size());
-      for (size_t i = 0; i < fields.size(); ++i)
+      collected_rows = collectSingleThreaded(src, fields);
+    }
+    else
+    {
+      ThreadPool& pool = ThreadPool::getInstance();
+      if (pool.getThreadCount() <= 1 || src.size() < Table::splitsize())
       {
-        row.push_back(obj[i]);
+        collected_rows = collectSingleThreaded(src, fields);
       }
-      dup->insertByIndex(obj.key(), std::move(row));
+      else
+      {
+        collected_rows = collectMultiThreaded(src, fields);
+      }
+    }
+
+    // Create target table and insert all collected rows
+    auto dup = std::make_unique<Table>(this->newTableName, fields);
+
+    for (auto& [key, row] : collected_rows)
+    {
+      dup->insertByIndex(key, std::move(row));
     }
 
     database.registerTable(std::move(dup));
@@ -124,23 +150,22 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
     }
     auto chunk_end = iterator;
 
-    tasks.emplace_back(chunk_index,
-                       pool.submit(
-                           [chunk_begin, chunk_end, &fields]()
-                           {
-                             std::vector<RowData> local_results;
-                             for (auto iter = chunk_begin; iter != chunk_end; ++iter)
-                             {
-                               std::vector<Table::ValueType> row;
-                               row.reserve(fields.size());
-                               for (size_t i = 0; i < fields.size(); ++i)
-                               {
-                                 row.push_back((*iter)[i]);
-                               }
-                               local_results.emplace_back(iter->key(), std::move(row));
-                             }
-                             return local_results;
-                           }));
+    tasks.emplace_back(chunk_index, pool.submit(
+                                        [chunk_begin, chunk_end, &fields]()
+                                        {
+                                          std::vector<RowData> local_results;
+                                          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+                                          {
+                                            std::vector<Table::ValueType> row;
+                                            row.reserve(fields.size());
+                                            for (size_t i = 0; i < fields.size(); ++i)
+                                            {
+                                              row.push_back((*iter)[i]);
+                                            }
+                                            local_results.emplace_back(iter->key(), std::move(row));
+                                          }
+                                          return local_results;
+                                        }));
     ++chunk_index;
   }
 
