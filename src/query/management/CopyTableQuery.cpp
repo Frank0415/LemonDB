@@ -129,7 +129,6 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
                            [chunk_begin, chunk_end, &fields]()
                            {
                              std::vector<RowData> local_results;
-                             local_results.reserve(std::distance(chunk_begin, chunk_end));
                              for (auto iter = chunk_begin; iter != chunk_end; ++iter)
                              {
                                std::vector<Table::ValueType> row;
