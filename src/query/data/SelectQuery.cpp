@@ -100,7 +100,7 @@ std::string SelectQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr SelectQuery::validateOperands() const
 {
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
   }
@@ -110,9 +110,9 @@ std::string SelectQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> SelectQuery::getFieldIndices(Table& table) const
 {
   std::vector<std::string> fieldsOrder;
-  fieldsOrder.reserve(this->operands.size() + 1);
+  fieldsOrder.reserve(this->getOperands().size() + 1);
   fieldsOrder.emplace_back("KEY");
-  for (const auto& field : this->operands)
+  for (const auto& field : this->getOperands())
   {
     if (field != "KEY")
     {

@@ -81,10 +81,10 @@ std::string SubQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr SubQuery::validateOperands() const
 {
-  if (this->operands.size() < 2)
+  if (this->getOperands().size() < 2)
   {
     return std::make_unique<ErrorMsgResult>(
-        qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+        qname, this->targetTable, "Invalid number of operands (? operands)."_f % getOperands().size());
   }
   return nullptr;
 }
@@ -92,8 +92,8 @@ std::string SubQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> SubQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> indices;
-  indices.reserve(this->operands.size());
-  for (const auto& operand : this->operands)
+  indices.reserve(this->getOperands().size());
+  for (const auto& operand : this->getOperands())
   {
     indices.push_back(table.getFieldIndex(operand));
   }
@@ -113,7 +113,7 @@ SubQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
     }
     // perform SUB operation
     int diff = (*it)[fids[0]];
-    for (size_t i = 1; i < this->operands.size() - 1; ++i)
+    for (size_t i = 1; i < this->getOperands().size() - 1; ++i)
     {
       diff -= (*it)[fids[i]];
     }
@@ -154,7 +154,7 @@ SubQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
             }
             // perform SUB operation
             int diff = (*it)[fids[0]];
-            for (size_t i = 1; i < this->operands.size() - 1; ++i)
+            for (size_t i = 1; i < this->getOperands().size() - 1; ++i)
             {
               diff -= (*it)[fids[i]];
             }

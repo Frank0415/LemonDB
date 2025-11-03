@@ -98,8 +98,8 @@
 [[nodiscard]] std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fids;
-  fids.reserve(this->operands.size());
-  for (const auto& field : this->operands)
+  fids.reserve(this->getOperands().size());
+  for (const auto& field : this->getOperands())
   {
     fids.emplace_back(table.getFieldIndex(field));
   }

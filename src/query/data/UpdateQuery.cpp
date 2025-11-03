@@ -34,16 +34,16 @@ QueryResult::Ptr UpdateQuery::execute()
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
 
-    if (this->operands[0] == "KEY")
+    if (this->getOperands()[0] == "KEY")
     {
-      this->keyValue = this->operands[1];
+      this->keyValue = this->getOperands()[1];
     }
     else
     {
       constexpr int decimal_base = 10;
-      this->fieldId = table.getFieldIndex(this->operands[0]);
+      this->fieldId = table.getFieldIndex(this->getOperands()[0]);
       this->fieldValue =
-          static_cast<Table::ValueType>(strtol(this->operands[1].c_str(), nullptr, decimal_base));
+          static_cast<Table::ValueType>(strtol(this->getOperands()[1].c_str(), nullptr, decimal_base));
     }
 
     auto result = initCondition(table);
@@ -93,11 +93,11 @@ std::string UpdateQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
 {
-  if (this->operands.size() != 2)
+  if (this->getOperands().size() != 2)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
   return nullptr;
 }

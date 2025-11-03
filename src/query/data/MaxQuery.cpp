@@ -87,10 +87,10 @@ std::string MaxQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr MaxQuery::validateOperands() const
 {
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "No operand (? operands)."_f % operands.size());
+                                            "No operand (? operands)."_f % getOperands().size());
   }
   return nullptr;
 }
@@ -98,7 +98,7 @@ std::string MaxQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> MaxQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fieldId;
-  for (const auto& operand : this->operands)
+  for (const auto& operand : this->getOperands())
   {
     if (operand == "KEY")
     {
