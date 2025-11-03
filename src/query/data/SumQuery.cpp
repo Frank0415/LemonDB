@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,7 +36,7 @@
     if (!result.second)
     {
       const size_t num_fields = getFieldIndices(table).size();
-      std::vector<Table::ValueType> sums(num_fields, 0);
+      const std::vector<Table::ValueType> sums(num_fields, 0);
       return std::make_unique<SuccessMsgResult>(sums);
     }
 
@@ -48,7 +49,7 @@
       return executeSingleThreaded(table, fids);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table, fids);
@@ -113,13 +114,13 @@ SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto row : table)
   {
-    if (this->evalCondition(*it))
+    if (this->evalCondition(row))
     {
-      for (size_t i = 0; i < num_fields; ++i)
+      for (size_t idx = 0; idx < num_fields; ++idx)
       {
-        sums[i] += (*it)[fids[i]];
+        sums[idx] += row[fids[idx]];
       }
     }
   }
@@ -130,7 +131,7 @@ SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 

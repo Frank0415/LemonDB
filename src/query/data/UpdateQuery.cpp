@@ -10,6 +10,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
@@ -20,8 +21,6 @@
 
 QueryResult::Ptr UpdateQuery::execute()
 {
-  using std::string_literals::operator""s;
-
   try
   {
     auto validationResult = validateOperands();
@@ -57,7 +56,7 @@ QueryResult::Ptr UpdateQuery::execute()
       return executeSingleThreaded(table);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table);
@@ -67,7 +66,8 @@ QueryResult::Ptr UpdateQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
@@ -88,7 +88,7 @@ QueryResult::Ptr UpdateQuery::execute()
 
 std::string UpdateQuery::toString()
 {
-  return "QUERY = UPDATE " + this->targetTableRef() + "\"";
+  return "QUERY = UPDATE " + this->targetTableRef();
 }
 
 [[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
@@ -126,7 +126,7 @@ std::string UpdateQuery::toString()
 [[nodiscard]] QueryResult::Ptr UpdateQuery::executeMultiThreaded(Table& table)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<std::future<Table::SizeType>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
