@@ -24,9 +24,9 @@ QueryResult::Ptr SwapQuery::execute()
       return validation_result;
     }
 
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     Database& database = Database::getInstance();
-    auto& table = database[this->targetTable];
+    auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
     if (!result.second)
@@ -77,35 +77,35 @@ QueryResult::Ptr SwapQuery::execute()
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
 }
 std::string SwapQuery::toString()
 {
-  return "QUERY = SWAP \"" + this->targetTable + "\"";
+  return "QUERY = SWAP \"" + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr SwapQuery::validateOperands() const
 {
-  if (this->operands.size() != 2)
+  if (this->getOperands().size() != 2)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
   return nullptr;
 }
@@ -113,12 +113,12 @@ std::string SwapQuery::toString()
 [[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
 SwapQuery::getFieldIndices(Table& table) const
 {
-  if (operands[0] == "KEY" || operands[1] == "KEY")
+  if (getOperands()[0] == "KEY" || getOperands()[1] == "KEY")
   {
-    throw std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    throw std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                            "Ill-formed query: KEY cannot be swapped.");
   }
-  return {table.getFieldIndex(operands[0]), table.getFieldIndex(operands[1])};
+  return {table.getFieldIndex(getOperands()[0]), table.getFieldIndex(getOperands()[1])};
 }
 
 [[nodiscard]] QueryResult::Ptr SwapQuery::executeSingleThreaded(

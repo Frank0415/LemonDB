@@ -28,8 +28,8 @@
       return validation_result;
     }
 
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
     if (!result.second)
@@ -59,38 +59,39 @@
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "No such table.");
   }
   catch (const TableFieldNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "No such field.");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "No such field.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable,
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
 }
 
 [[nodiscard]] std::string SumQuery::toString()
 {
-  return "QUERY = SUM \"" + this->targetTable + "\"";
+  return "QUERY = SUM \"" + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr SumQuery::validateOperands() const
 {
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(),
+                                            "Invalid number of fields");
   }
-  if (std::any_of(this->operands.begin(), this->operands.end(),
+  if (std::any_of(this->getOperands().begin(), this->getOperands().end(),
                   [](const auto& field) { return field == "KEY"; }))
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "KEY cannot be summed.");
   }
   return nullptr;
 }
@@ -98,8 +99,8 @@
 [[nodiscard]] std::vector<Table::FieldIndex> SumQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fids;
-  fids.reserve(this->operands.size());
-  for (const auto& field : this->operands)
+  fids.reserve(this->getOperands().size());
+  for (const auto& field : this->getOperands())
   {
     fids.emplace_back(table.getFieldIndex(field));
   }

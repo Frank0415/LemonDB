@@ -1,5 +1,7 @@
 #include "Collector.h"
 #include <sstream>
+#include "db/Table.h"
+#include <cstddef>
 
 void executeQueryAsync(Query::Ptr query, size_t query_id, QueryResultCollector& g_result_collector)
 {

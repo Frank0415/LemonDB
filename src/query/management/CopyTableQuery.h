@@ -3,14 +3,28 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
-#include "../Query.h"
-#include "../QueryResult.h"
+#include "db/Table.h"
+#include "query/QueryResult.h"
 
 class CopyTableQuery : public Query
 {
   static constexpr const char* qname = "COPYTABLE";
-  const std::string newTableName;
+  std::string newTableName;
+  constexpr static bool is_multithreaded = false;
+
+private:
+  // Helper methods to reduce complexity
+  using RowData = std::pair<std::string, std::vector<Table::ValueType>>;
+
+  [[nodiscard]] QueryResult::Ptr validateSourceTable(const Table& src) const;
+
+  [[nodiscard]] std::vector<RowData> static collectSingleThreaded(const Table& src,
+                                                           const std::vector<std::string>& fields);
+
+  [[nodiscard]] std::vector<RowData> static collectMultiThreaded(const Table& src,
+                                                          const std::vector<std::string>& fields);
 
 public:
   explicit CopyTableQuery(std::string sourceTable, std::string newTable)

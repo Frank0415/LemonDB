@@ -29,8 +29,8 @@ QueryResult::Ptr DuplicateQuery::execute()
     }
 
     auto& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
     if (!result.second)
@@ -78,40 +78,41 @@ QueryResult::Ptr DuplicateQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string DuplicateQuery::toString()
 {
-  return "QUERY = DUPLICATE " + this->targetTable + "\"";
+  return "QUERY = DUPLICATE " + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr DuplicateQuery::validateOperands() const
 {
-  if (!this->operands.empty())
+  if (!this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(
-        qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                getOperands().size());
   }
   return nullptr;
 }

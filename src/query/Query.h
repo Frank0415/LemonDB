@@ -11,8 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "../db/types.h"
-#include "../db/Table.h"
+#include "db/types.h"
+#include "db/Table.h"
 #include "QueryResult.h"
 
 struct QueryCondition
@@ -41,7 +41,7 @@ public:
 
 class ComplexQuery : public Query
 {
-protected:
+private:
   /** The field names in the first () */
   std::vector<std::string> operands;
   /** The function used in where clause */

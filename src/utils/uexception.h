@@ -1,7 +1,6 @@
 #ifndef SRC_QEURY_EXCEPTION_H
 #define SRC_QEURY_EXCEPTION_H
 
-#include <exception>
 #include <stdexcept>
 #include <string>
 

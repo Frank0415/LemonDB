@@ -15,20 +15,20 @@
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  using std::string_literals::operator""s;
-  if (!this->operands.empty())
+  using namespace std::literals::string_literals;
+  if (!this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
 
   try
   {
     Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     Table::SizeType counter = 0;
-    auto& table = database[this->targetTable];
+    auto& table = database[this->targetTableRef()];
     auto result = initCondition(table);
     if (result.second)
     {
@@ -54,30 +54,30 @@ QueryResult::Ptr DeleteQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                            "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string DeleteQuery::toString()
 {
-  return "QUERY = DELETE " + this->targetTable + "\"";
+  return "QUERY = DELETE " + this->targetTableRef();
 }

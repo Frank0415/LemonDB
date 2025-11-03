@@ -11,6 +11,7 @@ for file in $(find . -name "clang.*.tidy"); do
                -e '/Found compiler error(s)\./d' \
                -e '/Error while processing/d' \
                -e '/[0-9]* warnings and [0-9]* error.*generated\./d' \
+               -e '/clang-diagnostic-error/{N;N;d;}' \
                "$file"
     fi
 done

@@ -1,7 +1,4 @@
 #include "QueryBuilders.h"
-#include "../db/Database.h"
-#include "../utils/formatter.h"
-#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryParser.h"
 #include "data/AddQuery.h"
@@ -16,6 +13,7 @@
 #include "data/SumQuery.h"
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
+#include "db/Database.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -24,10 +22,25 @@
 #include "management/PrintTableQuery.h"
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <string>
+
+namespace
+{
+void Throwhelper(std::vector<std::string>::const_iterator iterator,
+                 std::vector<std::string>::const_iterator limit,
+                 const std::string&& message)
+{
+  if (iterator == limit)
+  {
+    throw IllFormedQuery(message);
+  }
+}
+} // namespace
 
 Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
@@ -49,7 +62,7 @@ Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     std::cerr << '\n';
   }
-  return this->nextBuilder->tryExtractQuery(query);
+  return getNextBuilder()->tryExtractQuery(query);
 }
 
 Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
@@ -84,7 +97,7 @@ Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
       return std::make_unique<CopyTableQuery>(query.token[1], query.token[2]);
     }
   }
-  return this->nextBuilder->tryExtractQuery(query);
+  return getNextBuilder()->tryExtractQuery(query);
 }
 
 Query::Ptr DebugQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
@@ -124,10 +137,7 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
   auto iterator = query.token.cbegin();
   auto end = query.token.cend();
   iterator += 1; // Take to args;
-  if (iterator == query.token.end())
-  {
-    throw IllFormedQuery("Missing FROM clause");
-  }
+  Throwhelper(iterator, end, "Missing operands or FROM clause.");
   if (*iterator != "FROM")
   {
     if (*iterator != "(")
@@ -139,19 +149,17 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
     {
       this->operandToken.push_back(*iterator);
       ++iterator;
-      if (iterator == end)
-      {
-        throw IllFormedQuery("Ill-formed operand");
-      }
+      Throwhelper(iterator, end, "Ill-formed operand.");
     }
-    if (++iterator == end || *iterator != "FROM")
+    ++iterator;
+    if (iterator == end || *iterator != "FROM")
     {
       throw IllFormedQuery("Missing FROM clause");
     }
   }
   if (++iterator == end)
   {
-    throw IllFormedQuery("Missing targed table");
+    throw IllFormedQuery("Missing target table");
   }
   this->targetTable = *iterator;
   if (++iterator == end) // the "WHERE" clause is ommitted
@@ -188,7 +196,8 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
       throw IllFormedQuery("Missing  in condition");
     }
     cond.value = *iterator;
-    if (++iterator == end || *iterator != ")")
+    ++iterator;
+    if (iterator == end || *iterator != ")")
     {
       throw IllFormedQuery("Ill-formed query condition");
     }
@@ -205,7 +214,7 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   catch (const IllFormedQuery& e)
   {
     std::cerr << e.what() << '\n';
-    return this->nextBuilder->tryExtractQuery(query);
+    return getNextBuilder()->tryExtractQuery(query);
   }
   const std::string operation = query.token.front();
   if (operation == "INSERT")
@@ -288,7 +297,7 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   }
   std::cerr << '\n';
 
-  return this->nextBuilder->tryExtractQuery(query);
+  return getNextBuilder()->tryExtractQuery(query);
 }
 
 void ComplexQueryBuilder::clear()
@@ -296,5 +305,5 @@ void ComplexQueryBuilder::clear()
   this->conditionToken.clear();
   this->targetTable = "";
   this->operandToken.clear();
-  this->nextBuilder->clear();
+  getNextBuilder()->clear();
 }

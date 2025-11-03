@@ -2,20 +2,16 @@
 // Created by liu on 18-10-21.
 //
 
-#include <algorithm>
 #include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <future>
 #include <getopt.h>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "db/Database.h"
 #include "query/QueryBuilders.h"
@@ -23,17 +19,6 @@
 #include "threading/Collector.h"
 #include "threading/Threadpool.h"
 #include <unistd.h>
-
-#include "query/Query.h"
-
-#ifdef __has_feature
-#if __has_feature(memory_sanitizer)
-#define LEMONDB_WITH_MSAN 1
-#endif
-#endif
-#ifdef __SANITIZE_MEMORY__
-#define LEMONDB_WITH_MSAN 1
-#endif
 
 namespace
 {
@@ -43,15 +28,17 @@ struct Args
   std::int64_t threads = 0;
 };
 
-void parseArgs(int argc, char* argv[], Args& args)
+void parseArgs(int argc, char** argv, Args& args)
 {
-  const option longOpts[] = {{"listen", required_argument, nullptr, 'l'},
-                             {"threads", required_argument, nullptr, 't'},
-                             {nullptr, no_argument, nullptr, 0}};
-  const char* shortOpts = "l:t:";
+  // Use std::array to avoid C-style array decay and allow safe indexing
+  const std::array<option, 3> longOpts = {{{"listen", required_argument, nullptr, 'l'},
+                                           {"threads", required_argument, nullptr, 't'},
+                                           {nullptr, no_argument, nullptr, 0}}};
+
+  const std::string shortOpts = "l:t:";
   int opt = 0;
   int longIndex = 0;
-  while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
+  while ((opt = getopt_long(argc, argv, shortOpts.c_str(), longOpts.data(), &longIndex)) != -1)
   {
     if (opt == 'l')
     {
@@ -64,7 +51,24 @@ void parseArgs(int argc, char* argv[], Args& args)
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
+      // longIndex may be out of range for unknown options, guard access
+      const char* optName = nullptr;
+      if (longIndex >= 0 && static_cast<size_t>(longIndex) < longOpts.size())
+      {
+        const auto* const iter_begin = longOpts.begin();
+        const auto* iter = iter_begin;
+        using diff_t = std::iterator_traits<decltype(longOpts.begin())>::difference_type;
+        std::advance(iter, static_cast<diff_t>(longIndex));
+        optName = iter->name;
+      }
+      if (optName != nullptr)
+      {
+        std::cerr << "lemondb: warning: unknown argument " << optName << '\n';
+      }
+      else
+      {
+        std::cerr << "lemondb: warning: unknown argument" << '\n';
+      }
     }
   }
 }
@@ -124,11 +128,13 @@ int main(int argc, char* argv[])
   std::istream* input = &std::cin;
   if (!parsedArgs.listen.empty())
   {
-    fin.open(parsedArgs.listen);
+    // Construct a new ifstream and assign to fin to ensure all internal
+    // members are properly initialized (avoids MSan use-of-uninitialized warnings).
+    fin = std::ifstream(parsedArgs.listen);
     if (!fin.is_open())
     {
       std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
-      exit(-1);
+      std::exit(-1);
     }
     input = &fin;
   }

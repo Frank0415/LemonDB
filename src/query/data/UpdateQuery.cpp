@@ -31,19 +31,19 @@ QueryResult::Ptr UpdateQuery::execute()
     }
 
     Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
-    if (this->operands[0] == "KEY")
+    if (this->getOperands()[0] == "KEY")
     {
-      this->keyValue = this->operands[1];
+      this->keyValue = this->getOperands()[1];
     }
     else
     {
       constexpr int decimal_base = 10;
-      this->fieldId = table.getFieldIndex(this->operands[0]);
-      this->fieldValue =
-          static_cast<Table::ValueType>(strtol(this->operands[1].c_str(), nullptr, decimal_base));
+      this->fieldId = table.getFieldIndex(this->getOperands()[0]);
+      this->fieldValue = static_cast<Table::ValueType>(
+          strtol(this->getOperands()[1].c_str(), nullptr, decimal_base));
     }
 
     auto result = initCondition(table);
@@ -67,37 +67,37 @@ QueryResult::Ptr UpdateQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string UpdateQuery::toString()
 {
-  return "QUERY = UPDATE " + this->targetTable + "\"";
+  return "QUERY = UPDATE " + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
 {
-  if (this->operands.size() != 2)
+  if (this->getOperands().size() != 2)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
   return nullptr;
 }

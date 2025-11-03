@@ -14,6 +14,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -22,15 +23,27 @@
 #include "../utils/uexception.h"
 #include "query/QueryResult.h"
 
-
 class Query
 {
-protected:
+  // private:
+  //   int id = -1;
+
+private:
   std::string targetTable;
-  int id = -1;
 
 public:
   Query() = default;
+
+  [[nodiscard]] std::string& targetTableRef()
+  {
+    return targetTable;
+  }
+
+  // Const overload so const member functions can access target table name
+  [[nodiscard]] const std::string& targetTableRef() const
+  {
+    return targetTable;
+  }
 
   explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
   {
@@ -71,13 +84,15 @@ public:
 
 private:
   /** A row in the table */
-  struct Datum
+  class Datum
   {
+  private:
     /** Unique key of this datum */
     KeyType key;
     /** The values in the order of fields */
     std::vector<ValueType> datum;
 
+  public:
     Datum() = default;
 
     // By declaring all 5 special member functions, we adhere to the Rule of
@@ -101,6 +116,32 @@ private:
     explicit Datum(KeyType key, std::vector<ValueType>&& datum) noexcept
         : key(std::move(key)), datum(std::move(datum))
     {
+    }
+
+    // Accessors so outer code need not access members directly
+    [[nodiscard]] const KeyType& keyConstRef() const noexcept
+    {
+      return key;
+    }
+
+    [[nodiscard]] KeyType& keyRef() noexcept
+    {
+      return key;
+    }
+
+    void setKey(KeyType newKey) noexcept
+    {
+      key = std::move(newKey);
+    }
+
+    [[nodiscard]] const std::vector<ValueType>& datumConstRef() const noexcept
+    {
+      return datum;
+    }
+
+    [[nodiscard]] std::vector<ValueType>& datumRef() noexcept
+    {
+      return datum;
     }
   };
 
@@ -147,42 +188,48 @@ public:
 
     /** Not const because key can be updated */
     Iterator it;
-    mutable Table* table;
+    // Use const Table* for const VType, Table* for non-const VType
+    using TablePtrType = std::conditional_t<std::is_const_v<VType>, const Table*, Table*>;
+    TablePtrType table;
 
   public:
     using Ptr = std::unique_ptr<ObjectImpl>;
 
-    ObjectImpl(Iterator datumIt, Table* table_ptr) : it(datumIt), table(table_ptr)
-    {
-    }
-
-    ObjectImpl(Iterator datumIt, const Table* table_ptr)
-        : it(datumIt), table(const_cast<Table*>(table_ptr))
+    ObjectImpl(Iterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
     ObjectImpl(const ObjectImpl&) = default;
-
     ObjectImpl(ObjectImpl&&) noexcept = default;
-
     ObjectImpl& operator=(const ObjectImpl&) = default;
-
     ObjectImpl& operator=(ObjectImpl&&) noexcept = default;
-
     ~ObjectImpl() = default;
 
     [[nodiscard]] const KeyType& key() const
     {
-      return it->key;
+      return it->keyConstRef();
+    }
+
+    // Helper to obtain the correct datum reference type depending on VType
+    template <typename T = VType> auto& datumAccess() const
+    {
+      if constexpr (std::is_const_v<T>)
+      {
+        return it->datumConstRef();
+      }
+      else
+      {
+        return it->datumRef();
+      }
     }
 
     void setKey(KeyType key)
     {
-      auto keyMapIt = table->keyMap.find(it->key);
+      auto keyMapIt = table->keyMap.find(it->keyConstRef());
       auto dataIt = std::move(keyMapIt->second);
       table->keyMap.erase(keyMapIt);
       table->keyMap.emplace(key, std::move(dataIt));
-      it->key = std::move(key);
+      it->setKey(std::move(key));
     }
 
     /**
@@ -196,7 +243,7 @@ public:
       try
       {
         auto& index = table->fieldMap.at(field);
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -208,7 +255,7 @@ public:
     {
       try
       {
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -221,7 +268,7 @@ public:
       try
       {
         auto& index = table->fieldMap.at(field);
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -233,7 +280,7 @@ public:
     {
       try
       {
-        return it->datum.at(index);
+        return datumAccess().at(index);
       }
       catch (const std::out_of_range& e)
       {
@@ -248,7 +295,7 @@ public:
   /**
    * A proxy class that provides iteration on the table
    * @tparam ObjType
-   * @tparam DatumIterator
+          return datumAccess().at(index);
    */
   template <typename ObjType, typename DatumIterator> class IteratorImpl
   {
@@ -262,10 +309,12 @@ public:
     friend class Table;
 
     DatumIterator it;
-    const Table* table = nullptr;
+    // Use const Table* for ConstObject, Table* for Object
+    using TablePtrType = typename ObjType::TablePtrType;
+    TablePtrType table = nullptr;
 
   public:
-    IteratorImpl(DatumIterator datumIt, const Table* table_ptr) : it(datumIt), table(table_ptr)
+    IteratorImpl(DatumIterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
     {
     }
 
@@ -397,17 +446,6 @@ private:
   static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)
   {
     return std::make_unique<ConstObject>(iterator, table);
-  }
-
-  static ConstObject::Ptr createProxy(ConstDataIterator iterator, Table* table)
-  {
-    return std::make_unique<ConstObject>(iterator, table);
-  }
-
-  static Object::Ptr createProxy(DataIterator iterator, const Table* table)
-  {
-    // For non-const iterators, we still accept const Table* since the iterator itself is not const
-    return std::make_unique<Object>(iterator, const_cast<Table*>(table));
   }
 
   static Object::Ptr createProxy(DataIterator iterator, Table* table)

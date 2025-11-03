@@ -28,8 +28,8 @@ QueryResult::Ptr MaxQuery::execute()
     }
 
     Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
 
@@ -57,40 +57,40 @@ QueryResult::Ptr MaxQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
   catch (const TableFieldNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string MaxQuery::toString()
 {
-  return "QUERY = MAX " + this->targetTable + "\"";
+  return "QUERY = MAX " + this->targetTableRef() + "\"";
 }
 
 [[nodiscard]] QueryResult::Ptr MaxQuery::validateOperands() const
 {
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "No operand (? operands)."_f % operands.size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
+                                            "No operand (? operands)."_f % getOperands().size());
   }
   return nullptr;
 }
@@ -98,7 +98,7 @@ std::string MaxQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> MaxQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fieldId;
-  for (const auto& operand : this->operands)
+  for (const auto& operand : this->getOperands())
   {
     if (operand == "KEY")
     {
