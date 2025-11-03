@@ -16,23 +16,23 @@ QueryResult::Ptr TruncateTableQuery::execute()
   try
   {
     auto& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
     table.clear();
 
     return std::make_unique<NullQueryResult>(); // silent success
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "No such table.");
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTable, "Unknown error");
+    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "Unknown error");
   }
 }
 
 std::string TruncateTableQuery::toString()
 {
-  return "QUERY = TRUNCATE \"" + this->targetTable + "\"";
+  return "QUERY = TRUNCATE \"" + this->targetTableRef() + "\"";
 }

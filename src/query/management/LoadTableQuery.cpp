@@ -19,7 +19,7 @@ QueryResult::Ptr LoadTableQuery::execute()
   try
   {
     // LOAD creates a new table, so we acquire write lock for the new table name
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     std::ifstream infile(this->fileName);
     if (!infile.is_open())
     {
@@ -27,7 +27,7 @@ QueryResult::Ptr LoadTableQuery::execute()
     }
     Database::loadTableFromStream(infile, this->fileName);
     infile.close();
-    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
   catch (const std::exception& e)
   {
