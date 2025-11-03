@@ -22,12 +22,12 @@
 QueryResult::Ptr InsertQuery::execute()
 {
   const int DECIMAL_BASE = 10;
-  using std::string_literals::operator""s;
   if (this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "No operand (? operands)."_f % getOperands().size());
   }
+
   Database& database = Database::getInstance();
   try
   {
@@ -45,7 +45,8 @@ QueryResult::Ptr InsertQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
@@ -60,11 +61,11 @@ QueryResult::Ptr InsertQuery::execute()
   catch (const std::exception& e)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
-                                            "Unkonwn error '?'."_f % e.what());
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string InsertQuery::toString()
 {
-  return "QUERY = INSERT " + this->targetTableRef() + "\"";
+  return "QUERY = INSERT " + this->targetTableRef();
 }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -18,8 +19,6 @@
 
 QueryResult::Ptr MaxQuery::execute()
 {
-  using std::string_literals::operator""s;
-
   try
   {
     if (validateOperands() != nullptr)
@@ -45,7 +44,7 @@ QueryResult::Ptr MaxQuery::execute()
       return executeSingleThreaded(table, fieldId);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
 
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
@@ -57,7 +56,8 @@ QueryResult::Ptr MaxQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const TableFieldNotFound& e)
   {
@@ -82,7 +82,7 @@ QueryResult::Ptr MaxQuery::execute()
 
 std::string MaxQuery::toString()
 {
-  return "QUERY = MAX " + this->targetTableRef() + "\"";
+  return "QUERY = MAX " + this->targetTableRef();
 }
 
 [[nodiscard]] QueryResult::Ptr MaxQuery::validateOperands() const
@@ -140,7 +140,7 @@ MaxQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 MaxQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> maxValues(num_fields, Table::ValueTypeMin);
 
