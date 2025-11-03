@@ -6,19 +6,22 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <fstream>
-#include <getopt.h>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
+#include <thread>
+#include <utility>
 
 #include "db/Database.h"
+#include "db/Table.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
 #include "threading/Collector.h"
 #include "threading/Threadpool.h"
-#include <unistd.h>
 
 namespace
 {
@@ -30,45 +33,51 @@ struct Args
 
 void parseArgs(int argc, char** argv, Args& args)
 {
-  // Use std::array to avoid C-style array decay and allow safe indexing
-  const std::array<option, 3> longOpts = {{{"listen", required_argument, nullptr, 'l'},
-                                           {"threads", required_argument, nullptr, 't'},
-                                           {nullptr, no_argument, nullptr, 0}}};
+  // Manual argument parser supporting both long and short forms
+  // --listen=<file> or --listen <file> or -l <file>
+  // --threads=<num> or --threads <num> or -t <num>
 
-  const std::string shortOpts = "l:t:";
-  int opt = 0;
-  int longIndex = 0;
-  while ((opt = getopt_long(argc, argv, shortOpts.c_str(), longOpts.data(), &longIndex)) != -1)
+  constexpr size_t listen_prefix_len = 9;   // Length of "--listen="
+  constexpr size_t threads_prefix_len = 10; // Length of "--threads="
+  constexpr int decimal_base = 10;
+
+  for (int i = 1; i < argc; ++i)
   {
-    if (opt == 'l')
+    const std::string arg(std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
+
+    // Helper lambda to get next argument value
+    auto getNextArg = [&]() -> std::string
     {
-      args.listen = optarg;
+      if (i + 1 < argc)
+      {
+        ++i;
+        return {std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]};
+      }
+      std::cerr << "lemondb: error: " << arg << " requires an argument\n";
+      std::exit(-1);
+    };
+
+    // Handle --listen=<value> or --listen <value>
+    if (arg.starts_with("--listen="))
+    {
+      args.listen = arg.substr(listen_prefix_len);
     }
-    else if (opt == 't')
+    else if (arg == "--listen" || arg == "-l")
     {
-      constexpr int decimal_base = 10;
-      args.threads = std::strtol(optarg, nullptr, decimal_base);
+      args.listen = getNextArg();
+    }
+    // Handle --threads=<value> or --threads <value>
+    else if (arg.starts_with("--threads="))
+    {
+      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(), nullptr, decimal_base);
+    }
+    else if (arg == "--threads" || arg == "-t")
+    {
+      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
     }
     else
     {
-      // longIndex may be out of range for unknown options, guard access
-      const char* optName = nullptr;
-      if (longIndex >= 0 && static_cast<size_t>(longIndex) < longOpts.size())
-      {
-        const auto* const iter_begin = longOpts.begin();
-        const auto* iter = iter_begin;
-        using diff_t = std::iterator_traits<decltype(longOpts.begin())>::difference_type;
-        std::advance(iter, static_cast<diff_t>(longIndex));
-        optName = iter->name;
-      }
-      if (optName != nullptr)
-      {
-        std::cerr << "lemondb: warning: unknown argument " << optName << '\n';
-      }
-      else
-      {
-        std::cerr << "lemondb: warning: unknown argument" << '\n';
-      }
+      std::cerr << "lemondb: warning: unknown argument " << arg << '\n';
     }
   }
 }
@@ -171,7 +180,7 @@ int main(int argc, char* argv[])
   // Main loop: SEQUENTIAL query execution
   // Each query runs to completion before the next one starts
   // (but queries can use ThreadPool internally for parallelism)
-  Database& database = Database::getInstance();
+  const Database& database = Database::getInstance();
 
   QueryResultCollector g_result_collector;
   std::atomic<size_t> g_query_counter{0};
@@ -180,11 +189,11 @@ int main(int argc, char* argv[])
   {
     try
     {
-      std::string queryStr = extractQueryString(input_stream);
+      const std::string queryStr = extractQueryString(input_stream);
 
       Query::Ptr query = parser.parseQuery(queryStr);
 
-      size_t query_id = g_query_counter.fetch_add(1) + 1;
+      const size_t query_id = g_query_counter.fetch_add(1) + 1;
 
       // ALL queries execute synchronously one after another
       // This ensures no data races between queries
