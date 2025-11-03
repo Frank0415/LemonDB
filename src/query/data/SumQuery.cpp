@@ -83,11 +83,11 @@
 
 [[nodiscard]] QueryResult::Ptr SumQuery::validateOperands() const
 {
-  if (this->operands.empty())
+  if (this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "Invalid number of fields");
   }
-  if (std::any_of(this->operands.begin(), this->operands.end(),
+  if (std::any_of(this->getOperands().begin(), this->getOperands().end(),
                   [](const auto& field) { return field == "KEY"; }))
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTable, "KEY cannot be summed.");

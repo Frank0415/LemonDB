@@ -16,11 +16,11 @@
 QueryResult::Ptr DeleteQuery::execute()
 {
   using std::string_literals::operator""s;
-  if (!this->operands.empty())
+  if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
                                             "Invalid number of operands (? operands)."_f %
-                                                operands.size());
+                                                getOperands().size());
   }
 
   try
