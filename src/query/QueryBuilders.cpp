@@ -14,7 +14,6 @@
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
 #include "db/Database.h"
-#include "db/Table.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -44,28 +43,6 @@ void Throwhelper(std::vector<std::string>::const_iterator iterator,
 }
 } // namespace
 
-Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
-{
-  std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
-  std::cerr << "Tokens:\n";
-  constexpr int column_width = 10;
-  constexpr int tokens_per_line = 5;
-  int count = 0;
-  for (const auto& tok : query.token)
-  {
-    std::cerr << std::setw(column_width) << "\"" << tok << "\"";
-    count = (count + 1) % tokens_per_line;
-    if (count == 4)
-    {
-      std::cerr << '\n';
-    }
-  }
-  if (count != 4)
-  {
-    std::cerr << '\n';
-  }
-  return getNextBuilder()->tryExtractQuery(query);
-}
 
 Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
@@ -246,9 +223,6 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   }
   if (operation == "COUNT")
   {
-    // return std::make_unique<NopQuery>(); // Not implemented
-    // FIX: Enable CountQuery by creating an instance of it.
-    // The empty operand list and the condition list are correctly handled.
     return std::make_unique<CountQuery>(this->targetTable, this->operandToken,
                                         this->conditionToken);
   }
