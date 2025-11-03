@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../../db/TableLockManager.h"
-#include "../../utils/uexception.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/TableLockManager.h"
+#include "utils/uexception.h"
+#include "query/QueryResult.h"
 
 QueryResult::Ptr PrintTableQuery::execute()
 {

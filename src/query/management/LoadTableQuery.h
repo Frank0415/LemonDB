@@ -8,8 +8,8 @@
 #include <string>
 #include <utility>
 
-#include "../Query.h"
-#include "../QueryResult.h"
+#include "query/Query.h"
+#include "query/QueryResult.h"
 
 class LoadTableQuery : public Query
 {
