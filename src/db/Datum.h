@@ -29,4 +29,34 @@ public:
   {
   }
 
+  explicit Datum(std::string key, std::vector<int>&& datum) noexcept
+      : key(std::move(key)), datum(std::move(datum))
+  {
+  }
+
+  // Accessors so outer code need not access members directly
+  [[nodiscard]] const std::string& keyConstRef() const noexcept
+  {
+    return key;
+  }
+
+  [[nodiscard]] std::string& keyRef() noexcept
+  {
+    return key;
+  }
+
+  void setKey(std::string newKey) noexcept
+  {
+    key = std::move(newKey);
+  }
+
+  [[nodiscard]] const std::vector<int>& datumConstRef() const noexcept
+  {
+    return datum;
+  }
+
+  [[nodiscard]] std::vector<int>& datumRef() noexcept
+  {
+    return datum;
+  }
 };
