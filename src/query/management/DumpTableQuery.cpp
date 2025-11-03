@@ -19,15 +19,15 @@ QueryResult::Ptr DumpTableQuery::execute()
   const auto& database = Database::getInstance();
   try
   {
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
     std::ofstream outfile(this->fileName);
     if (!outfile.is_open())
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
-    outfile << database[this->targetTable];
+    outfile << database[this->targetTableRef()];
     outfile.close();
-    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
   catch (const std::exception& e)
   {
