@@ -19,21 +19,21 @@ QueryResult::Ptr PrintTableQuery::execute()
   const Database& database = Database::getInstance();
   try
   {
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    const auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    const auto& table = database[this->targetTableRef()];
     std::cout << "================\n";
     std::cout << "TABLE = ";
     std::cout << table;
     std::cout << "================\n" << '\n';
-    return std::make_unique<SuccessMsgResult>(qname, this->targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
   }
 }
 
 std::string PrintTableQuery::toString()
 {
-  return "QUERY = SHOWTABLE, Table = \"" + this->targetTable + "\"";
+  return "QUERY = SHOWTABLE, Table = \"" + this->targetTableRef() + "\"";
 }
