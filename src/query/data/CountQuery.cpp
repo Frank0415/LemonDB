@@ -83,3 +83,28 @@ std::string CountQuery::toString()
   // Returns a string representation of the query, useful for debugging.
   return "QUERY = COUNT, Table = " + this->targetTable;
 }
+
+[[nodiscard]] QueryResult::Ptr CountQuery::validateOperands() const
+{
+  if (!this->operands.empty())
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                            "COUNT query does not take any operands.");
+  }
+  return nullptr;
+}
+
+[[nodiscard]] QueryResult::Ptr CountQuery::executeSingleThreaded(Table& table)
+{
+  int record_count = 0;
+
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      record_count++;
+    }
+  }
+
+  return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(record_count) + "\n");
+}
