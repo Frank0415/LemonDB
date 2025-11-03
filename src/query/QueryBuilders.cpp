@@ -29,6 +29,18 @@
 #include <memory>
 #include <string>
 
+namespace
+{
+void Throwhelper(std::vector<std::string>::const_iterator iterator,
+                 std::vector<std::string>::const_iterator limit, const std::string&& message)
+{
+  if (iterator == limit)
+  {
+    throw IllFormedQuery(message);
+  }
+}
+} // namespace
+
 Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
   std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
@@ -124,10 +136,7 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
   auto iterator = query.token.cbegin();
   auto end = query.token.cend();
   iterator += 1; // Take to args;
-  if (iterator == query.token.end())
-  {
-    throw IllFormedQuery("Missing FROM clause");
-  }
+  Throwhelper(iterator, end, "Missing operands or FROM clause.");
   if (*iterator != "FROM")
   {
     if (*iterator != "(")
@@ -139,19 +148,17 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
     {
       this->operandToken.push_back(*iterator);
       ++iterator;
-      if (iterator == end)
-      {
-        throw IllFormedQuery("Ill-formed operand");
-      }
+      Throwhelper(iterator, end, "Ill-formed operand.");
     }
-    if (++iterator == end || *iterator != "FROM")
+    ++iterator;
+    if (iterator == end || *iterator != "FROM")
     {
       throw IllFormedQuery("Missing FROM clause");
     }
   }
   if (++iterator == end)
   {
-    throw IllFormedQuery("Missing targed table");
+    throw IllFormedQuery("Missing target table");
   }
   this->targetTable = *iterator;
   if (++iterator == end) // the "WHERE" clause is ommitted
@@ -188,7 +195,8 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
       throw IllFormedQuery("Missing  in condition");
     }
     cond.value = *iterator;
-    if (++iterator == end || *iterator != ")")
+    ++iterator;
+    if (iterator == end || *iterator != ")")
     {
       throw IllFormedQuery("Ill-formed query condition");
     }

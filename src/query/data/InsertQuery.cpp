@@ -33,7 +33,7 @@ QueryResult::Ptr InsertQuery::execute()
   {
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
-    auto& key = this->getOperands().front();
+    const auto& key = this->getOperands().front();
     std::vector<Table::ValueType> data;
     data.reserve(this->getOperands().size() - 1);
     for (auto it = ++this->getOperands().begin(); it != this->getOperands().end(); ++it)
