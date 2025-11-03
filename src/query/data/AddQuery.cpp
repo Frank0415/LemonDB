@@ -38,18 +38,21 @@
 
     // Stategy: iterate through all rows that satisfy the condition and sum all
     // @ once
+
+    auto indices = getFieldIndices(table);
+
     if (!ThreadPool::isInitialized())
     {
-      return executeSingleThreaded(table);
+      return executeSingleThreaded(table, indices);
     }
 
     ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
-      return executeSingleThreaded(table);
+      return executeSingleThreaded(table, indices);
     }
 
-    return executeMultiThreaded(table);
+    return executeMultiThreaded(table, indices);
   }
   catch (const NotFoundKey& e)
   {
@@ -91,7 +94,19 @@ std::string AddQuery::toString()
   return nullptr;
 }
 
-[[nodiscard]] QueryResult::Ptr AddQuery::executeSingleThreaded(Table& table)
+[[nodiscard]] std::vector<Table::FieldIndex> AddQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> indices;
+  indices.reserve(this->operands.size());
+  for (const auto& operand : this->operands)
+  {
+    indices.push_back(table.getFieldIndex(operand));
+  }
+  return indices;
+}
+
+[[nodiscard]] QueryResult::Ptr
+AddQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   int count = 0;
 
@@ -105,16 +120,16 @@ std::string AddQuery::toString()
     int sum = 0;
     for (size_t i = 0; i < this->operands.size() - 1; ++i)
     {
-      auto fieldIndex = table.getFieldIndex(this->operands[i]);
-      sum += (*it)[fieldIndex];
+      sum += (*it)[fids[i]];
     }
-    (*it)[table.getFieldIndex(this->operands.back())] = sum;
+    (*it)[fids.back()] = sum;
     count++;
   }
   return std::make_unique<RecordCountResult>(count);
 }
 
-[[nodiscard]] QueryResult::Ptr AddQuery::executeMultiThreaded(Table& table)
+[[nodiscard]] QueryResult::Ptr
+AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   ThreadPool& pool = ThreadPool::getInstance();
