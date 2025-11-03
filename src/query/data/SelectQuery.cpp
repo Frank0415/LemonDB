@@ -165,8 +165,7 @@ SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldI
 }
 
 [[nodiscard]] QueryResult::Ptr
-SelectQuery::executeMultiThreaded(Table& table,
-                                  const std::vector<Table::FieldIndex>& fieldIds)
+SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   ThreadPool& pool = ThreadPool::getInstance();
