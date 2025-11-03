@@ -11,11 +11,15 @@ class AddQuery : public ComplexQuery
   static constexpr const char* qname = "ADD";
 
 public:
+  [[nodiscard]] QueryResult::Ptr validateOperands() const;
+
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+
   using ComplexQuery::ComplexQuery;
 
-  QueryResult::Ptr execute() override;
+  [[nodiscard]] QueryResult::Ptr execute() override;
 
-  std::string toString() override;
+  [[nodiscard]] std::string toString() override;
 
   [[nodiscard]] bool isWriter() const override { return true; }
 };
