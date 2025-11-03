@@ -22,52 +22,44 @@ QueryResult::Ptr DuplicateQuery::execute()
   using std::string_literals::operator""s;
   try
   {
-    if (!this->operands.empty())
+    auto validationResult = validateOperands();
+    if (validationResult != nullptr)
     {
-      return std::make_unique<ErrorMsgResult>(
-          qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+      return validationResult;
     }
+
     auto& database = Database::getInstance();
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
     auto& table = database[this->targetTable];
+
     auto result = initCondition(table);
     if (!result.second)
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
-    Table::SizeType counter = 0;
-    auto row_size = table.field().size();
+    // Decide between single-threaded and multi-threaded execution
+    std::vector<RecordPair> recordsToDuplicate;
 
-    // Collect records to duplicate
-    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> recordsToDuplicate;
-
-    for (auto it = table.begin(); it != table.end(); ++it)
+    if (!ThreadPool::isInitialized())
     {
-      if (!this->evalCondition(*it))
+      recordsToDuplicate = executeSingleThreaded(table);
+    }
+    else
+    {
+      ThreadPool& pool = ThreadPool::getInstance();
+      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
       {
-        continue;
+        recordsToDuplicate = executeSingleThreaded(table);
       }
-      auto originalKey = it->key();
-      auto newKey = originalKey + "_copy";
-
-      // if a "_copy" already exists, skip this key
-      if (table[newKey] != nullptr)
+      else
       {
-        continue;
+        recordsToDuplicate = executeMultiThreaded(table);
       }
-
-      // Copy the values from the original record
-      std::vector<Table::ValueType> values(row_size);
-      for (size_t i = 0; i < row_size; ++i)
-      {
-        values[i] = (*it)[i];
-      }
-
-      recordsToDuplicate.emplace_back(newKey, std::move(values));
     }
 
-    // Insert all duplicated records
+    // Insert all duplicated records (in order preserved by helpers)
+    Table::SizeType counter = 0;
     for (auto& record : recordsToDuplicate)
     {
       try
@@ -185,37 +177,37 @@ DuplicateQuery::executeMultiThreaded(Table& table)
 
     size_t current_chunk_index = chunk_index;
     tasks.emplace_back(current_chunk_index, pool.submit(
-                                               [this, &table, chunk_begin, chunk_end, row_size]()
-                                               {
-                                                 std::vector<RecordPair> local_records;
-                                                 for (auto it = chunk_begin; it != chunk_end; ++it)
-                                                 {
-                                                   if (!this->evalCondition(*it))
-                                                   {
-                                                     continue;
-                                                   }
+                                                [this, &table, chunk_begin, chunk_end, row_size]()
+                                                {
+                                                  std::vector<RecordPair> local_records;
+                                                  for (auto it = chunk_begin; it != chunk_end; ++it)
+                                                  {
+                                                    if (!this->evalCondition(*it))
+                                                    {
+                                                      continue;
+                                                    }
 
-                                                   auto originalKey = it->key();
-                                                   auto newKey = originalKey + "_copy";
+                                                    auto originalKey = it->key();
+                                                    auto newKey = originalKey + "_copy";
 
-                                                   // Check if _copy already exists
-                                                   if (table[newKey] != nullptr)
-                                                   {
-                                                     continue;
-                                                   }
+                                                    // Check if _copy already exists
+                                                    if (table[newKey] != nullptr)
+                                                    {
+                                                      continue;
+                                                    }
 
-                                                   // Copy the values
-                                                   std::vector<Table::ValueType> values(row_size);
-                                                   for (size_t i = 0; i < row_size; ++i)
-                                                   {
-                                                     values[i] = (*it)[i];
-                                                   }
+                                                    // Copy the values
+                                                    std::vector<Table::ValueType> values(row_size);
+                                                    for (size_t i = 0; i < row_size; ++i)
+                                                    {
+                                                      values[i] = (*it)[i];
+                                                    }
 
-                                                   local_records.emplace_back(newKey,
-                                                                              std::move(values));
-                                                 }
-                                                 return local_records;
-                                               }));
+                                                    local_records.emplace_back(newKey,
+                                                                               std::move(values));
+                                                  }
+                                                  return local_records;
+                                                }));
     ++chunk_index;
   }
 
