@@ -143,3 +143,32 @@ std::string SelectQuery::toString()
   }
   return fieldIds;
 }
+
+[[nodiscard]] QueryResult::Ptr SelectQuery::executeSingleThreaded(
+    const Table& table, const std::vector<Table::FieldIndex>& fieldIds)
+{
+  // Use map to automatically sort by KEY
+  std::map<std::string, Table::Iterator> sorted_rows;
+
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      sorted_rows.emplace(it->key(), it);
+    }
+  }
+
+  // Output in KEY order
+  std::ostringstream buffer;
+  for (const auto& [key, it] : sorted_rows)
+  {
+    buffer << "( " << key;
+    for (const auto& field_id : fieldIds)
+    {
+      buffer << " " << (*it)[field_id];
+    }
+    buffer << " )\n";
+  }
+
+  return std::make_unique<TextRowsResult>(buffer.str());
+}
