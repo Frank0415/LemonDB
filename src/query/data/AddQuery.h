@@ -13,7 +13,11 @@ class AddQuery : public ComplexQuery
 public:
   [[nodiscard]] QueryResult::Ptr validateOperands() const;
 
+  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+
   [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
 
   using ComplexQuery::ComplexQuery;
 
@@ -22,6 +26,7 @@ public:
   [[nodiscard]] std::string toString() override;
 
   [[nodiscard]] bool isWriter() const override { return true; }
+  
 };
 
 #endif

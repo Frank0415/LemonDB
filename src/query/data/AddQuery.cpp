@@ -11,6 +11,7 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "threading/Threadpool.h"
 
 [[nodiscard]] QueryResult::Ptr AddQuery::execute()
 {
@@ -33,28 +34,22 @@
     }
     // this operands stores a list of ADD ( fields ... destField ) FROM table
     // WHERE ( cond ) ...;
+    // No proper conditions implemented
 
     // Stategy: iterate through all rows that satisfy the condition and sum all
     // @ once
-    int count = 0;
-
-    for (auto it = table.begin(); it != table.end(); ++it)
+    if (!ThreadPool::isInitialized())
     {
-      if (!this->evalCondition(*it))
-      {
-        continue;
-      }
-      // perform ADD operation
-      int sum = 0;
-      for (size_t i = 0; i < this->operands.size() - 1; ++i)
-      {
-        auto fieldIndex = table.getFieldIndex(this->operands[i]);
-        sum += (*it)[fieldIndex];
-      }
-      (*it)[table.getFieldIndex(this->operands.back())] = sum;
-      count++;
+      return executeSingleThreaded(table);
     }
-    return std::make_unique<RecordCountResult>(count);
+
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    return executeMultiThreaded(table);
   }
   catch (const NotFoundKey& e)
   {
@@ -117,4 +112,27 @@ std::string AddQuery::toString()
     count++;
   }
   return std::make_unique<RecordCountResult>(count);
+}
+
+[[nodiscard]] QueryResult::Ptr AddQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  const size_t num_fields = this->operands.size() - 1;
+  const size_t src_field_count = num_fields - 1;
+  std::vector<std::future<int>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_start = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+  }
 }
