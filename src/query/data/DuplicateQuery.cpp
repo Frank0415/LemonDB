@@ -158,3 +158,75 @@ DuplicateQuery::executeSingleThreaded(Table& table)
 
   return recordsToDuplicate;
 }
+
+[[nodiscard]] std::vector<DuplicateQuery::RecordPair>
+DuplicateQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  auto row_size = table.field().size();
+
+  // Collect tasks with their positions to preserve order
+  std::vector<std::pair<size_t, std::future<std::vector<RecordPair>>>> tasks;
+  tasks.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  size_t chunk_index = 0;
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    size_t current_chunk_index = chunk_index;
+    tasks.emplace_back(current_chunk_index, pool.submit(
+                                               [this, &table, chunk_begin, chunk_end, row_size]()
+                                               {
+                                                 std::vector<RecordPair> local_records;
+                                                 for (auto it = chunk_begin; it != chunk_end; ++it)
+                                                 {
+                                                   if (!this->evalCondition(*it))
+                                                   {
+                                                     continue;
+                                                   }
+
+                                                   auto originalKey = it->key();
+                                                   auto newKey = originalKey + "_copy";
+
+                                                   // Check if _copy already exists
+                                                   if (table[newKey] != nullptr)
+                                                   {
+                                                     continue;
+                                                   }
+
+                                                   // Copy the values
+                                                   std::vector<Table::ValueType> values(row_size);
+                                                   for (size_t i = 0; i < row_size; ++i)
+                                                   {
+                                                     values[i] = (*it)[i];
+                                                   }
+
+                                                   local_records.emplace_back(newKey,
+                                                                              std::move(values));
+                                                 }
+                                                 return local_records;
+                                               }));
+    ++chunk_index;
+  }
+
+  // Merge results in order (preserve chunk order)
+  std::vector<RecordPair> allRecords;
+  for (auto& [idx, future] : tasks)
+  {
+    auto local_records = future.get();
+    allRecords.insert(allRecords.end(), make_move_iterator(local_records.begin()),
+                      make_move_iterator(local_records.end()));
+  }
+
+  return allRecords;
+}
