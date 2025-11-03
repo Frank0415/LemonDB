@@ -23,75 +23,62 @@ QueryResult::Ptr SelectQuery::execute()
 {
   try
   {
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr)
+    {
+      return validation_result;
+    }
+
     auto& database = Database::getInstance();
     auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
     auto& table = database[this->targetTable];
-    if (this->operands.empty())
+
+    auto fieldIds = getFieldIndices(table);
+    auto result = initCondition(table);
+
+    if (!result.second)
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
-    }
-    std::vector<std::string> fieldsOrder;
-    fieldsOrder.reserve(this->operands.size() + 1);
-    fieldsOrder.emplace_back("KEY");
-    for (const auto& field : this->operands)
-    {
-      if (field != "KEY")
-      {
-        fieldsOrder.emplace_back(field);
-      }
-    }
-    std::vector<Table::FieldIndex> fieldIds;
-    fieldIds.reserve(fieldsOrder.size() - 1);
-    for (size_t i = 1; i < fieldsOrder.size(); ++i)
-    {
-      fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
+      return std::make_unique<TextRowsResult>("");
     }
 
-    std::ostringstream buffer;
-    const bool handled = this->testKeyCondition(table,
-                                                [&](bool success, Table::Object::Ptr&& obj)
-                                                {
-                                                  if (!success)
-                                                  {
-                                                    return;
-                                                  }
-                                                  if (obj)
-                                                  {
-                                                    buffer << "( " << obj->key();
-                                                    for (const auto& field_id : fieldIds)
-                                                    {
-                                                      buffer << " " << (*obj)[field_id];
-                                                    }
-                                                    buffer << " )\n";
-                                                  }
-                                                });
+    // Try KEY condition optimization first
+    std::ostringstream key_buffer;
+    const bool handled = this->testKeyCondition(
+        table, [&](bool success, Table::Object::Ptr obj)
+        {
+          if (!success)
+          {
+            return;
+          }
+          if (obj)
+          {
+            key_buffer << "( " << obj->key();
+            for (const auto& field_id : fieldIds)
+            {
+              key_buffer << " " << (*obj)[field_id];
+            }
+            key_buffer << " )\n";
+          }
+        });
+
     if (handled)
     {
-      return std::make_unique<TextRowsResult>(buffer.str());
+      return std::make_unique<TextRowsResult>(key_buffer.str());
     }
 
-    std::vector<Table::Iterator> rows;
-    for (auto it = table.begin(); it != table.end(); ++it)
+    // Use ThreadPool if available
+    if (!ThreadPool::isInitialized())
     {
-      if (this->evalCondition(*it))
-      {
-        rows.push_back(it);
-      }
+      return executeSingleThreaded(table, fieldIds);
     }
-    std::sort(rows.begin(), rows.end(),
-              [](const Table::Iterator& first, const Table::Iterator& second)
-              { return (*first).key() < (*second).key(); });
 
-    for (const auto& iterator : rows)
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
-      buffer << "( " << (*iterator).key();
-      for (const auto& field_id : fieldIds)
-      {
-        buffer << " " << (*iterator)[field_id];
-      }
-      buffer << " )\n";
+      return executeSingleThreaded(table, fieldIds);
     }
-    return std::make_unique<TextRowsResult>(buffer.str());
+
+    return executeMultiThreaded(table, fieldIds);
   }
   catch (const TableNameNotFound&)
   {
