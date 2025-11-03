@@ -211,7 +211,7 @@ public:
     }
 
     // Helper to obtain the correct datum reference type depending on VType
-    template <typename T = VType> auto& datumAccess() const
+    template <typename T = VType> [[nodiscard]] auto& datumAccess() const
     {
       if constexpr (std::is_const_v<T>)
       {

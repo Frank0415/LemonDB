@@ -14,6 +14,7 @@
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
 #include "db/Database.h"
+#include "db/Table.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -28,6 +29,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace
 {

@@ -43,7 +43,8 @@ void parseArgs(int argc, char** argv, Args& args)
 
   for (int i = 1; i < argc; ++i)
   {
-    const std::string arg(std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
+    const std::string arg(
+        std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
 
     // Helper lambda to get next argument value
     auto getNextArg = [&]() -> std::string
