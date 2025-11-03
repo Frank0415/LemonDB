@@ -60,7 +60,7 @@ QueryResult::Ptr CopyTableQuery::execute()
     else
     {
       ThreadPool& pool = ThreadPool::getInstance();
-      if (pool.getThreadCount() <= 1 || src.size() < Table::splitsize())
+      if (!is_multithreaded || pool.getThreadCount() <= 1 || src.size() < Table::splitsize())
       {
         collected_rows = collectSingleThreaded(src, fields);
       }
