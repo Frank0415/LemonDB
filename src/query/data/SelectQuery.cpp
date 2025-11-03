@@ -144,8 +144,9 @@ std::string SelectQuery::toString()
   return fieldIds;
 }
 
-[[nodiscard]] QueryResult::Ptr SelectQuery::executeSingleThreaded(
-    const Table& table, const std::vector<Table::FieldIndex>& fieldIds)
+[[nodiscard]] QueryResult::Ptr
+SelectQuery::executeSingleThreaded(const Table& table,
+                                   const std::vector<Table::FieldIndex>& fieldIds)
 {
   // Use map to automatically sort by KEY
   std::map<std::string, Table::Iterator> sorted_rows;
