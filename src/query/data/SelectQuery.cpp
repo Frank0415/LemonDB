@@ -148,25 +148,31 @@ std::string SelectQuery::toString()
 SelectQuery::executeSingleThreaded(const Table& table,
                                    const std::vector<Table::FieldIndex>& fieldIds)
 {
-  // Use map to automatically sort by KEY
-  std::map<std::string, Table::Iterator> sorted_rows;
+  // Collect matching rows as pairs of (key, values)
+  std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
 
   for (auto it = table.begin(); it != table.end(); ++it)
   {
     if (this->evalCondition(*it))
     {
-      sorted_rows.emplace(it->key(), it);
+      std::vector<Table::ValueType> values;
+      values.reserve(fieldIds.size());
+      for (const auto& field_id : fieldIds)
+      {
+        values.emplace_back((*it)[field_id]);
+      }
+      sorted_rows.emplace(it->key(), std::move(values));
     }
   }
 
-  // Output in KEY order
+  // Output in KEY order (already sorted by map)
   std::ostringstream buffer;
-  for (const auto& [key, it] : sorted_rows)
+  for (const auto& [key, values] : sorted_rows)
   {
     buffer << "( " << key;
-    for (const auto& field_id : fieldIds)
+    for (const auto& value : values)
     {
-      buffer << " " << (*it)[field_id];
+      buffer << " " << value;
     }
     buffer << " )\n";
   }
