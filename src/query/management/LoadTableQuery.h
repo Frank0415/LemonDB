@@ -14,7 +14,7 @@
 class LoadTableQuery : public Query
 {
   static constexpr const char* qname = "LOAD";
-  const std::string fileName;
+  std::string fileName;
 
 public:
   explicit LoadTableQuery(std::string table, std::string fileName)
@@ -27,10 +27,16 @@ public:
   std::string toString() override;
 
   // LOAD is a writer query (modifies database state)
-  [[nodiscard]] bool isWriter() const override { return true; }
+  [[nodiscard]] bool isWriter() const override
+  {
+    return true;
+  }
 
   // LOAD must execute immediately and serially (not parallel)
-  [[nodiscard]] bool isInstant() const override { return true; }
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  }
 };
 
 #endif // PROJECT_LOADTABLEQUERY_H

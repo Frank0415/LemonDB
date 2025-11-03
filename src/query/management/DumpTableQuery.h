@@ -13,7 +13,7 @@
 class DumpTableQuery : public Query
 {
   static constexpr const char* qname = "DUMP";
-  const std::string fileName;
+  std::string fileName;
 
 public:
   DumpTableQuery(std::string table, std::string filename)
@@ -25,8 +25,14 @@ public:
 
   std::string toString() override;
 
-  [[nodiscard]] bool isWriter() const override { return false; } // DUMP only reads
-  [[nodiscard]] bool isInstant() const override { return true; } // But must be serial
+  [[nodiscard]] bool isWriter() const override
+  {
+    return false;
+  } // DUMP only reads
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  } // But must be serial
 };
 
 #endif // PROJECT_DUMPTABLEQUERY_H
