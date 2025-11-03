@@ -72,7 +72,7 @@ public:
     std::lock_guard<std::mutex> lock(instance_mutex);
     if (initialized)
     {
-      throw std::runtime_error("ThreadPool already initialized");
+      return;
     }
     global_instance = std::unique_ptr<ThreadPool>(new ThreadPool(num_threads));
     initialized = true;
