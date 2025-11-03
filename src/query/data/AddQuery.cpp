@@ -133,8 +133,6 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   ThreadPool& pool = ThreadPool::getInstance();
-  const size_t num_fields = this->operands.size() - 1;
-  const size_t src_field_count = num_fields - 1;
   std::vector<std::future<int>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
@@ -149,5 +147,34 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
       ++count;
     }
     auto chunk_end = iterator;
+    futures.push_back(pool.submit(
+        [this, chunk_start, chunk_end, fids]()
+        {
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it)
+          {
+            if (!this->evalCondition(*it))
+            {
+              continue;
+            }
+            // perform ADD operation
+            int sum = 0;
+            for (size_t i = 0; i < this->operands.size() - 1; ++i)
+            {
+              sum += (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = sum;
+            local_count++;
+          }
+          return local_count;
+        }));
   }
+
+  // Wait for all tasks to complete and aggregate results
+  int total_count = 0;
+  for (auto& future : futures)
+  {
+    total_count += future.get();
+  }
+  return std::make_unique<RecordCountResult>(total_count);
 }
