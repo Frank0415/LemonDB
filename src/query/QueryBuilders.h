@@ -13,25 +13,7 @@
 #include "Query.h"
 #include "QueryParser.h"
 
-#define QueryBuilder(name) name##QueryBuilder
 
-#define QueryBuilderClass(name)                                                                    \
-  class QueryBuilder(name) : public QueryBuilder                                                   \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
-
-#define BasicQueryBuilderClass(name)                                                               \
-  class QueryBuilder(name) : public BasicQueryBuilder                                              \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
-
-#define ComplexQueryBuilderClass(name)                                                             \
-  class QueryBuilder(name) : public ComplexQueryBuilder                                            \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
 
 class FailedQueryBuilder : public QueryBuilder
 {
@@ -113,13 +95,22 @@ public:
 // It does not modify or extract anything
 // It prints current tokenized string
 // Use to examine the queries and tokenizer
-BasicQueryBuilderClass(Fake);
+class FakeQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
 
 // Debug commands / Utils
-BasicQueryBuilderClass(Debug);
+class DebugQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
 
 // Load, dump, truncate and delete table
-BasicQueryBuilderClass(ManageTable);
+class ManageTableQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
 
 // ComplexQueryBuilderClass(UpdateTable);
 // ComplexQueryBuilderClass(Insert);

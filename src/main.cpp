@@ -103,9 +103,9 @@ void validateAndPrintThreads(std::int64_t threads)
 
 void setupParser(QueryParser& parser)
 {
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
 }
 
 std::string extractQueryString(std::istream& input_stream)
