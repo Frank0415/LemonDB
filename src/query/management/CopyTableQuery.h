@@ -21,7 +21,7 @@ private:
   [[nodiscard]] QueryResult::Ptr validateSourceTable(const Table& src) const;
 
   [[nodiscard]] std::vector<RowData> collectSingleThreaded(const Table& src,
-                                                            const std::vector<std::string>& fields);
+                                                           const std::vector<std::string>& fields);
 
   [[nodiscard]] std::vector<RowData> collectMultiThreaded(const Table& src,
                                                           const std::vector<std::string>& fields);

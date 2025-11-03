@@ -70,3 +70,88 @@ std::string CopyTableQuery::toString()
   return "QUERY = COPYTABLE, SOURCE = \"" + this->targetTable + "\", TARGET = \"" +
          this->newTableName + "\"";
 }
+
+[[nodiscard]] QueryResult::Ptr CopyTableQuery::validateSourceTable(const Table& src) const
+{
+  if (src.empty())
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Source table is empty.");
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<CopyTableQuery::RowData>
+CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::string>& fields)
+{
+  std::vector<RowData> results;
+  results.reserve(src.size());
+
+  for (const auto& obj : src)
+  {
+    std::vector<Table::ValueType> row;
+    row.reserve(fields.size());
+    for (size_t i = 0; i < fields.size(); ++i)
+    {
+      row.push_back(obj[i]);
+    }
+    results.emplace_back(obj.key(), std::move(row));
+  }
+
+  return results;
+}
+
+[[nodiscard]] std::vector<CopyTableQuery::RowData>
+CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::string>& fields)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<RowData> results;
+
+  // Create chunks and submit tasks
+  std::vector<std::pair<size_t, std::future<std::vector<RowData>>>> tasks;
+  tasks.reserve((src.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = src.begin();
+  size_t chunk_index = 0;
+  while (iterator != src.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != src.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    tasks.emplace_back(chunk_index,
+                       pool.submit(
+                           [chunk_begin, chunk_end, &fields]()
+                           {
+                             std::vector<RowData> local_results;
+                             local_results.reserve(std::distance(chunk_begin, chunk_end));
+                             for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+                             {
+                               std::vector<Table::ValueType> row;
+                               row.reserve(fields.size());
+                               for (size_t i = 0; i < fields.size(); ++i)
+                               {
+                                 row.push_back((*iter)[i]);
+                               }
+                               local_results.emplace_back(iter->key(), std::move(row));
+                             }
+                             return local_results;
+                           }));
+    ++chunk_index;
+  }
+
+  // Collect results in order by chunk_index
+  for (auto& [idx, future] : tasks)
+  {
+    auto local_results = future.get();
+    results.insert(results.end(), std::make_move_iterator(local_results.begin()),
+                   std::make_move_iterator(local_results.end()));
+  }
+
+  return results;
+}
