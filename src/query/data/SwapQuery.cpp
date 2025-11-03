@@ -44,20 +44,6 @@ QueryResult::Ptr SwapQuery::execute()
     }
 
     return executeMultiThreaded(table, field_index_1, field_index_2);
-
-    Table::SizeType counter = 0;
-
-    for (auto it = table.begin(); it != table.end(); ++it)
-    {
-      if (this->evalCondition(*it))
-      {
-        auto tmp = (*it)[field_index_1];
-        (*it)[field_index_1] = (*it)[field_index_2];
-        (*it)[field_index_2] = tmp;
-        ++counter;
-      }
-    }
-    return std::make_unique<RecordCountResult>(static_cast<int>(counter));
   }
   catch (const TableNameNotFound&)
   {
@@ -105,14 +91,59 @@ SwapQuery::getFieldIndices(Table& table) const
   return {table.getFieldIndex(operands[0]), table.getFieldIndex(operands[1])};
 }
 
-[[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
-                                                     const Table::FieldIndex& field_index_1,
-                                                     const Table::FieldIndex& field_index_2)
+[[nodiscard]] QueryResult::Ptr SwapQuery::executeSingleThreaded(
+    Table& table, const Table::FieldIndex& field_index_1, const Table::FieldIndex& field_index_2)
 {
+  Table::SizeType counter = 0;
+
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      auto tmp = (*it)[field_index_1];
+      (*it)[field_index_1] = (*it)[field_index_2];
+      (*it)[field_index_2] = tmp;
+      ++counter;
+    }
+  }
+  return std::make_unique<RecordCountResult>(static_cast<int>(counter));
 }
 
-[[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
-                                                    const Table::FieldIndex& field_index_1,
-                                                    const Table::FieldIndex& field_index_2)
+[[nodiscard]] QueryResult::Ptr SwapQuery::executeMultiThreaded(
+    Table& table, const Table::FieldIndex& field_index_1, const Table::FieldIndex& field_index_2)
 {
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<Table::SizeType>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_begin, chunk_end, field_index_1, field_index_2]()
+        {
+          Table::SizeType local_counter = 0;
+          for (auto it = chunk_begin; it != chunk_end; ++it)
+          {
+            if (this->evalCondition(*it))
+            {
+              auto tmp = (*it)[field_index_1];
+              (*it)[field_index_1] = (*it)[field_index_2];
+              (*it)[field_index_2] = tmp;
+              ++local_counter;
+            }
+          }
+          return local_counter;
+        }));
+  }
 }
