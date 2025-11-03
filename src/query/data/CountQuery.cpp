@@ -27,9 +27,9 @@ QueryResult::Ptr CountQuery::execute()
 
     // Get a reference to the database singleton instance
     Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireRead(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
     // Access the target table using the table name
-    Table& table = database[this->targetTable];
+    Table& table = database[this->targetTableRef()];
 
     // Initialize the WHERE clause condition. The 'second' member of the
     // returned pair is a flag indicating if the condition can ever be true.
@@ -60,17 +60,17 @@ QueryResult::Ptr CountQuery::execute()
   catch (const TableNameNotFound& e)
   {
     // If the specified table does not exist, return an error message
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Table not found.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Table not found.");
   }
   catch (const IllFormedQueryCondition& e)
   {
     // Handle errors in the WHERE clause, e.g., invalid field name
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::exception& e)
   {
     // Catch any other standard exceptions and return a generic error message
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
 }
 
@@ -78,14 +78,14 @@ QueryResult::Ptr CountQuery::execute()
 std::string CountQuery::toString()
 {
   // Returns a string representation of the query, useful for debugging.
-  return "QUERY = COUNT, Table = " + this->targetTable;
+  return "QUERY = COUNT, Table = " + this->targetTableRef();
 }
 
 [[nodiscard]] QueryResult::Ptr CountQuery::validateOperands() const
 {
   if (!this->getOperands().empty())
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "COUNT query does not take any operands.");
   }
   return nullptr;
