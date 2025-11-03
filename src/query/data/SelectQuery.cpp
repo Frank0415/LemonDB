@@ -107,7 +107,7 @@ std::string SelectQuery::toString()
   return nullptr;
 }
 
-[[nodiscard]] std::vector<Table::FieldIndex> SelectQuery::getFieldIndices(const Table& table) const
+[[nodiscard]] std::vector<Table::FieldIndex> SelectQuery::getFieldIndices(Table& table) const
 {
   std::vector<std::string> fieldsOrder;
   fieldsOrder.reserve(this->operands.size() + 1);
