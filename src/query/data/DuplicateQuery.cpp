@@ -123,3 +123,38 @@ std::string DuplicateQuery::toString()
   }
   return nullptr;
 }
+
+[[nodiscard]] std::vector<DuplicateQuery::RecordPair>
+DuplicateQuery::executeSingleThreaded(Table& table)
+{
+  std::vector<RecordPair> recordsToDuplicate;
+  auto row_size = table.field().size();
+
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (!this->evalCondition(*it))
+    {
+      continue;
+    }
+
+    auto originalKey = it->key();
+    auto newKey = originalKey + "_copy";
+
+    // if a "_copy" already exists, skip this key
+    if (table[newKey] != nullptr)
+    {
+      continue;
+    }
+
+    // Copy the values from the original record
+    std::vector<Table::ValueType> values(row_size);
+    for (size_t i = 0; i < row_size; ++i)
+    {
+      values[i] = (*it)[i];
+    }
+
+    recordsToDuplicate.emplace_back(newKey, std::move(values));
+  }
+
+  return recordsToDuplicate;
+}
