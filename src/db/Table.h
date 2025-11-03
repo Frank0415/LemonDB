@@ -19,10 +19,10 @@
 #include <utility>
 #include <vector>
 
-#include "../utils/formatter.h"
-#include "../utils/uexception.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
 #include "query/QueryResult.h"
-
+#include "Datum.h"
 class Query
 {
   // private:
@@ -84,66 +84,6 @@ public:
 
 private:
   /** A row in the table */
-  class Datum
-  {
-  private:
-    /** Unique key of this datum */
-    KeyType key;
-    /** The values in the order of fields */
-    std::vector<ValueType> datum;
-
-  public:
-    Datum() = default;
-
-    // By declaring all 5 special member functions, we adhere to the Rule of
-    // Five.
-    Datum(const Datum&) = default;
-    Datum&
-    operator=(const Datum&) = default; // Fix: Explicitly default the copy assignment operator.
-    Datum(Datum&&) noexcept = default;
-    Datum& operator=(Datum&&) noexcept = default;
-    ~Datum() = default;
-
-    explicit Datum(const SizeType& size) : datum(size, ValueType())
-    {
-    }
-
-    template <class ValueTypeContainer>
-    explicit Datum(KeyType key, const ValueTypeContainer& datum) : key(std::move(key)), datum(datum)
-    {
-    }
-
-    explicit Datum(KeyType key, std::vector<ValueType>&& datum) noexcept
-        : key(std::move(key)), datum(std::move(datum))
-    {
-    }
-
-    // Accessors so outer code need not access members directly
-    [[nodiscard]] const KeyType& keyConstRef() const noexcept
-    {
-      return key;
-    }
-
-    [[nodiscard]] KeyType& keyRef() noexcept
-    {
-      return key;
-    }
-
-    void setKey(KeyType newKey) noexcept
-    {
-      key = std::move(newKey);
-    }
-
-    [[nodiscard]] const std::vector<ValueType>& datumConstRef() const noexcept
-    {
-      return datum;
-    }
-
-    [[nodiscard]] std::vector<ValueType>& datumRef() noexcept
-    {
-      return datum;
-    }
-  };
 
   using DataIterator = std::vector<Datum>::iterator;
   using ConstDataIterator = std::vector<Datum>::const_iterator;
