@@ -14,13 +14,13 @@ class SelectQuery : public ComplexQuery
 private:
   [[nodiscard]] QueryResult::Ptr validateOperands() const;
 
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(Table& table) const;
 
   [[nodiscard]] QueryResult::Ptr
-  executeSingleThreaded(const Table& table, const std::vector<Table::FieldIndex>& fieldIds);
+  executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds);
 
   [[nodiscard]] QueryResult::Ptr
-  executeMultiThreaded(const Table& table, const std::vector<Table::FieldIndex>& fieldIds);
+  executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds);
 
 public:
   using ComplexQuery::ComplexQuery;

@@ -1,12 +1,10 @@
 #include "SelectQuery.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -43,23 +41,23 @@ QueryResult::Ptr SelectQuery::execute()
 
     // Try KEY condition optimization first
     std::ostringstream key_buffer;
-    const bool handled = this->testKeyCondition(
-        table, [&](bool success, Table::Object::Ptr obj)
-        {
-          if (!success)
-          {
-            return;
-          }
-          if (obj)
-          {
-            key_buffer << "( " << obj->key();
-            for (const auto& field_id : fieldIds)
-            {
-              key_buffer << " " << (*obj)[field_id];
-            }
-            key_buffer << " )\n";
-          }
-        });
+    const bool handled = this->testKeyCondition(table,
+                                                [&](bool success, Table::Object::Ptr obj)
+                                                {
+                                                  if (!success)
+                                                  {
+                                                    return;
+                                                  }
+                                                  if (obj)
+                                                  {
+                                                    key_buffer << "( " << obj->key();
+                                                    for (const auto& field_id : fieldIds)
+                                                    {
+                                                      key_buffer << " " << (*obj)[field_id];
+                                                    }
+                                                    key_buffer << " )\n";
+                                                  }
+                                                });
 
     if (handled)
     {
@@ -132,8 +130,7 @@ std::string SelectQuery::toString()
 }
 
 [[nodiscard]] QueryResult::Ptr
-SelectQuery::executeSingleThreaded(const Table& table,
-                                   const std::vector<Table::FieldIndex>& fieldIds)
+SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds)
 {
   // Collect matching rows as pairs of (key, values)
   std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
@@ -168,7 +165,7 @@ SelectQuery::executeSingleThreaded(const Table& table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-SelectQuery::executeMultiThreaded(const Table& table,
+SelectQuery::executeMultiThreaded(Table& table,
                                   const std::vector<Table::FieldIndex>& fieldIds)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
