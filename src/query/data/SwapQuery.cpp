@@ -10,32 +10,28 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "db/Table.h"
 
 QueryResult::Ptr SwapQuery::execute()
 {
-  if (this->operands.size() != 2)
-  {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "Invalid number of operands (? operands)."_f %
-                                                operands.size());
-  }
 
   try
   {
-    Database& database = Database::getInstance();
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
-    auto& table = database[this->targetTable];
-    if (operands[0] == "KEY" || operands[1] == "KEY")
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr)
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "Ill-formed query: KEY cannot be swapped.");
+      return validation_result;
     }
-    const auto field_index_1 = table.getFieldIndex(operands[0]);
-    const auto field_index_2 = table.getFieldIndex(operands[1]);
+
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTable);
+    Database& database = Database::getInstance();
+    auto& table = database[this->targetTable];
+
+    const auto [field_index_1, field_index_2] = getFieldIndices(table);
 
     Table::SizeType counter = 0;
     const bool handled = this->testKeyCondition(table,
-                                                [&](bool success, Table::Object::Ptr&& obj)
+                                                [&](bool success, Table::Object::Ptr obj)
                                                 {
                                                   if (!success)
                                                   {
@@ -87,4 +83,26 @@ QueryResult::Ptr SwapQuery::execute()
 std::string SwapQuery::toString()
 {
   return "QUERY = SWAP \"" + this->targetTable + "\"";
+}
+
+[[nodiscard]] QueryResult::Ptr SwapQuery::validateOperands() const
+{
+  if (this->operands.size() != 2)
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                operands.size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
+SwapQuery::getFieldIndices(Table& table) const
+{
+  if (operands[0] == "KEY" || operands[1] == "KEY")
+  {
+    throw std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+                                           "Ill-formed query: KEY cannot be swapped.");
+  }
+  return {table.getFieldIndex(operands[0]), table.getFieldIndex(operands[1])};
 }
