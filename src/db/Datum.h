@@ -1,3 +1,6 @@
+#ifndef PROJECT_DB_DATUM_H
+#define PROJECT_DB_DATUM_H
+
 #include <string>
 #include <vector>
 
@@ -60,3 +63,5 @@ public:
     return datum;
   }
 };
+
+#endif // PROJECT_DB_DATUM_H
