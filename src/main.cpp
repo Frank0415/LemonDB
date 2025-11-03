@@ -2,20 +2,16 @@
 // Created by liu on 18-10-21.
 //
 
-#include <algorithm>
 #include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
-#include <future>
 #include <getopt.h>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "db/Database.h"
 #include "query/QueryBuilders.h"
@@ -23,17 +19,6 @@
 #include "threading/Collector.h"
 #include "threading/Threadpool.h"
 #include <unistd.h>
-
-#include "query/Query.h"
-
-#ifdef __has_feature
-#if __has_feature(memory_sanitizer)
-#define LEMONDB_WITH_MSAN 1
-#endif
-#endif
-#ifdef __SANITIZE_MEMORY__
-#define LEMONDB_WITH_MSAN 1
-#endif
 
 namespace
 {

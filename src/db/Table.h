@@ -25,9 +25,12 @@
 
 class Query
 {
+// private:
+//   int id = -1;
+
 protected:
   std::string targetTable;
-  int id = -1;
+
 
 public:
   Query() = default;
