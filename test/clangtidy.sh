@@ -17,7 +17,7 @@ compile_commands_path="../build/compile_commands.json"
 
 if [[ "$usr" == "frank" || "$usr" == "ve482" ]]; then
   declare -A check_groups=(
-    ["bugprone"]='bugprone-*'
+    ["bugprone"]='bugprone-*,-bugprone-easily-swappable-parameters'
     ["cppcoreguidelines"]='cppcoreguidelines-*'
     ["misc"]='misc-*'
     ["modernize"]='modernize-*,-modernize-use-trailing-return-type'
