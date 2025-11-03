@@ -90,3 +90,35 @@ std::string UpdateQuery::toString()
 {
   return "QUERY = UPDATE " + this->targetTable + "\"";
 }
+
+[[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
+{
+  if (this->operands.size() != 2)
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                operands.size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] QueryResult::Ptr UpdateQuery::executeSingleThreaded(Table& table)
+{
+  Table::SizeType counter = 0;
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      if (this->keyValue.empty())
+      {
+        (*it)[this->fieldId] = this->fieldValue;
+      }
+      else
+      {
+        it->setKey(this->keyValue);
+      }
+      ++counter;
+    }
+  }
+  return std::make_unique<RecordCountResult>(counter);
+}
