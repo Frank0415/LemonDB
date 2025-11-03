@@ -11,8 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "../db/types.h"
-#include "../db/Table.h"
+#include "db/types.h"
+#include "db/Table.h"
 #include "QueryResult.h"
 
 struct QueryCondition

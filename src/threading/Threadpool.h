@@ -9,7 +9,8 @@
 #include <thread>
 #include <vector>
 
-class ThreadPool {
+class ThreadPool
+{
 private:
   static std::unique_ptr<ThreadPool> global_instance;
   static std::mutex instance_mutex;
@@ -24,14 +25,17 @@ private:
   size_t total_threads;
 
   // a manager for threads to constantly work until the ThreadPool is destructed
-  void thread_manager() {
-    while (!done.load()) {
+  void thread_manager()
+  {
+    while (!done.load())
+    {
       std::function<void()> task;
       {
         std::unique_lock<std::mutex> lock(lockx);
         cv.wait(lock, [this]() { return !Task_assemble.empty() || done.load(); });
 
-        if (done.load() && Task_assemble.empty()) {
+        if (done.load() && Task_assemble.empty())
+        {
           return;
         }
 
@@ -47,8 +51,10 @@ private:
 
   // Private constructor for singleton
   explicit ThreadPool(size_t num_threads)
-      : done(false), idleThreadNum(0), total_threads(num_threads) {
-    for (size_t i = 0; i < num_threads; ++i) {
+      : done(false), idleThreadNum(0), total_threads(num_threads)
+  {
+    for (size_t i = 0; i < num_threads; ++i)
+    {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
     }
@@ -56,45 +62,54 @@ private:
 
 public:
   // Deleted copy constructor and assignment operator
-  ThreadPool(const ThreadPool &) = delete;
-  ThreadPool &operator=(const ThreadPool &) = delete;
+  ThreadPool(const ThreadPool&) = delete;
+  ThreadPool& operator=(const ThreadPool&) = delete;
+  ThreadPool(ThreadPool&&) = delete;
+  ThreadPool& operator=(ThreadPool&&) = delete;
 
-  static void
-  initialize(size_t num_threads = std::thread::hardware_concurrency()) {
+  static void initialize(size_t num_threads = std::thread::hardware_concurrency())
+  {
     std::lock_guard<std::mutex> lock(instance_mutex);
-    if (initialized) {
+    if (initialized)
+    {
       throw std::runtime_error("ThreadPool already initialized");
     }
     global_instance = std::unique_ptr<ThreadPool>(new ThreadPool(num_threads));
     initialized = true;
   }
 
-  static ThreadPool &getInstance() {
+  static ThreadPool& getInstance()
+  {
     std::lock_guard<std::mutex> lock(instance_mutex);
-    if (!initialized) {
-      throw std::runtime_error(
-          "ThreadPool not initialized. Call initialize() first.");
+    if (!initialized)
+    {
+      throw std::runtime_error("ThreadPool not initialized. Call initialize() first.");
     }
     return *global_instance;
   }
 
-  static bool isInitialized() {
+  static bool isInitialized()
+  {
     std::lock_guard<std::mutex> lock(instance_mutex);
     return initialized;
   }
 
-  ~ThreadPool() {
+  ~ThreadPool()
+  {
     done.store(true);
     cv.notify_all();
-    for (auto &thread : pool_vector) {
-      if (thread.joinable()) {
+    for (auto& thread : pool_vector)
+    {
+      if (thread.joinable())
+      {
         thread.join();
       }
     }
   }
 
   template <typename F, typename... Args>
-  auto submit(F &&func, Args &&...args) -> std::future<decltype(func(args...))> {
+  auto submit(F&& func, Args&&... args) -> std::future<decltype(func(args...))>
+  {
     using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
@@ -109,8 +124,14 @@ public:
     return ret;
   }
 
-  [[nodiscard]] int getIdleThreadNum() const { return idleThreadNum.load(); }
-  [[nodiscard]] size_t getThreadCount() const { return total_threads; }
+  [[nodiscard]] int getIdleThreadNum() const
+  {
+    return idleThreadNum.load();
+  }
+  [[nodiscard]] size_t getThreadCount() const
+  {
+    return total_threads;
+  }
 };
 
 #endif // PROJECT_THREADPOOL_H

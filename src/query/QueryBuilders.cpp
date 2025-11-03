@@ -1,7 +1,4 @@
 #include "QueryBuilders.h"
-#include "../db/Database.h"
-#include "../utils/formatter.h"
-#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryParser.h"
 #include "data/AddQuery.h"
@@ -16,6 +13,7 @@
 #include "data/SumQuery.h"
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
+#include "db/Database.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -24,6 +22,8 @@
 #include "management/PrintTableQuery.h"
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
 #include <iomanip>
 #include <iostream>
 #include <memory>
