@@ -18,11 +18,11 @@ QueryResult::Ptr CountQuery::execute()
   // Use a try-catch block to handle potential exceptions gracefully
   try
   {
-    // According to the PDF, COUNT should not have any operands
-    if (!this->operands.empty())
+    // Validate operands
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr)
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "COUNT query does not take any operands.");
+      return validation_result;
     }
 
     // Get a reference to the database singleton instance
@@ -35,30 +35,27 @@ QueryResult::Ptr CountQuery::execute()
     // returned pair is a flag indicating if the condition can ever be true.
     auto condition = this->initCondition(table);
 
-    // Initialize a counter for the records that match the condition
-    int record_count = 0;
-
     // An optimization: only proceed with iteration if the condition isn't
     // always false (e.g., WHERE (KEY = "a") (KEY = "b"))
-    if (condition.second)
+    if (!condition.second)
     {
-      // Iterate through each row (record) in the table
-      for (const auto& row : table)
-      {
-        // Evaluate the WHERE clause for the current row.
-        // If there's no WHERE clause, evalCondition returns true.
-        if (this->evalCondition(row))
-        {
-          // If the condition is met, increment the counter
-          record_count++;
-        }
-      }
+      return std::make_unique<TextRowsResult>("ANSWER = 0\n");
     }
 
-    // According to p2.pdf, the output format is "ANSWER = <numRecords>".
-    // We use TextRowsResult to format this string and ensure it's printed to
-    // standard output, as its display() method returns true.
-    return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(record_count) + "\n");
+    // Check if ThreadPool is available and has multiple threads
+    if (!ThreadPool::isInitialized())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    // Multi-threaded execution
+    return executeMultiThreaded(table);
   }
   catch (const TableNameNotFound& e)
   {
