@@ -20,8 +20,8 @@ QueryResult::Ptr CopyTableQuery::execute()
   try
   {
     auto& database = Database::getInstance();
-    auto srcLock = TableLockManager::getInstance().acquireRead(this->targetTable);
-    auto& src = database[this->targetTable];
+    auto srcLock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& src = database[this->targetTableRef()];
 
     // Validate source table
     auto validation_result = validateSourceTable(src);
@@ -45,7 +45,8 @@ QueryResult::Ptr CopyTableQuery::execute()
     }
     if (targetExists)
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Target table name exists");
+      return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                              "Target table name exists");
     }
 
     // Get field names
@@ -83,17 +84,17 @@ QueryResult::Ptr CopyTableQuery::execute()
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Unknown error");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Unknown error");
   }
 }
 
 std::string CopyTableQuery::toString()
 {
-  return "QUERY = COPYTABLE, SOURCE = \"" + this->targetTable + "\", TARGET = \"" +
+  return "QUERY = COPYTABLE, SOURCE = \"" + this->targetTableRef() + "\", TARGET = \"" +
          this->newTableName + "\"";
 }
 
@@ -101,7 +102,8 @@ std::string CopyTableQuery::toString()
 {
   if (src.empty())
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Source table is empty.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Source table is empty.");
   }
   return nullptr;
 }
