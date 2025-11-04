@@ -21,15 +21,16 @@ if [ "$VERBOSE" = true ]; then
     echo ""
 fi
 
-
-
-./test/linecount.sh
+./test/linecount.sh --verbose=$VERBOSE
 
 usr=$(whoami)
 
 if [[ $usr == "frank" ]]; then
-  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON
-  cmake --build build -j$(nproc)
+  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > tmp.log 2>&1
+  cmake --build build -j$(nproc) > tmp.log 2>&1
+  if [ "$VERBOSE" = true ]; then
+      cat tmp.log
+  fi
 elif [[ $usr == "114514" ]]; then # not working, replace with your own whoami
     cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > /dev/null 2>&1 # not working, replace with your own clang-18
     cmake --build build -j$(nproc) > /dev/null 2>&1
@@ -42,6 +43,7 @@ cp ./build/bin/lemondb ./lemondb
 
 ./test/test_correctness.sh --verbose=$VERBOSE --full=$FULL_COMPARE
 
+cd test
 
 ./clangtidy.sh
 ./cpplint.sh
