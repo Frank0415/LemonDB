@@ -45,8 +45,13 @@ cp ./build/bin/lemondb ./lemondb
 
 cd test
 
-./clangtidy.sh
 ./cpplint.sh
 ./cppcheck.sh
-./clangtidy_cleanup.sh
 
+if [ $usr != "frank" ]; then
+    ./clangtidy.sh
+    ./clangtidy_cleanup.sh
+else
+    cd ..
+    ./run_tidy.sh
+fi
