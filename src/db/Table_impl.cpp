@@ -1,3 +1,7 @@
+#include <string>
+#include <vector>
+#include <cstddef>
+
 #include "Table.h"
 
 void Table::setName(const std::string& name)
