@@ -15,7 +15,7 @@
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  using namespace std::literals::string_literals;
+  using std::string_literals::operator""s;
   if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
@@ -73,11 +73,11 @@ QueryResult::Ptr DeleteQuery::execute()
   catch (const std::exception& e)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
-                                            "Unknown error '?'."_f % e.what());
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string DeleteQuery::toString()
 {
-  return "QUERY = DELETE " + this->targetTableRef();
+  return "QUERY = DELETE " + this->targetTableRef() + "\"";
 }
