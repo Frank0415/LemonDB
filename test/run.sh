@@ -47,11 +47,10 @@ cd test
 
 ./cpplint.sh
 ./cppcheck.sh
+./clangtidy.sh
+./clangtidy_cleanup.sh
 
-if [ $usr != "frank" ]; then
-    ./clangtidy.sh
-    ./clangtidy_cleanup.sh
-else
+if [ $usr == "frank" ]; then
     cd ..
     ./run_tidy.sh
 fi
