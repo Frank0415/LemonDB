@@ -1,10 +1,13 @@
 #include "SwapQuery.h"
 
+#include <cstddef>
 #include <exception>
 #include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
@@ -67,7 +70,7 @@ QueryResult::Ptr SwapQuery::execute()
       return executeSingleThreaded(table, field_index_1, field_index_2);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table, field_index_1, field_index_2);
@@ -126,13 +129,13 @@ SwapQuery::getFieldIndices(Table& table) const
 {
   Table::SizeType counter = 0;
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto row : table)
   {
-    if (this->evalCondition(*it))
+    if (this->evalCondition(row))
     {
-      auto tmp = (*it)[field_index_1];
-      (*it)[field_index_1] = (*it)[field_index_2];
-      (*it)[field_index_2] = tmp;
+      auto tmp = row[field_index_1];
+      row[field_index_1] = row[field_index_2];
+      row[field_index_2] = tmp;
       ++counter;
     }
   }
@@ -143,7 +146,7 @@ SwapQuery::getFieldIndices(Table& table) const
     Table& table, const Table::FieldIndex& field_index_1, const Table::FieldIndex& field_index_2)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<std::future<Table::SizeType>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 

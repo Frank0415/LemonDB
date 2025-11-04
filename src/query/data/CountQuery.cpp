@@ -1,9 +1,11 @@
 #include "CountQuery.h"
 
+#include <cstddef>
 #include <exception>
 #include <future>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
@@ -48,7 +50,7 @@ QueryResult::Ptr CountQuery::execute()
       return executeSingleThreaded(table);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table);
@@ -95,9 +97,9 @@ std::string CountQuery::toString()
 {
   int record_count = 0;
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto row : table)
   {
-    if (this->evalCondition(*it))
+    if (this->evalCondition(row))
     {
       record_count++;
     }
@@ -109,7 +111,7 @@ std::string CountQuery::toString()
 [[nodiscard]] QueryResult::Ptr CountQuery::executeMultiThreaded(Table& table)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   int total_count = 0;
 
   // Create chunks and submit tasks

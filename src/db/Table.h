@@ -19,57 +19,10 @@
 #include <utility>
 #include <vector>
 
-#include "../utils/formatter.h"
-#include "../utils/uexception.h"
-#include "query/QueryResult.h"
-
-class Query
-{
-  // private:
-  //   int id = -1;
-
-private:
-  std::string targetTable;
-
-public:
-  Query() = default;
-
-  [[nodiscard]] std::string& targetTableRef()
-  {
-    return targetTable;
-  }
-
-  // Const overload so const member functions can access target table name
-  [[nodiscard]] const std::string& targetTableRef() const
-  {
-    return targetTable;
-  }
-
-  explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
-  {
-  }
-
-  using Ptr = std::unique_ptr<Query>;
-
-  virtual QueryResult::Ptr execute() = 0;
-
-  virtual std::string toString() = 0;
-
-  virtual ~Query() = default;
-
-  // For thread safety: indicate if this query modifies data
-  [[nodiscard]] virtual bool isWriter() const
-  {
-    return false;
-  }
-
-  // For execution order: indicate if this query must execute immediately (not
-  // parallel) e.g., LOAD and QUIT must execute serially
-  [[nodiscard]] virtual bool isInstant() const
-  {
-    return false;
-  }
-};
+#include "Datum.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
+#include "QueryBase.h"
 
 class Table
 {
@@ -84,66 +37,6 @@ public:
 
 private:
   /** A row in the table */
-  class Datum
-  {
-  private:
-    /** Unique key of this datum */
-    KeyType key;
-    /** The values in the order of fields */
-    std::vector<ValueType> datum;
-
-  public:
-    Datum() = default;
-
-    // By declaring all 5 special member functions, we adhere to the Rule of
-    // Five.
-    Datum(const Datum&) = default;
-    Datum&
-    operator=(const Datum&) = default; // Fix: Explicitly default the copy assignment operator.
-    Datum(Datum&&) noexcept = default;
-    Datum& operator=(Datum&&) noexcept = default;
-    ~Datum() = default;
-
-    explicit Datum(const SizeType& size) : datum(size, ValueType())
-    {
-    }
-
-    template <class ValueTypeContainer>
-    explicit Datum(KeyType key, const ValueTypeContainer& datum) : key(std::move(key)), datum(datum)
-    {
-    }
-
-    explicit Datum(KeyType key, std::vector<ValueType>&& datum) noexcept
-        : key(std::move(key)), datum(std::move(datum))
-    {
-    }
-
-    // Accessors so outer code need not access members directly
-    [[nodiscard]] const KeyType& keyConstRef() const noexcept
-    {
-      return key;
-    }
-
-    [[nodiscard]] KeyType& keyRef() noexcept
-    {
-      return key;
-    }
-
-    void setKey(KeyType newKey) noexcept
-    {
-      key = std::move(newKey);
-    }
-
-    [[nodiscard]] const std::vector<ValueType>& datumConstRef() const noexcept
-    {
-      return datum;
-    }
-
-    [[nodiscard]] std::vector<ValueType>& datumRef() noexcept
-    {
-      return datum;
-    }
-  };
 
   using DataIterator = std::vector<Datum>::iterator;
   using ConstDataIterator = std::vector<Datum>::const_iterator;
@@ -211,7 +104,7 @@ public:
     }
 
     // Helper to obtain the correct datum reference type depending on VType
-    template <typename T = VType> auto& datumAccess() const
+    template <typename T = VType> [[nodiscard]] auto& datumAccess() const
     {
       if constexpr (std::is_const_v<T>)
       {
@@ -531,58 +424,37 @@ public:
    * Set the name of the table
    * @param name
    */
-  void setName(const std::string& name)
-  {
-    this->tableName = name;
-  }
+  void setName(const std::string& name);
 
   /**
    * Get the name of the table
    * @return
    */
-  [[nodiscard]] const std::string& name() const
-  {
-    return this->tableName;
-  }
+  [[nodiscard]] const std::string& name() const;
 
   /**
    * Return whether the table is empty
    * @return
    */
-  [[nodiscard]] bool empty() const
-  {
-    return this->data.empty();
-  }
+  [[nodiscard]] bool empty() const;
 
   /**
    * Return the num of data stored in the table
    * @return
    */
-  [[nodiscard]] size_t size() const
-  {
-    return this->data.size();
-  }
+  [[nodiscard]] size_t size() const;
 
   /**
    * Return the fields in the table
    * @return
    */
-  [[nodiscard]] const std::vector<FieldNameType>& field() const
-  {
-    return this->fields;
-  }
+  [[nodiscard]] const std::vector<FieldNameType>& field() const;
 
   /**
    * Clear all content in the table
    * @return rows affected
    */
-  size_t clear()
-  {
-    auto result = keyMap.size();
-    data.clear();
-    keyMap.clear();
-    return result;
-  }
+  size_t clear();
 
   /**
    * Pre-allocate capacity for bulk load operations
@@ -595,53 +467,31 @@ public:
     keyMap.reserve(capacity);
   }
 
-  void drop()
-  {
-    queryQueueCounter = 0;
-    fields.clear();
-    fieldMap.clear();
-    data.clear();
-    keyMap.clear();
-    queryQueueMutex.lock();
-    initialized = false;
-    queryQueueMutex.unlock();
-  }
+  void drop();
 
   /**
    * Get a begin iterator similar to the standard iterator
    * @return begin iterator
    */
-  Iterator begin()
-  {
-    return {data.begin(), this};
-  }
+  Iterator begin();
 
   /**
    * Get a end iterator similar to the standard iterator
    * @return end iterator
    */
-  Iterator end()
-  {
-    return {data.end(), this};
-  }
+  Iterator end();
 
   /**
    * Get a const begin iterator similar to the standard iterator
    * @return const begin iterator
    */
-  [[nodiscard]] ConstIterator begin() const
-  {
-    return {data.cbegin(), this};
-  }
+  [[nodiscard]] ConstIterator begin() const;
 
   /**
    * Get a const end iterator similar to the standard iterator
    * @return const end iterator
    */
-  [[nodiscard]] ConstIterator end() const
-  {
-    return {data.cend(), this};
-  }
+  [[nodiscard]] ConstIterator end() const;
 
   /**
    * Overload the << operator for complete print of the table
@@ -653,10 +503,7 @@ public:
 
   void addQuery(Query* query);
   void completeQuery();
-  [[nodiscard]] bool isInited() const
-  {
-    return initialized;
-  }
+  [[nodiscard]] bool isInited() const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Table& table);

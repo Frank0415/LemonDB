@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../../db/Database.h"
@@ -70,7 +71,7 @@ QueryResult::Ptr SelectQuery::execute()
       return executeSingleThreaded(table, fieldIds);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table, fieldIds);
@@ -168,7 +169,7 @@ SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldI
 SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<std::future<std::map<std::string, std::vector<Table::ValueType>>>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 

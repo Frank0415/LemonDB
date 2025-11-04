@@ -4,8 +4,9 @@
 #include <string>
 #include <utility>
 
-#include "utils/uexception.h"
 #include "QueryBuilders.h"
+#include "db/QueryBase.h"
+#include "utils/uexception.h"
 
 QueryParser::QueryParser() = default;
 

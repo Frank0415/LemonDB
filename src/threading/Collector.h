@@ -29,7 +29,7 @@ public:
   void addResult(size_t query_id, const std::string& result)
   {
     {
-      std::lock_guard<std::mutex> lock(results_mutex);
+      const std::scoped_lock<std::mutex> lock(results_mutex);
       results[query_id] = result;
     }
     const size_t new_completed = completed_queries.fetch_add(1) + 1;
@@ -47,7 +47,7 @@ public:
 
   void outputAllResults()
   {
-    std::lock_guard<std::mutex> lock(results_mutex);
+    const std::scoped_lock<std::mutex> lock(results_mutex);
 
     const size_t completed = completed_queries.load();
     const size_t expected = expected_queries.load();

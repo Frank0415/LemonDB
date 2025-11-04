@@ -1,4 +1,3 @@
-#include "DeleteQuery.h"
 
 #include <exception>
 #include <memory>
@@ -12,10 +11,10 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "DeleteQuery.h"
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  using std::string_literals::operator""s;
   if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
@@ -54,11 +53,11 @@ QueryResult::Ptr DeleteQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found.");
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
