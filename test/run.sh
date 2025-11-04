@@ -49,8 +49,8 @@ fi
 
 cd test
 
-./cpplint.sh
-./cppcheck.sh
+./cpplint.sh > cpplint 2>&1
+./cppcheck.sh > cppcheck 2>&1
 ./clangtidy.sh
 ./clangtidy_cleanup.sh
 
