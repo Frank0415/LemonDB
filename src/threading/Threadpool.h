@@ -16,10 +16,10 @@ private:
   static std::mutex instance_mutex;
   static bool initialized;
 
-  std::mutex lockx;
-  std::queue<std::function<void()>> Task_assemble;
+  mutable std::mutex lockx;
+  mutable std::queue<std::function<void()>> Task_assemble;
   std::vector<std::thread> pool_vector;
-  std::condition_variable cv;
+  mutable std::condition_variable cv;
   std::atomic<bool> done;
   std::atomic<int> idleThreadNum;
   size_t total_threads;
@@ -69,7 +69,7 @@ public:
 
   static void initialize(size_t num_threads = std::thread::hardware_concurrency())
   {
-    std::lock_guard<std::mutex> lock(instance_mutex);
+    const std::scoped_lock<std::mutex> lock(instance_mutex);
     if (initialized)
     {
       return;
@@ -80,7 +80,7 @@ public:
 
   static ThreadPool& getInstance()
   {
-    std::lock_guard<std::mutex> lock(instance_mutex);
+    const std::scoped_lock<std::mutex> lock(instance_mutex);
     if (!initialized)
     {
       throw std::runtime_error("ThreadPool not initialized. Call initialize() first.");
@@ -90,7 +90,7 @@ public:
 
   static bool isInitialized()
   {
-    std::lock_guard<std::mutex> lock(instance_mutex);
+    const std::scoped_lock<std::mutex> lock(instance_mutex);
     return initialized;
   }
 
@@ -108,16 +108,17 @@ public:
   }
 
   template <typename F, typename... Args>
-  auto submit(F&& func, Args&&... args) -> std::future<decltype(func(args...))>
+  auto submit(F&& func, Args&&... args) const -> std::future<decltype(func(args...))>
   {
     using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
-        std::bind(std::forward<F>(func), std::forward<Args>(args)...));
+        [func_cap = std::forward<F>(func), ... args_tuple = std::forward<Args>(args)]() mutable
+        { return func_cap(std::forward<Args>(args_tuple)...); });
 
     std::future<return_type> ret = task->get_future();
     {
-      std::lock_guard<std::mutex> lock(lockx);
+      const std::scoped_lock<std::mutex> lock(lockx);
       Task_assemble.emplace([task]() { (*task)(); });
     }
     cv.notify_one();

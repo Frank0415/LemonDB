@@ -15,7 +15,7 @@
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  using namespace std::literals::string_literals;
+  (void)0; // no string literal operator used directly; keep file self-contained
   if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
@@ -54,11 +54,11 @@ QueryResult::Ptr DeleteQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found.");
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {

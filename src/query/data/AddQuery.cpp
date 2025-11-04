@@ -2,9 +2,11 @@
 
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
@@ -15,7 +17,6 @@
 
 [[nodiscard]] QueryResult::Ptr AddQuery::execute()
 {
-  using std::string_literals::operator""s;
   try
   {
     auto validationResult = validateOperands();
@@ -46,7 +47,7 @@
       return executeSingleThreaded(table, indices);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table, indices);
@@ -56,11 +57,13 @@
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("Key not found."));
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
@@ -111,19 +114,19 @@ AddQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 {
   int count = 0;
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto row : table)
   {
-    if (!this->evalCondition(*it))
+    if (!this->evalCondition(row))
     {
       continue;
     }
     // perform ADD operation
     int sum = 0;
-    for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
+    for (size_t idx = 0; idx < this->getOperands().size() - 1; ++idx)
     {
-      sum += (*it)[fids[i]];
+      sum += row[fids[idx]];
     }
-    (*it)[fids.back()] = sum;
+    row[fids.back()] = sum;
     count++;
   }
   return std::make_unique<RecordCountResult>(count);
@@ -133,7 +136,7 @@ AddQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<std::future<int>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 

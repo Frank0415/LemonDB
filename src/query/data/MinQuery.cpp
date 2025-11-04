@@ -19,8 +19,6 @@
 
 QueryResult::Ptr MinQuery::execute()
 {
-  using std::string_literals::operator""s;
-
   try
   {
     if (validateOperands() != nullptr)
@@ -46,7 +44,7 @@ QueryResult::Ptr MinQuery::execute()
       return executeSingleThreaded(table, fieldId);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
 
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
@@ -58,7 +56,8 @@ QueryResult::Ptr MinQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const TableFieldNotFound& e)
   {
@@ -83,7 +82,7 @@ QueryResult::Ptr MinQuery::execute()
 
 std::string MinQuery::toString()
 {
-  return "QUERY = MIN " + this->targetTableRef() + "\"";
+  return "QUERY = MIN " + this->targetTableRef();
 }
 
 [[nodiscard]] QueryResult::Ptr MinQuery::validateOperands() const
@@ -141,7 +140,7 @@ MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> minValues(num_fields, Table::ValueTypeMax);
 

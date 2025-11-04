@@ -10,12 +10,11 @@
 
 #include "db/Database.h"
 #include "db/TableLockManager.h"
-#include "utils/uexception.h"
 #include "query/QueryResult.h"
+#include "utils/uexception.h"
 
 QueryResult::Ptr PrintTableQuery::execute()
 {
-  using std::string_literals::operator""s;
   const Database& database = Database::getInstance();
   try
   {
@@ -29,7 +28,8 @@ QueryResult::Ptr PrintTableQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
 }
 

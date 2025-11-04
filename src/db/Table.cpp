@@ -16,6 +16,7 @@
 #include "../threading/Threadpool.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
+#include "db/QueryBase.h"
 
 Table::FieldIndex Table::getFieldIndex(const Table::FieldNameType& field) const
 {
@@ -92,9 +93,8 @@ Table::Object::Ptr Table::operator[](const Table::KeyType& key)
     // not found
     return nullptr;
   }
-  return createProxy(data.begin() +
-                         static_cast<std::vector<Table::Datum>::difference_type>(iterator->second),
-                     this);
+  return createProxy(
+      data.begin() + static_cast<std::vector<Datum>::difference_type>(iterator->second), this);
 }
 
 std::ostream& operator<<(std::ostream& out, const Table& table)
@@ -229,8 +229,8 @@ void Table::completeQuery()
   {
     // if reading, execute all read query before next write query
     decltype(queryQueue) list;
-    auto iter = std::find_if(queryQueue.begin(), queryQueue.end(),
-                             [](const Query* query) { return query->isWriter(); });
+    auto iter =
+        std::ranges::find_if(queryQueue, [](const Query* query) { return query->isWriter(); });
     list.splice(list.begin(), queryQueue, queryQueue.begin(), iter);
     queryQueueCounter += static_cast<int>(list.size());
     queryQueueMutex.unlock();

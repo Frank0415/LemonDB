@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
@@ -60,7 +61,7 @@ QueryResult::Ptr CopyTableQuery::execute()
     }
     else
     {
-      ThreadPool& pool = ThreadPool::getInstance();
+      const ThreadPool& pool = ThreadPool::getInstance();
       if (!is_multithreaded || pool.getThreadCount() <= 1 || src.size() < Table::splitsize())
       {
         collected_rows = collectSingleThreaded(src, fields);
@@ -132,7 +133,7 @@ CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::s
 CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::string>& fields)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<RowData> results;
 
   // Create chunks and submit tasks

@@ -1,7 +1,9 @@
 #include "Collector.h"
-#include <sstream>
-#include "db/Table.h"
+#include "db/QueryBase.h"
+#include "query/QueryResult.h"
 #include <cstddef>
+#include <exception>
+#include <sstream>
 
 void executeQueryAsync(Query::Ptr query, size_t query_id, QueryResultCollector& g_result_collector)
 {
@@ -10,7 +12,7 @@ void executeQueryAsync(Query::Ptr query, size_t query_id, QueryResultCollector& 
     QueryResult::Ptr result = query->execute();
 
     std::ostringstream oss;
-    if (result&& result->display())
+    if (result && result->display())
     {
       oss << *result;
     }

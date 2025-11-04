@@ -15,7 +15,6 @@
 
 QueryResult::Ptr DropTableQuery::execute()
 {
-  using std::string_literals::operator""s;
   Database& database = Database::getInstance();
   try
   {
@@ -25,7 +24,8 @@ QueryResult::Ptr DropTableQuery::execute()
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const std::exception& e)
   {

@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -19,7 +20,6 @@
 
 QueryResult::Ptr DuplicateQuery::execute()
 {
-  using std::string_literals::operator""s;
   try
   {
     auto validationResult = validateOperands();
@@ -47,7 +47,7 @@ QueryResult::Ptr DuplicateQuery::execute()
     }
     else
     {
-      ThreadPool& pool = ThreadPool::getInstance();
+      const ThreadPool& pool = ThreadPool::getInstance();
       if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
       {
         recordsToDuplicate = executeSingleThreaded(table);
@@ -78,11 +78,13 @@ QueryResult::Ptr DuplicateQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("Key not found."));
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
@@ -156,7 +158,7 @@ DuplicateQuery::executeSingleThreaded(Table& table)
 DuplicateQuery::executeMultiThreaded(Table& table)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   auto row_size = table.field().size();
 
   // Collect tasks with their positions to preserve order
@@ -176,7 +178,7 @@ DuplicateQuery::executeMultiThreaded(Table& table)
     }
     auto chunk_end = iterator;
 
-    size_t current_chunk_index = chunk_index;
+    const size_t current_chunk_index = chunk_index;
     tasks.emplace_back(current_chunk_index, pool.submit(
                                                 [this, &table, chunk_begin, chunk_end, row_size]()
                                                 {

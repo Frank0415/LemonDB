@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
@@ -16,7 +17,6 @@
 
 QueryResult::Ptr SubQuery::execute()
 {
-  using std::string_literals::operator""s;
   try
   {
     auto validationResult = validateOperands();
@@ -41,7 +41,7 @@ QueryResult::Ptr SubQuery::execute()
       return executeSingleThreaded(table, indices);
     }
 
-    ThreadPool& pool = ThreadPool::getInstance();
+    const ThreadPool& pool = ThreadPool::getInstance();
     if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
     {
       return executeSingleThreaded(table, indices);
@@ -51,11 +51,13 @@ QueryResult::Ptr SubQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("Key not found."));
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
@@ -70,7 +72,7 @@ QueryResult::Ptr SubQuery::execute()
   catch (const std::exception& e)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
-                                            "Unkonwn error '?'."_f % e.what());
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
@@ -106,19 +108,19 @@ SubQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 {
   int count = 0;
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto row : table)
   {
-    if (!this->evalCondition(*it))
+    if (!this->evalCondition(row))
     {
       continue;
     }
     // perform SUB operation
-    int diff = (*it)[fids[0]];
-    for (size_t i = 1; i < this->getOperands().size() - 1; ++i)
+    int diff = row[fids[0]];
+    for (size_t idx = 1; idx < this->getOperands().size() - 1; ++idx)
     {
-      diff -= (*it)[fids[i]];
+      diff -= row[fids[idx]];
     }
-    (*it)[fids.back()] = diff;
+    row[fids.back()] = diff;
     count++;
   }
   return std::make_unique<RecordCountResult>(count);
@@ -128,7 +130,7 @@ SubQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 SubQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
 {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool& pool = ThreadPool::getInstance();
   std::vector<std::future<int>> futures;
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
