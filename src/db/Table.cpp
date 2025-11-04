@@ -61,7 +61,7 @@ void Table::insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>>&
   auto localBatch = std::move(batch);
   // Track keys for duplicate detection
   std::unordered_set<KeyType> seenKeys;
-  
+
   // Insert rows one by one, skipping duplicates
   for (auto& [key, data] : localBatch)
   {
@@ -70,7 +70,7 @@ void Table::insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>>&
     {
       continue; // Skip duplicate, don't throw
     }
-    
+
     // Insert the row
     this->keyMap.emplace(key, this->data.size());
     this->data.emplace_back(std::move(key), std::move(data));
