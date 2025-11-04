@@ -188,10 +188,7 @@ Table& Database::loadTableFromStream(std::istream& input_stream, const std::stri
   // Pre-allocate space for all rows to reduce allocation overhead
   table->reserve(dataLines.size());
 
-  // Parse all data rows first
-  std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> batchData;
-  batchData.reserve(dataLines.size());
-
+  // Parse and insert all data rows
   for (Table::SizeType i = 0; i < dataLines.size(); ++i)
   {
     sstream.clear();
@@ -213,11 +210,8 @@ Table& Database::loadTableFromStream(std::istream& input_stream, const std::stri
       }
       tuple.emplace_back(value);
     }
-    batchData.emplace_back(std::move(key), std::move(tuple));
+    table->insertByIndex(key, std::move(tuple));
   }
-
-  // Batch insert all rows at once (with duplicate checking)
-  table->insertBatch(std::move(batchData));
 
   return database.registerTable(std::move(table));
 }

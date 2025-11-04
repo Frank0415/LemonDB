@@ -59,36 +59,21 @@ void Table::insertByIndex(const KeyType& key, std::vector<ValueType>&& data)
 void Table::insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>>&& batch)
 {
   auto localBatch = std::move(batch);
-  // First, check for conflicts with existing keys and within the batch
-  for (const auto& [key, unused] : localBatch)
+  // Track keys for duplicate detection
+  std::unordered_set<KeyType> seenKeys;
+  
+  // Insert rows one by one, skipping duplicates
+  for (auto& [key, data] : localBatch)
   {
-    if (this->keyMap.contains(key))
+    // Skip if key already exists in table or was seen in this batch
+    if (this->keyMap.contains(key) || !seenKeys.insert(key).second)
     {
-      const std::string err =
-          "In Table \"" + this->tableName + "\" : Key \"" + key + "\" already exists!";
-      throw ConflictingKey(err);
+      continue; // Skip duplicate, don't throw
     }
-  }
-
-  // Check for duplicates within the batch itself
-  std::unordered_set<KeyType> batchKeys;
-  for (const auto& [key, unused] : localBatch)
-  {
-    if (!batchKeys.insert(key).second)
-    {
-      const std::string err = "In Table \"" + this->tableName + "\" : Key \"" + key +
-                              "\" appears multiple times in batch!";
-      throw ConflictingKey(err);
-    }
-  }
-
-  // All keys are unique, now insert them
-  const size_t startIndex = this->data.size();
-  for (size_t i = 0; i < localBatch.size(); ++i)
-  {
-    const auto& [key, data] = localBatch[i];
-    this->keyMap.emplace(key, startIndex + i);
-    this->data.emplace_back(key, std::move(localBatch[i].second));
+    
+    // Insert the row
+    this->keyMap.emplace(key, this->data.size());
+    this->data.emplace_back(std::move(key), std::move(data));
   }
 }
 
