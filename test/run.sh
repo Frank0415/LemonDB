@@ -43,6 +43,10 @@ cp ./build/bin/lemondb ./lemondb
 
 ./test/test_correctness.sh --verbose=$VERBOSE --full=$FULL_COMPARE
 
+if [ $usr == "frank" ]; then
+    ./run_tidy.sh
+fi
+
 cd test
 
 ./cpplint.sh
@@ -50,7 +54,4 @@ cd test
 ./clangtidy.sh
 ./clangtidy_cleanup.sh
 
-if [ $usr == "frank" ]; then
-    cd ..
-    ./run_tidy.sh
-fi
+
