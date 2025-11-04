@@ -144,7 +144,7 @@ for test in "${TESTS[@]}"; do
                     table_differences="${table_differences}\n  dump: $dump_wc"
                 elif [ "$FULL_COMPARE" = true ]; then
                     # Full comparison: verify all lines match (independent of order)
-                    python3 verify_tables.py "$tmp_file" "$expected_dump" > /dev/null 2>&1
+                    python3 ../verify_tables.py "$tmp_file" "$expected_dump"
                     if [ $? -ne 0 ]; then
                         table_pass=false
                         table_differences="${table_differences}\nLine content mismatch in ${test}_${base_name}"
