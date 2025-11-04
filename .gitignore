@@ -71,6 +71,8 @@
 !test/cpplint.sh
 !test/cppcheck.sh
 !test/clangtidy_cleanup.sh
+!test/linecount.sh
+!test/test_correctness.sh
 !test/data
 !test/gtests
 !test/gtests/
