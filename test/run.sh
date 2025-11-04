@@ -2,14 +2,31 @@
 
 # Parse command line arguments
 FULL_COMPARE=false
-if [[ "$1" == "--full" ]]; then
-    FULL_COMPARE=true
+VERBOSE=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --full|-f)
+            FULL_COMPARE=true
+            ;;
+        --verbose|-v)
+            VERBOSE=true
+            ;;
+    esac
+done
+
+if [ "$VERBOSE" = true ]; then
+    echo "Verbose mode enabled"
+    [ "$FULL_COMPARE" = true ] && echo "Full comparison mode enabled"
+    echo ""
 fi
 
-echo "WARNING: Files over 300 lines:"
-find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
-echo "Files over 200 lines:"
-find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
+if [ "$VERBOSE" = true ]; then
+    echo "WARNING: Files over 300 lines:"
+    find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
+    echo "Files over 200 lines:"
+    find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 200 && $1 < 300 && $2 != "total"'
+fi
 
 usr=$(whoami)
 
@@ -44,8 +61,10 @@ TESTS=(
 
 PASSED=0
 FAILED=0
-echo "Running tests..."
-echo "================"
+if [ "$VERBOSE" = true ]; then
+    echo "Running tests..."
+    echo "================"
+fi
 
 cd test/data
 
@@ -56,12 +75,16 @@ cp ../../build/bin/lemondb ./lemondb
 
 for test in "${TESTS[@]}"; do
     if [ ! -f "queries/${test}.query" ]; then
-        echo "SKIP: queries/${test}.query not found"
+        if [ "$VERBOSE" = true ]; then
+            echo "SKIP: queries/${test}.query not found"
+        fi
         continue
     fi
     
     if [ ! -f "stdout/${test}.out" ]; then
-        echo "SKIP: stdout/${test}.out not found"
+        if [ "$VERBOSE" = true ]; then
+            echo "SKIP: stdout/${test}.out not found"
+        fi
         continue
     fi
     
@@ -71,19 +94,26 @@ for test in "${TESTS[@]}"; do
     start=$(date +%s.%N)
     ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
     end=$(date +%s.%N)
-    elapsed=$(echo "$end - $start" | bc)
+    elapsed=$(echo "$end - $start" | bc -l)
+    elapsed_rounded=$(printf "%.4f" "$elapsed")
 
-    echo "Test: ${test} completed in ${elapsed} seconds"
+    if [ "$VERBOSE" = true ]; then
+        echo "Test: ${test} completed in ${elapsed_rounded} seconds"
+    fi
     
     # Compare stdout output
     stdout_pass=true
     if diff -q "1.out" "stdout/${test}.out" > /dev/null 2>&1; then
-        echo "PASS: ${test} stdout"
+        if [ "$VERBOSE" = true ]; then
+            echo "PASS: ${test} stdout"
+        fi
     else
         echo "FAIL: ${test} stdout"
         stdout_pass=false
-        echo "Stdout differences found:"
-        diff "1.out" "stdout/${test}.out" | head -20
+        if [ "$VERBOSE" = true ]; then
+            echo "Stdout differences found:"
+            diff "1.out" "stdout/${test}.out" | head -20
+        fi
     fi
     
     # Compare table files
@@ -129,35 +159,49 @@ for test in "${TESTS[@]}"; do
     
     # Check if we found any tables to compare
     if [ $table_count -eq 0 ]; then
-        echo "INFO: ${test} - No table files to compare"
+        if [ "$VERBOSE" = true ]; then
+            echo "INFO: ${test} - No table files to compare"
+        fi
     fi
     
     if $table_pass; then
-        echo "PASS: ${test} tables"
+        if [ "$VERBOSE" = true ]; then
+            echo "PASS: ${test} tables"
+        fi
     else
         echo "FAIL: ${test} tables"
-        echo -e "$table_differences"
+        if [ "$VERBOSE" = true ]; then
+            echo -e "$table_differences"
+        fi
     fi
     
     # Overall test result
     if $stdout_pass && $table_pass; then
-        echo "PASS: ${test}"
+        # Only output on pass if verbose mode (name + time)
+        if [ "$VERBOSE" = true ]; then
+            echo "PASS: ${test}"
+        fi
         ((PASSED++))
     else
-        echo "FAIL: ${test}"
+        # Always output failures with time
+        echo "${test} ${elapsed_rounded} seconds"
         ((FAILED++))
     fi
     
     rm -f "1.out"
 done
 
-echo "================="
+if [ "$VERBOSE" = true ]; then
+    echo "================="
+fi
 echo "Tests passed: ${PASSED}"
 echo "Tests failed: ${FAILED}"
 
 cd ..
 
-./clangtidy.sh
-./cpplint.sh
-./cppcheck.sh
-./clangtidy_cleanup.sh
+if [ "$VERBOSE" = true ]; then
+    ./clangtidy.sh
+    ./cpplint.sh
+    ./cppcheck.sh
+    ./clangtidy_cleanup.sh
+fi
