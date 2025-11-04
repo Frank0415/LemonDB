@@ -508,6 +508,13 @@ public:
   void insertByIndex(const KeyType& key, std::vector<ValueType>&& data);
 
   /**
+   * Insert multiple rows of data by their keys (batch operation)
+   * Checks for key conflicts before inserting any data
+   * @param batch: vector of key-data pairs to insert
+   */
+  void insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>>&& batch);
+
+  /**
    * Delete a row of data by its key
    * @param key
    */
@@ -575,6 +582,17 @@ public:
     data.clear();
     keyMap.clear();
     return result;
+  }
+
+  /**
+   * Pre-allocate capacity for bulk load operations
+   * Reserves space for data vector and keyMap to reduce allocation overhead
+   * @param capacity number of rows to pre-allocate
+   */
+  void reserve(SizeType capacity)
+  {
+    data.reserve(capacity);
+    keyMap.reserve(capacity);
   }
 
   void drop()
