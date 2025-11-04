@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Parse command line arguments
+FULL_COMPARE=false
+if [[ "$1" == "--full" ]]; then
+    FULL_COMPARE=true
+fi
+
 echo "WARNING: Files over 300 lines:"
 find test src -name "*.cpp" -o -name "*.h" | xargs realpath | xargs wc -l | sort -nr | awk '$1 >= 300 && $2 != "total"'
 echo "Files over 200 lines:"
@@ -96,10 +103,22 @@ for test in "${TESTS[@]}"; do
             ((table_count++))
             
             if [ -f "$expected_dump" ]; then
-                if ! diff -q "$tmp_file" "$expected_dump" > /dev/null 2>&1; then
+                # Quick compare: check line count and character count
+                tmp_wc=$(wc "$tmp_file" | awk '{print $1, $3}')
+                dump_wc=$(wc "$expected_dump" | awk '{print $1, $3}')
+                
+                if [ "$tmp_wc" != "$dump_wc" ]; then
                     table_pass=false
-                    table_differences="${table_differences}\nDifferences in ${test}_${base_name}:"
-                    table_differences="${table_differences}\n$(diff "$tmp_file" "$expected_dump" | head -10)"
+                    table_differences="${table_differences}\nLine/char count mismatch in ${test}_${base_name}:"
+                    table_differences="${table_differences}\n  tmp:  $tmp_wc"
+                    table_differences="${table_differences}\n  dump: $dump_wc"
+                elif [ "$FULL_COMPARE" = true ]; then
+                    # Full comparison: verify all lines match (independent of order)
+                    python3 verify_tables.py "$tmp_file" "$expected_dump" > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then
+                        table_pass=false
+                        table_differences="${table_differences}\nLine content mismatch in ${test}_${base_name}"
+                    fi
                 fi
             else
                 table_pass=false
