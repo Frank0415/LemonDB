@@ -26,11 +26,13 @@ fi
 usr=$(whoami)
 
 if [[ $usr == "frank" ]]; then
-  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > tmp.log 2>&1
+  cmake -S . -B build -DCMAKE_CXX_COMPILER=/usr/lib/llvm18/bin/clang++ -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > tmp.log 2>&1
   cmake --build build -j$(nproc) > tmp.log 2>&1
+  cp build/compile_commands.json .
   if [ "$VERBOSE" = true ]; then
       cat tmp.log
   fi
+  rm tmp.log
 elif [[ $usr == "114514" ]]; then # not working, replace with your own whoami
     cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++-18 -DENABLE_ASAN=ON -DENABLE_MSAN=ON -DENABLE_UBSAN=ON > /dev/null 2>&1 # not working, replace with your own clang-18
     cmake --build build -j$(nproc) > /dev/null 2>&1
