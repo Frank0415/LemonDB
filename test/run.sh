@@ -42,6 +42,9 @@ echo "================"
 
 cd test/data
 
+# Ensure tmp directory exists
+mkdir -p tmp
+
 cp ../../build/bin/lemondb ./lemondb
 
 for test in "${TESTS[@]}"; do
@@ -55,23 +58,77 @@ for test in "${TESTS[@]}"; do
         continue
     fi
     
+    # Clean tmp directory before each test
+    rm -f tmp/*.tbl
+    
     start=$(date +%s.%N)
     ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
     end=$(date +%s.%N)
     elapsed=$(echo "$end - $start" | bc)
 
     echo "Test: ${test} completed in ${elapsed} seconds"
-    cnt=$(wc -l < "1.out")
-    # Compare output
+    
+    # Compare stdout output
+    stdout_pass=true
     if diff -q "1.out" "stdout/${test}.out" > /dev/null 2>&1; then
+        echo "PASS: ${test} stdout"
+    else
+        echo "FAIL: ${test} stdout"
+        stdout_pass=false
+        echo "Stdout differences found:"
+        diff "1.out" "stdout/${test}.out" | head -20
+    fi
+    
+    # Compare table files
+    table_pass=true
+    table_differences=""
+    table_count=0
+    
+    # Compare all tmp files with corresponding dump files
+    # The dump files are named like: ${test}_dump_*.tbl or ${test}_*_dump.tbl
+    for tmp_file in tmp/*.tbl; do
+        if [ -f "$tmp_file" ]; then
+            base_name=$(basename "$tmp_file")
+            # Expected dump file name: prepend test name to the tmp filename
+            # tmp/dump_sTable0.tbl -> dump/single_read_dump_sTable0.tbl
+            expected_dump="dump/${test}_${base_name}"
+            
+            ((table_count++))
+            
+            if [ -f "$expected_dump" ]; then
+                if ! diff -q "$tmp_file" "$expected_dump" > /dev/null 2>&1; then
+                    table_pass=false
+                    table_differences="${table_differences}\nDifferences in ${test}_${base_name}:"
+                    table_differences="${table_differences}\n$(diff "$tmp_file" "$expected_dump" | head -10)"
+                fi
+            else
+                table_pass=false
+                table_differences="${table_differences}\nExpected dump file not found: ${test}_${base_name}"
+            fi
+        fi
+    done
+    
+    # Check if we found any tables to compare
+    if [ $table_count -eq 0 ]; then
+        echo "INFO: ${test} - No table files to compare"
+    fi
+    
+    if $table_pass; then
+        echo "PASS: ${test} tables"
+    else
+        echo "FAIL: ${test} tables"
+        echo -e "$table_differences"
+    fi
+    
+    # Overall test result
+    if $stdout_pass && $table_pass; then
         echo "PASS: ${test}"
         ((PASSED++))
     else
         echo "FAIL: ${test}"
         ((FAILED++))
-        echo "Differences found:"
-        diff "1.out" "stdout/${test}.out" | head -50
     fi
+    
     rm -f "1.out"
 done
 
