@@ -3,22 +3,59 @@
 # Parse command-line arguments
 VERBOSE=false
 FULL_COMPARE=false
+ENABLE_VALGRIND=false
+ENABLE_GPROF=false
+ENABLE_PROF=false
 
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --verbose=*)
-            VERBOSE="${arg#*=}"
+            VERBOSE="${1#*=}"
             ;;
         --full=*)
-            FULL_COMPARE="${arg#*=}"
+            FULL_COMPARE="${1#*=}"
+            ;;
+        --valgrind=*)
+            ENABLE_VALGRIND="${1#*=}"
+            ;;
+        --valgrind)
+            ENABLE_VALGRIND=true
+            ;;
+        --gprof=*)
+            ENABLE_GPROF="${1#*=}"
+            ;;
+        --gprof)
+            ENABLE_GPROF=true
+            ;;
+        --prof=*)
+            ENABLE_PROF="${1#*=}"
+            ;;
+        --prof)
+            ENABLE_PROF=true
             ;;
         *)
-            echo "Unknown option: $arg"
+            echo "Unknown option: $1"
+            echo "Run from test/run.sh with --help for usage information."
             exit 1
             ;;
     esac
+    shift
 done
 
+# If profiling is enabled, run profiling scripts instead of normal tests
+if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_PROF" = true ]; then
+    if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_PROF" = true ]; then
+        echo "Running Valgrind profiling..."
+        ./test/valgrind.sh
+    fi
+    if [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_PROF" = true ]; then
+        echo "Running GProf profiling..."
+        ./test/gprof.sh
+    fi
+    exit 0
+fi
+
+# Normal test execution continues below
 TESTS=(
   "single_read"
   "single_read_dup"
