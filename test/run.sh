@@ -21,7 +21,7 @@ for arg in "$@"; do
             ;;
         --gprof)
             # kept as alias for backward-compatibility -> gperftools
-            ENABLE_GPERFTOOLS=true
+            ENABLE_GPROF=true
             ;;
         --gperftools)
             ENABLE_GPERFTOOLS=true
@@ -36,6 +36,7 @@ for arg in "$@"; do
             echo "  --full, -f          Enable full comparison mode"
             echo "  --verbose, -v       Enable verbose output"
             echo "  --valgrind          Enable Valgrind/Callgrind profiling"
+            echo "  --gprof             Enable GProf profiling"
             echo "  --gperftools        Enable gperftools profiling"
             echo "  --prof              Enable both Valgrind and gperftools profiling"
             echo "  --help, -h          Show this help message"
@@ -43,7 +44,8 @@ for arg in "$@"; do
             echo "Examples:"
             echo "  $0 --verbose --full"
             echo "  $0 --valgrind"
-            echo "  $0 --gperftools  (alias: --gprof)"
+            echo "  $0 --gprof"
+            echo "  $0 --gperftools"
             echo "  $0 --prof"
             exit 0
             ;;
@@ -54,12 +56,13 @@ if [ "$VERBOSE" = true ]; then
     echo "Verbose mode enabled"
     [ "$FULL_COMPARE" = true ] && echo "Full comparison mode enabled"
     [ "$ENABLE_VALGRIND" = true ] && echo "Valgrind profiling enabled"
+    [ "$ENABLE_GPROF" = true ] && echo "GProf profiling enabled"
     [ "$ENABLE_GPERFTOOLS" = true ] && echo "gperftools profiling enabled"
     [ "$ENABLE_PROF" = true ] && echo "Profiling (valgrind + gperftools) enabled"
     echo ""
 fi
 
-if [ "$ENABLE_VALGRIND" != true ] && [ "$ENABLE_GPERFTOOLS" != true ] && [ "$ENABLE_PROF" != true ]; then
+if [ "$ENABLE_VALGRIND" != true ] && [ "$ENABLE_GPROF" != true ] && [ "$ENABLE_GPERFTOOLS" != true ] && [ "$ENABLE_PROF" != true ]; then
     ./test/linecount.sh --verbose=$VERBOSE
 fi
 
@@ -69,6 +72,9 @@ usr=$(whoami)
 PROFILING_FLAGS=""
 if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_PROF" = true ]; then
     PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_CALLGRIND=ON -DCMAKE_BUILD_TYPE=Debug"
+fi
+if [ "$ENABLE_GPROF" = true ]; then
+    PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_GPROF=ON"
 fi
 if [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
     PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_GPERFTOOLS=ON"
@@ -93,10 +99,10 @@ fi
 cp ./build/bin/lemondb ./lemondb
 
 # Pass profiling flags to test_correctness; --gprof kept as alias for gperftools
-./test/test_correctness.sh --verbose=$VERBOSE --full=$FULL_COMPARE --valgrind=$ENABLE_VALGRIND --gprof=$ENABLE_GPERFTOOLS --gperftools=$ENABLE_GPERFTOOLS --prof=$ENABLE_PROF
+./test/test_correctness.sh --verbose=$VERBOSE --full=$FULL_COMPARE --valgrind=$ENABLE_VALGRIND --gprof=$ENABLE_GPROF --gperftools=$ENABLE_GPERFTOOLS --prof=$ENABLE_PROF
 
 # Skip quality checks if profiling is enabled
-if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
+if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
     exit 0
 fi
 

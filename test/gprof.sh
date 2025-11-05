@@ -42,4 +42,12 @@ for test in "${TESTS[@]}"; do
 done
 
 echo "GProf profiling completed."
-echo "Check ${test}.gprof.txt files for analysis."
+echo "Check test/prof.gprof/${test}.gprof.txt files for analysis."
+
+cd ..
+mkdir -p prof.gprof
+cd data
+mv *.gprof.txt ../prof.gprof 2>/dev/null || true
+cd ../..
+
+echo "Profile files moved to test/prof.gprof/"
