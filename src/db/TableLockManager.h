@@ -19,7 +19,7 @@ private:
   std::shared_mutex& getOrCreateLock(const std::string& table_name)
   {
     {
-      const std::shared_lock<std::shared_mutex> read(map_mutex_);
+      std::shared_lock<std::shared_mutex> read(map_mutex_);
       auto iter = lock_map_.find(table_name);
       if (iter != lock_map_.end())
       {
@@ -27,7 +27,7 @@ private:
       }
     }
 
-    const std::unique_lock<std::shared_mutex> write(map_mutex_);
+    std::unique_lock<std::shared_mutex> write(map_mutex_);
     auto& ptr = lock_map_[table_name];
     if (!ptr)
     {

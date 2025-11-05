@@ -1,4 +1,3 @@
-#include "DeleteQuery.h"
 
 #include <exception>
 #include <memory>
@@ -12,10 +11,10 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "DeleteQuery.h"
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  (void)0; // no string literal operator used directly; keep file self-contained
   if (!this->getOperands().empty())
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
@@ -73,11 +72,11 @@ QueryResult::Ptr DeleteQuery::execute()
   catch (const std::exception& e)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
-                                            "Unknown error '?'."_f % e.what());
+                                            "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string DeleteQuery::toString()
 {
-  return "QUERY = DELETE " + this->targetTableRef();
+  return "QUERY = DELETE " + this->targetTableRef() + "\"";
 }

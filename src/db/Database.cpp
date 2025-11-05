@@ -172,6 +172,8 @@ Table& Database::loadTableFromStream(std::istream& input_stream, const std::stri
   fields.erase(fields.begin()); // Remove leading key
   auto table = std::make_unique<Table>(tableName, fields);
 
+  // Pre-read all data lines to determine table size for pre-allocation
+  std::vector<std::string> dataLines;
   Table::SizeType lineCount = 2;
   while (std::getline(input_stream, line))
   {
@@ -180,8 +182,20 @@ Table& Database::loadTableFromStream(std::istream& input_stream, const std::stri
       break; // Read to an empty line
     }
     lineCount++;
+    dataLines.emplace_back(std::move(line));
+  }
+
+  // Pre-allocate space for all rows to reduce allocation overhead
+  table->reserve(dataLines.size());
+
+  // Parse all data rows first
+  std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> batchData;
+  batchData.reserve(dataLines.size());
+
+  for (Table::SizeType i = 0; i < dataLines.size(); ++i)
+  {
     sstream.clear();
-    sstream.str(line);
+    sstream.str(dataLines[i]);
     std::string key;
     if (!(sstream >> key))
     {
@@ -189,23 +203,27 @@ Table& Database::loadTableFromStream(std::istream& input_stream, const std::stri
     }
     std::vector<Table::ValueType> tuple;
     tuple.reserve(fieldCount - 1);
-    for (Table::SizeType i = 1; i < fieldCount; ++i)
+    for (Table::SizeType j = 1; j < fieldCount; ++j)
     {
       Table::ValueType value = 0;
       if (!(sstream >> value))
       {
         throw LoadFromStreamException(errString + "Invalid row on LINE " +
-                                      std::to_string(lineCount));
+                                      std::to_string(lineCount - dataLines.size() + i + 1));
       }
       tuple.emplace_back(value);
     }
-    table->insertByIndex(key, std::move(tuple));
+    batchData.emplace_back(std::move(key), std::move(tuple));
   }
+
+  // Batch insert all rows at once (with duplicate checking)
+  table->insertBatch(std::move(batchData));
 
   return database.registerTable(std::move(table));
 }
 
-void Database::exit() {
+void Database::exit()
+{
   // Set the flag to stop reading new queries
   endInput = true;
   // Note: Don't call std::exit(0) here!
