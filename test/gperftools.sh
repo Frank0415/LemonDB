@@ -3,6 +3,9 @@
 # gperftools profiling script
 # Profiles each test using Google gperftools CPU profiler (sampling).
 
+export PATH="$PATH:$(go env GOBIN):$(go env GOPATH)/bin"
+export CPUPROFILE_FREQUENCY=100000
+
 TESTS=(
   "single_read"
   "single_read_dup"
@@ -69,4 +72,13 @@ for test in "${TESTS[@]}"; do
 done
 
 echo "gperftools profiling completed."
-echo "Use 'kcachegrind <test>.callgrind.out' to analyze each test."
+echo "Use 'kcachegrind test/prof.gperf/<test>.callgrind.out' to analyze each test."
+
+cd ..
+mkdir -p prof.gperf
+cd data
+mv *.callgrind.out ../prof.gperf 2>/dev/null || true
+cd ../..
+
+echo "Profile files moved to test/prof.gperf/"
+

@@ -36,11 +36,11 @@ for test in "${TESTS[@]}"; do
 done
 
 cd .. 
-mkdir -p callgrind
+mkdir -p prof.callgrind
 
 cd data
 
-mv *.callgrind.out ../callgrind
+mv *.callgrind.out ../prof.callgrind
 
 cd ../..
 
