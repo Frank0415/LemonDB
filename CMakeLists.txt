@@ -94,6 +94,10 @@ option(ENABLE_ASAN "Build AddressSanitizer instrumented binaries" OFF)
 option(ENABLE_MSAN "Build MemorySanitizer instrumented binaries" OFF)
 option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF)
 
+# Profiling options
+option(ENABLE_GPROF "Enable GProf profiling" OFF)
+option(ENABLE_CALLGRIND "Enable Callgrind-compatible profiling" OFF)
+
 if(ENABLE_ASAN)
     message(STATUS "Configuring ASAN build targets")
     set(LEMONDB_ASAN_FLAGS -fsanitize=address -fno-omit-frame-pointer -fno-sanitize-recover=all -g)
@@ -142,6 +146,33 @@ if(ENABLE_UBSAN)
     target_link_libraries(lemondb_ubsan PRIVATE lemondb_lib_ubsan)
     target_compile_options(lemondb_ubsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_UBSAN_FLAGS})
     target_link_options(lemondb_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
+endif()
+
+# Profiling flags
+set(PROFILING_FLAGS "")
+if(ENABLE_GPROF)
+    list(APPEND PROFILING_FLAGS -pg)
+endif()
+if(ENABLE_CALLGRIND OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND PROFILING_FLAGS -g)
+endif()
+
+# Apply profiling flags to main targets
+target_compile_options(lemondb_lib PRIVATE ${PROFILING_FLAGS})
+target_compile_options(lemondb PRIVATE ${PROFILING_FLAGS})
+
+# Also apply to sanitizer variants if profiling is enabled
+if(ENABLE_ASAN)
+    target_compile_options(lemondb_lib_asan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_asan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_MSAN)
+    target_compile_options(lemondb_lib_msan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_msan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_UBSAN)
+    target_compile_options(lemondb_lib_ubsan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_ubsan PRIVATE ${PROFILING_FLAGS})
 endif()
 
 # Google Test Setup
