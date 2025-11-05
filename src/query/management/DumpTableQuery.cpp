@@ -29,9 +29,9 @@ QueryResult::Ptr DumpTableQuery::execute()
     outfile.close();
     return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 

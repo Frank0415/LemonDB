@@ -87,7 +87,7 @@ QueryResult::Ptr CopyTableQuery::execute()
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Unknown error");
   }
@@ -119,9 +119,9 @@ CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::s
   {
     std::vector<Table::ValueType> row;
     row.reserve(fields.size());
-    for (size_t i = 0; i < fields.size(); ++i)
+    for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx)
     {
-      row.push_back(obj[i]);
+      row.push_back(obj[field_idx]);
     }
     results.emplace_back(obj.key(), std::move(row));
   }
@@ -161,9 +161,9 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
                                           {
                                             std::vector<Table::ValueType> row;
                                             row.reserve(fields.size());
-                                            for (size_t i = 0; i < fields.size(); ++i)
+                                            for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx)
                                             {
-                                              row.push_back((*iter)[i]);
+                                              row.push_back((*iter)[field_idx]);
                                             }
                                             local_results.emplace_back(iter->key(), std::move(row));
                                           }
