@@ -73,6 +73,8 @@
 !test/clangtidy_cleanup.sh
 !test/linecount.sh
 !test/test_correctness.sh
+!test/gprof.sh
+!test/valgrind.sh
 !test/verify_tables.py
 !test/data
 !test/gtests
