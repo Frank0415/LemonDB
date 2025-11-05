@@ -24,7 +24,7 @@ QueryResult::Ptr UpdateQuery::execute()
   try
   {
     auto validationResult = validateOperands();
-    if (validationResult != nullptr)
+    if (validationResult != nullptr) [[unlikely]]
     {
       return validationResult;
     }
@@ -33,11 +33,11 @@ QueryResult::Ptr UpdateQuery::execute()
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     auto& table = database[this->targetTableRef()];
 
-    if (this->getOperands()[0] == "KEY")
+    if (this->getOperands()[0] == "KEY") [[unlikely]]
     {
       this->keyValue = this->getOperands()[1];
     }
-    else
+    else [[likely]]
     {
       constexpr int decimal_base = 10;
       this->fieldId = table.getFieldIndex(this->getOperands()[0]);
@@ -46,18 +46,18 @@ QueryResult::Ptr UpdateQuery::execute()
     }
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<RecordCountResult>(0);
     }
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table);
     }
@@ -93,7 +93,7 @@ std::string UpdateQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr UpdateQuery::validateOperands() const
 {
-  if (this->getOperands().size() != 2)
+  if (this->getOperands().size() != 2) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
@@ -107,13 +107,13 @@ std::string UpdateQuery::toString()
   Table::SizeType counter = 0;
   for (auto it = table.begin(); it != table.end(); ++it)
   {
-    if (this->evalCondition(*it))
+    if (this->evalCondition(*it)) [[likely]]
     {
-      if (this->keyValue.empty())
+      if (this->keyValue.empty()) [[likely]]
       {
         (*it)[this->fieldId] = this->fieldValue;
       }
-      else
+      else [[unlikely]]
       {
         it->setKey(this->keyValue);
       }
@@ -131,11 +131,11 @@ std::string UpdateQuery::toString()
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_start = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -148,13 +148,13 @@ std::string UpdateQuery::toString()
           Table::SizeType local_count = 0;
           for (auto it = chunk_start; it != chunk_end; ++it)
           {
-            if (this->evalCondition(*it))
+            if (this->evalCondition(*it)) [[likely]]
             {
-              if (this->keyValue.empty())
+              if (this->keyValue.empty()) [[likely]]
               {
                 (*it)[this->fieldId] = this->fieldValue;
               }
-              else
+              else [[unlikely]]
               {
                 it->setKey(this->keyValue);
               }

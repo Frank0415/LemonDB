@@ -23,7 +23,7 @@ QueryResult::Ptr SelectQuery::execute()
   try
   {
     auto validation_result = validateOperands();
-    if (validation_result != nullptr)
+    if (validation_result != nullptr) [[unlikely]]
     {
       return validation_result;
     }
@@ -35,7 +35,7 @@ QueryResult::Ptr SelectQuery::execute()
     auto fieldIds = getFieldIndices(table);
     auto result = initCondition(table);
 
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<TextRowsResult>("");
     }
@@ -45,11 +45,11 @@ QueryResult::Ptr SelectQuery::execute()
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool success, Table::Object::Ptr obj)
                                                 {
-                                                  if (!success)
+                                                  if (!success) [[unlikely]]
                                                   {
                                                     return;
                                                   }
-                                                  if (obj)
+                                                  if (obj) [[likely]]
                                                   {
                                                     key_buffer << "( " << obj->key();
                                                     for (const auto& field_id : fieldIds)
@@ -60,19 +60,19 @@ QueryResult::Ptr SelectQuery::execute()
                                                   }
                                                 });
 
-    if (handled)
+    if (handled) [[unlikely]]
     {
       return std::make_unique<TextRowsResult>(key_buffer.str());
     }
 
     // Use ThreadPool if available
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldIds);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldIds);
     }
@@ -101,7 +101,7 @@ std::string SelectQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr SelectQuery::validateOperands() const
 {
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Invalid operands.");
   }
@@ -115,7 +115,7 @@ std::string SelectQuery::toString()
   fieldsOrder.emplace_back("KEY");
   for (const auto& field : this->getOperands())
   {
-    if (field != "KEY")
+    if (field != "KEY") [[likely]]
     {
       fieldsOrder.emplace_back(field);
     }
@@ -138,7 +138,7 @@ SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldI
 
   for (auto it = table.begin(); it != table.end(); ++it)
   {
-    if (this->evalCondition(*it))
+    if (this->evalCondition(*it)) [[likely]]
     {
       std::vector<Table::ValueType> values;
       values.reserve(fieldIds.size());
@@ -174,11 +174,11 @@ SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIn
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -191,7 +191,7 @@ SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIn
           std::map<std::string, std::vector<Table::ValueType>> local_rows;
           for (auto iter = chunk_begin; iter != chunk_end; ++iter)
           {
-            if (this->evalCondition(*iter))
+            if (this->evalCondition(*iter)) [[likely]]
             {
               std::vector<Table::ValueType> values;
               values.reserve(fieldIds.size());

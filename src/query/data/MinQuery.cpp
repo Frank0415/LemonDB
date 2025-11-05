@@ -21,7 +21,7 @@ QueryResult::Ptr MinQuery::execute()
 {
   try
   {
-    if (validateOperands() != nullptr)
+    if (validateOperands() != nullptr) [[unlikely]]
     {
       return validateOperands();
     }
@@ -32,21 +32,21 @@ QueryResult::Ptr MinQuery::execute()
 
     auto result = initCondition(table);
 
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<NullQueryResult>();
     }
 
     auto fieldId = getFieldIndices(table);
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldId);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
 
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldId);
     }
@@ -87,7 +87,7 @@ std::string MinQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr MinQuery::validateOperands() const
 {
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "No operand (? operands)."_f % getOperands().size());
@@ -100,7 +100,7 @@ std::string MinQuery::toString()
   std::vector<Table::FieldIndex> fieldId;
   for (const auto& operand : this->getOperands())
   {
-    if (operand == "KEY")
+    if (operand == "KEY") [[unlikely]]
     {
       throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
     }
@@ -118,7 +118,7 @@ MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 
   for (const auto& row : table)
   {
-    if (this->evalCondition(row))
+    if (this->evalCondition(row)) [[likely]]
     {
       found = true;
 
@@ -129,7 +129,7 @@ MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
     }
   }
 
-  if (!found)
+  if (!found) [[unlikely]]
   {
     return std::make_unique<NullQueryResult>();
   }
@@ -147,11 +147,11 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   // Create chunks and submit tasks
   std::vector<std::future<std::vector<Table::ValueType>>> futures;
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -164,7 +164,7 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
           std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
           for (auto it = chunk_begin; it != chunk_end; ++it)
           {
-            if (this->evalCondition(*it))
+            if (this->evalCondition(*it)) [[likely]]
             {
               for (size_t i = 0; i < num_fields; ++i)
               {
@@ -181,14 +181,14 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
     auto local_min = future.get();
     for (size_t i = 0; i < num_fields; ++i)
     {
-      if (!any_found && local_min[i] != Table::ValueTypeMax)
+      if (!any_found && local_min[i] != Table::ValueTypeMax) [[unlikely]]
       {
         any_found = true;
       }
       minValues[i] = std::min(minValues[i], local_min[i]);
     }
   }
-  if (!any_found)
+  if (!any_found) [[unlikely]]
   {
     return std::make_unique<NullQueryResult>();
   }
