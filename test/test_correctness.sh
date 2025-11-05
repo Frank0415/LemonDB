@@ -5,6 +5,7 @@ VERBOSE=false
 FULL_COMPARE=false
 ENABLE_VALGRIND=false
 ENABLE_GPROF=false
+ENABLE_GPERFTOOLS=false
 ENABLE_PROF=false
 
 while [[ $# -gt 0 ]]; do
@@ -22,10 +23,17 @@ while [[ $# -gt 0 ]]; do
             ENABLE_VALGRIND=true
             ;;
         --gprof=*)
-            ENABLE_GPROF="${1#*=}"
+            # backward-compatible: treat gprof as gperftools alias
+            ENABLE_GPERFTOOLS="${1#*=}"
             ;;
         --gprof)
-            ENABLE_GPROF=true
+            ENABLE_GPERFTOOLS=true
+            ;;
+        --gperftools=*)
+            ENABLE_GPERFTOOLS="${1#*=}"
+            ;;
+        --gperftools)
+            ENABLE_GPERFTOOLS=true
             ;;
         --prof=*)
             ENABLE_PROF="${1#*=}"
@@ -43,14 +51,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # If profiling is enabled, run profiling scripts instead of normal tests
-if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_PROF" = true ]; then
+if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
     if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_PROF" = true ]; then
         echo "Running Valgrind profiling..."
         ./test/valgrind.sh
     fi
-    if [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_PROF" = true ]; then
-        echo "Running GProf profiling..."
-        ./test/gprof.sh
+    if [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
+        echo "Running gperftools profiling..."
+        ./test/gperftools.sh
     fi
     exit 0
 fi

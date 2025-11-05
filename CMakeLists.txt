@@ -97,6 +97,7 @@ option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF
 # Profiling options
 option(ENABLE_GPROF "Enable GProf profiling" OFF)
 option(ENABLE_CALLGRIND "Enable Callgrind-compatible profiling" OFF)
+option(ENABLE_GPERFTOOLS "Enable gperftools (Google profiler) support" OFF)
 
 if(ENABLE_ASAN)
     message(STATUS "Configuring ASAN build targets")
@@ -155,6 +156,14 @@ if(ENABLE_GPROF)
 endif()
 if(ENABLE_CALLGRIND OR CMAKE_BUILD_TYPE STREQUAL "Debug")
     list(APPEND PROFILING_FLAGS -g)
+endif()
+if(ENABLE_GPERFTOOLS)
+    list(APPEND PROFILING_FLAGS -g)
+    # try to link profiler library for convenience when enabled
+    find_library(GPERFTOOLS_PROFILER profiler)
+    if(GPERFTOOLS_PROFILER)
+        target_link_libraries(lemondb_lib PUBLIC ${GPERFTOOLS_PROFILER})
+    endif()
 endif()
 
 # Apply profiling flags to main targets

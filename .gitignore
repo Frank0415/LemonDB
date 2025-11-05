@@ -74,6 +74,7 @@
 !test/linecount.sh
 !test/test_correctness.sh
 !test/gprof.sh
+!test/gperftools.sh
 !test/valgrind.sh
 !test/verify_tables.py
 !test/data
