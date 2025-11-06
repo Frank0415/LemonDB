@@ -98,7 +98,7 @@ std::string MinQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> MinQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fieldId;
-  for (const auto& operand : this->getOperands())
+  for (const auto& operand : this->getOperands()) [[likely]]
   {
     if (operand == "KEY") [[unlikely]]
     {
@@ -116,13 +116,13 @@ MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
   std::vector<Table::ValueType> minValue(fids.size(),
                                          Table::ValueTypeMax); // each has its own min value
 
-  for (const auto& row : table)
+  for (const auto& row : table) [[likely]]
   {
     if (this->evalCondition(row)) [[likely]]
     {
       found = true;
 
-      for (size_t i = 0; i < fids.size(); ++i)
+      for (size_t i = 0; i < fids.size(); ++i) [[likely]]
       {
         minValue[i] = std::min(minValue[i], row[fids[i]]);
       }
@@ -162,11 +162,11 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         [this, fids, chunk_begin, chunk_end, num_fields]()
         {
           std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
-          for (auto it = chunk_begin; it != chunk_end; ++it)
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
           {
             if (this->evalCondition(*it)) [[likely]]
             {
-              for (size_t i = 0; i < num_fields; ++i)
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
               {
                 local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
               }
@@ -176,10 +176,10 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         }));
   }
   bool any_found = false;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     auto local_min = future.get();
-    for (size_t i = 0; i < num_fields; ++i)
+    for (size_t i = 0; i < num_fields; ++i) [[likely]]
     {
       if (!any_found && local_min[i] != Table::ValueTypeMax) [[unlikely]]
       {
