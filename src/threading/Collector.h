@@ -52,7 +52,7 @@ public:
     const size_t completed = completed_queries.load();
     const size_t expected = expected_queries.load();
 
-    if (results.empty())
+    if (results.empty()) [[unlikely]]
     {
       std::cerr << "[Collector] Not outputting results: completed=" << completed
                 << ", expected=" << expected << "\n";
@@ -68,20 +68,20 @@ public:
     std::cerr << "\n";
 
     auto const debug_iter = results.find(114);
-    if (debug_iter != results.end())
+    if (debug_iter != results.end()) [[unlikely]]
     {
       std::cerr << "[Collector] Query 114 result length: " << debug_iter->second.size() << "\n";
       std::cerr << "[Collector] Query 114 result raw: '" << debug_iter->second << "'\n";
     }
 
     // Find the last query ID (which is QUIT)
-    if (!results.empty())
+    if (!results.empty()) [[likely]]
     {
       const size_t last_query_id = results.rbegin()->first;
       for (const auto& [query_id, result] : results)
       {
         // Skip output for QUIT query (last query)
-        if (query_id != last_query_id)
+        if (query_id != last_query_id) [[likely]]
         {
           std::cout << query_id << "\n" << result;
         }

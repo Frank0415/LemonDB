@@ -195,57 +195,57 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
     return getNextBuilder()->tryExtractQuery(query);
   }
   const std::string operation = query.token.front();
-  if (operation == "INSERT")
+  if (operation == "INSERT") [[likely]]
   {
     return std::make_unique<InsertQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "UPDATE")
+  if (operation == "UPDATE") [[likely]]
   {
     return std::make_unique<UpdateQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "SELECT")
+  if (operation == "SELECT") [[likely]]
   {
     return std::make_unique<SelectQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "DELETE")
+  if (operation == "DELETE") [[likely]]
   {
     return std::make_unique<DeleteQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "DUPLICATE")
+  if (operation == "DUPLICATE") [[likely]]
   {
     return std::make_unique<DuplicateQuery>(this->targetTable, this->operandToken,
                                             this->conditionToken);
   }
-  if (operation == "COUNT")
+  if (operation == "COUNT") [[likely]]
   {
     return std::make_unique<CountQuery>(this->targetTable, this->operandToken,
                                         this->conditionToken);
   }
-  if (operation == "SUM")
+  if (operation == "SUM") [[likely]]
   {
     return std::make_unique<SumQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "MIN")
+  if (operation == "MIN") [[likely]]
   {
     return std::make_unique<MinQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "MAX")
+  if (operation == "MAX") [[likely]]
   {
     return std::make_unique<MaxQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "ADD")
+  if (operation == "ADD") [[likely]]
   {
     return std::make_unique<AddQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "SUB")
+  if (operation == "SUB") [[likely]]
   {
     return std::make_unique<SubQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "SWAP")
+  if (operation == "SWAP") [[likely]]
   {
     return std::make_unique<SwapQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }

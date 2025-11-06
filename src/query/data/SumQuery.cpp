@@ -84,13 +84,13 @@
 
 [[nodiscard]] QueryResult::Ptr SumQuery::validateOperands() const
 {
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(),
                                             "Invalid number of fields");
   }
   if (std::any_of(this->getOperands().begin(), this->getOperands().end(),
-                  [](const auto& field) { return field == "KEY"; }))
+                  [](const auto& field) { return field == "KEY"; })) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "KEY cannot be summed.");
   }
@@ -140,11 +140,11 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
