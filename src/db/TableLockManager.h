@@ -21,7 +21,7 @@ private:
     {
       std::shared_lock<std::shared_mutex> read(map_mutex_);
       auto iter = lock_map_.find(table_name);
-      if (iter != lock_map_.end())
+      if (iter != lock_map_.end()) [[likely]]
       {
         return *iter->second;
       }
@@ -29,7 +29,7 @@ private:
 
     std::unique_lock<std::shared_mutex> write(map_mutex_);
     auto& ptr = lock_map_[table_name];
-    if (!ptr)
+    if (!ptr) [[unlikely]]
     {
       ptr = std::make_unique<std::shared_mutex>();
     }
