@@ -21,7 +21,7 @@ QueryResult::Ptr LoadTableQuery::execute()
     // LOAD creates a new table, so we acquire write lock for the new table name
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     std::ifstream infile(this->fileName);
-    if (!infile.is_open())
+    if (!infile.is_open()) [[unlikely]]
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
