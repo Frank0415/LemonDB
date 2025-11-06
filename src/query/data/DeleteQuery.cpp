@@ -32,7 +32,7 @@ QueryResult::Ptr DeleteQuery::execute()
     if (result.second) [[likely]]
     {
       std::vector<Table::KeyType> keysToDelete;
-      for (auto it = table.begin(); it != table.end(); it++)
+      for (auto it = table.begin(); it != table.end(); it++) [[likely]]
       {
         if (this->evalCondition(*it)) [[likely]]
         {
@@ -40,7 +40,7 @@ QueryResult::Ptr DeleteQuery::execute()
           ++counter;
         }
       }
-      for (const auto& key : keysToDelete)
+      for (const auto& key : keysToDelete) [[likely]]
       {
         table.deleteByIndex(key);
       }

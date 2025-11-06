@@ -101,7 +101,7 @@
 {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
-  for (const auto& field : this->getOperands())
+  for (const auto& field : this->getOperands()) [[likely]]
   {
     fids.emplace_back(table.getFieldIndex(field));
   }
@@ -114,11 +114,11 @@ SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
     if (this->evalCondition(row)) [[likely]]
     {
-      for (size_t idx = 0; idx < num_fields; ++idx)
+      for (size_t idx = 0; idx < num_fields; ++idx) [[likely]]
       {
         sums[idx] += row[fids[idx]];
       }
@@ -155,11 +155,11 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         [this, fids, chunk_begin, chunk_end, num_fields]()
         {
           std::vector<Table::ValueType> local_sums(num_fields, 0);
-          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
             if (this->evalCondition(*iter)) [[likely]]
             {
-              for (size_t i = 0; i < num_fields; ++i)
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
               {
                 local_sums[i] += (*iter)[fids[i]];
               }
@@ -170,10 +170,10 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   }
 
   // Combine results from all threads
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     auto local_sums = future.get();
-    for (size_t i = 0; i < num_fields; ++i)
+    for (size_t i = 0; i < num_fields; ++i) [[likely]]
     {
       sums[i] += local_sums[i];
     }

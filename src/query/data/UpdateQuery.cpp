@@ -105,7 +105,7 @@ std::string UpdateQuery::toString()
 [[nodiscard]] QueryResult::Ptr UpdateQuery::executeSingleThreaded(Table& table)
 {
   Table::SizeType counter = 0;
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto it = table.begin(); it != table.end(); ++it) [[likely]]
   {
     if (this->evalCondition(*it)) [[likely]]
     {
@@ -146,7 +146,7 @@ std::string UpdateQuery::toString()
         [this, chunk_start, chunk_end]()
         {
           Table::SizeType local_count = 0;
-          for (auto it = chunk_start; it != chunk_end; ++it)
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
           {
             if (this->evalCondition(*it)) [[likely]]
             {
@@ -167,7 +167,7 @@ std::string UpdateQuery::toString()
 
   // Wait for all tasks to complete and aggregate results
   Table::SizeType total_count = 0;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     total_count += future.get();
   }

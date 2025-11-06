@@ -97,7 +97,7 @@ std::string CountQuery::toString()
 {
   int record_count = 0;
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
     if (this->evalCondition(row)) [[likely]]
     {
@@ -134,7 +134,7 @@ std::string CountQuery::toString()
         [this, chunk_begin, chunk_end]()
         {
           int local_count = 0;
-          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
             if (this->evalCondition(*iter)) [[likely]]
             {
@@ -146,7 +146,7 @@ std::string CountQuery::toString()
   }
 
   // Combine results from all threads
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     total_count += future.get();
   }

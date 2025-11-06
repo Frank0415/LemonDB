@@ -113,7 +113,7 @@ std::string SelectQuery::toString()
   std::vector<std::string> fieldsOrder;
   fieldsOrder.reserve(this->getOperands().size() + 1);
   fieldsOrder.emplace_back("KEY");
-  for (const auto& field : this->getOperands())
+  for (const auto& field : this->getOperands()) [[likely]]
   {
     if (field != "KEY") [[likely]]
     {
@@ -123,7 +123,7 @@ std::string SelectQuery::toString()
 
   std::vector<Table::FieldIndex> fieldIds;
   fieldIds.reserve(fieldsOrder.size() - 1);
-  for (size_t i = 1; i < fieldsOrder.size(); ++i)
+  for (size_t i = 1; i < fieldsOrder.size(); ++i) [[likely]]
   {
     fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
   }
@@ -136,13 +136,13 @@ SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldI
   // Collect matching rows as pairs of (key, values)
   std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto it = table.begin(); it != table.end(); ++it) [[likely]]
   {
     if (this->evalCondition(*it)) [[likely]]
     {
       std::vector<Table::ValueType> values;
       values.reserve(fieldIds.size());
-      for (const auto& field_id : fieldIds)
+      for (const auto& field_id : fieldIds) [[likely]]
       {
         values.emplace_back((*it)[field_id]);
       }
@@ -152,10 +152,10 @@ SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldI
 
   // Output in KEY order (already sorted by map)
   std::ostringstream buffer;
-  for (const auto& [key, values] : sorted_rows)
+  for (const auto& [key, values] : sorted_rows) [[likely]]
   {
     buffer << "( " << key;
-    for (const auto& value : values)
+    for (const auto& value : values) [[likely]]
     {
       buffer << " " << value;
     }
@@ -189,13 +189,13 @@ SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIn
         [this, chunk_begin, chunk_end, &fieldIds]()
         {
           std::map<std::string, std::vector<Table::ValueType>> local_rows;
-          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
             if (this->evalCondition(*iter)) [[likely]]
             {
               std::vector<Table::ValueType> values;
               values.reserve(fieldIds.size());
-              for (const auto& field_id : fieldIds)
+              for (const auto& field_id : fieldIds) [[likely]]
               {
                 values.emplace_back((*iter)[field_id]);
               }
@@ -208,7 +208,7 @@ SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIn
 
   // Merge all results into sorted map
   std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     auto local_rows = future.get();
     sorted_rows.insert(local_rows.begin(), local_rows.end());
@@ -216,10 +216,10 @@ SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIn
 
   // Output in KEY order (already sorted by map)
   std::ostringstream buffer;
-  for (const auto& [key, values] : sorted_rows)
+  for (const auto& [key, values] : sorted_rows) [[likely]]
   {
     buffer << "( " << key;
-    for (const auto& value : values)
+    for (const auto& value : values) [[likely]]
     {
       buffer << " " << value;
     }
