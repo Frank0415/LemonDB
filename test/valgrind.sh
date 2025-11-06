@@ -28,7 +28,7 @@ for test in "${TESTS[@]}"; do
     if [ -f "queries/${test}.query" ]; then
         echo "Profiling test: ${test}"
         # Run with Valgrind Callgrind, suppress output
-        valgrind --tool=callgrind --dump-instr=yes --callgrind-out-file=${test}.callgrind.out ../../lemondb < "queries/${test}.query" > /dev/null 2>&1
+        valgrind --tool=callgrind --dump-instr=yes --callgrind-out-file=${test}.callgrind.out ./lemondb < "queries/${test}.query"
         echo "Generated: ${test}.callgrind.out"
     else
         echo "Skipping ${test}: query file not found"

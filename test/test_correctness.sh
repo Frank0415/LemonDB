@@ -55,9 +55,10 @@ if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_GPROF" = true ] || [ "$ENABLE_GPE
         echo "Running Valgrind profiling..."
         ./test/valgrind.sh
     fi
-    if [ "$ENABLE_GPROF" = true ]; then
-        echo "Running GProf profiling..."
-        ./test/gprof.sh
+    if [ "$ENABLE_GPROF" = true ]|| [ "$ENABLE_PROF" = true ]; then
+        # echo "Running GProf profiling..."
+        # ./test/gprof.sh
+        echo "GProf is not working"
     fi
     if [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
         echo "Running gperftools profiling..."

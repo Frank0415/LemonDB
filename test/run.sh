@@ -56,7 +56,7 @@ if [ "$VERBOSE" = true ]; then
     echo "Verbose mode enabled"
     [ "$FULL_COMPARE" = true ] && echo "Full comparison mode enabled"
     [ "$ENABLE_VALGRIND" = true ] && echo "Valgrind profiling enabled"
-    [ "$ENABLE_GPROF" = true ] && echo "GProf profiling enabled"
+    [ "$ENABLE_GPROF" = true ] && echo "GProf is not working"
     [ "$ENABLE_GPERFTOOLS" = true ] && echo "gperftools profiling enabled"
     [ "$ENABLE_PROF" = true ] && echo "Profiling (valgrind + gperftools) enabled"
     echo ""
@@ -73,8 +73,9 @@ PROFILING_FLAGS=""
 if [ "$ENABLE_VALGRIND" = true ] || [ "$ENABLE_PROF" = true ]; then
     PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_CALLGRIND=ON -DCMAKE_BUILD_TYPE=Debug"
 fi
-if [ "$ENABLE_GPROF" = true ]; then
-    PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_GPROF=ON"
+if [ "$ENABLE_GPROF" = true ]|| [ "$ENABLE_PROF" = true ]; then
+    # PROFILING_FLAGS="$PROFILING_FLAGS -pg"
+    echo "GProf is not working"
 fi
 if [ "$ENABLE_GPERFTOOLS" = true ] || [ "$ENABLE_PROF" = true ]; then
     PROFILING_FLAGS="$PROFILING_FLAGS -DENABLE_GPERFTOOLS=ON"
