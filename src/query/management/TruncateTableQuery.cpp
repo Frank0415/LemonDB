@@ -26,7 +26,7 @@ QueryResult::Ptr TruncateTableQuery::execute()
   {
     return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "No such table.");
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
     return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "Unknown error");
   }

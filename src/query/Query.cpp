@@ -22,25 +22,25 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
       {">", '>'}, {"<", '<'}, {"=", '='}, {">=", 'g'}, {"<=", 'l'},
   };
   std::pair<std::string, bool> result = {"", true};
-  for (auto& cond : condition)
+  for (auto& cond : condition) [[likely]]
   {
-    if (cond.field == "KEY")
+    if (cond.field == "KEY") [[unlikely]]
     {
-      if (cond.op != "=")
+      if (cond.op != "=") [[unlikely]]
       {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
       }
-      if (result.first.empty())
+      if (result.first.empty()) [[likely]]
       {
         result.first = cond.value;
       }
-      else if (result.first != cond.value)
+      else if (result.first != cond.value) [[unlikely]]
       {
         result.second = false;
         return result;
       }
     }
-    else
+    else [[likely]]
     {
       constexpr int decimal_base = 10;
       cond.fieldId = table.getFieldIndex(cond.field);
@@ -83,13 +83,13 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 bool ComplexQuery::evalCondition(const Table::Object& object)
 {
   bool ret = true;
-  for (const auto& cond : condition)
+  for (const auto& cond : condition) [[likely]]
   {
-    if (cond.field != "KEY")
+    if (cond.field != "KEY") [[likely]]
     {
       ret = ret && cond.comp(object[cond.fieldId], cond.valueParsed);
     }
-    else
+    else [[unlikely]]
     {
       ret = ret && (object.key() == cond.value);
     }
@@ -101,19 +101,19 @@ bool ComplexQuery::testKeyCondition(Table& table,
                                     const std::function<void(bool, Table::Object::Ptr&&)>& function)
 {
   auto condResult = initCondition(table);
-  if (!condResult.second)
+  if (!condResult.second) [[unlikely]]
   {
     function(false, nullptr);
     return true;
   }
-  if (!condResult.first.empty())
+  if (!condResult.first.empty()) [[unlikely]]
   {
     auto object = table[condResult.first];
-    if (object != nullptr && evalCondition(*object))
+    if (object != nullptr && evalCondition(*object)) [[likely]]
     {
       function(true, std::move(object));
     }
-    else
+    else [[unlikely]]
     {
       function(false, nullptr);
     }
