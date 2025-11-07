@@ -18,7 +18,7 @@
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 {
-  const std::unordered_map<std::string, int> opmap{
+  static const std::unordered_map<std::string, int> opmap{
       {">", '>'}, {"<", '<'}, {"=", '='}, {">=", 'g'}, {"<=", 'l'},
   };
   std::pair<std::string, bool> result = {"", true};
@@ -39,6 +39,7 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
         result.second = false;
         return result;
       }
+      cond.fieldId = static_cast<size_t>(-1);
     }
     else
     {
@@ -46,15 +47,14 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
       cond.fieldId = table.getFieldIndex(cond.field);
       cond.valueParsed =
           static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, decimal_base));
-      int operator_index = 0;
-      try
-      {
-        operator_index = opmap.at(cond.op);
-      }
-      catch (const std::out_of_range& e)
+      
+      const auto it = opmap.find(cond.op);
+      if (it == opmap.end())
       {
         throw IllFormedQueryCondition(R"("?" is not a valid condition operator.)"_f % cond.op);
       }
+      
+      const int operator_index = it->second;
       switch (operator_index)
       {
       case '>':
@@ -84,16 +84,16 @@ bool ComplexQuery::evalCondition(const Table::Object& object)
 {
   for (const auto& cond : condition)
   {
-    if (cond.field != "KEY")
+    if (cond.fieldId == static_cast<size_t>(-1))
     {
-      if (!cond.comp(object[cond.fieldId], cond.valueParsed))
+      if (object.key() != cond.value)
       {
         return false;
       }
     }
     else
     {
-      if (object.key() != cond.value)
+      if (!cond.comp(object[cond.fieldId], cond.valueParsed))
       {
         return false;
       }
