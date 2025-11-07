@@ -15,7 +15,7 @@
 
 QueryResult::Ptr DeleteQuery::execute()
 {
-  if (!this->getOperands().empty())
+  if (!this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
@@ -29,23 +29,23 @@ QueryResult::Ptr DeleteQuery::execute()
     Table::SizeType counter = 0;
     auto& table = database[this->targetTableRef()];
     auto result = initCondition(table);
-    if (result.second)
+    if (result.second) [[likely]]
     {
       std::vector<Table::KeyType> keysToDelete;
-      for (auto it = table.begin(); it != table.end(); it++)
+      for (auto it = table.begin(); it != table.end(); it++) [[likely]]
       {
-        if (this->evalCondition(*it))
+        if (this->evalCondition(*it)) [[likely]]
         {
           keysToDelete.push_back(it->key());
           ++counter;
         }
       }
-      for (const auto& key : keysToDelete)
+      for (const auto& key : keysToDelete) [[likely]]
       {
         table.deleteByIndex(key);
       }
     }
-    else
+    else [[unlikely]]
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }

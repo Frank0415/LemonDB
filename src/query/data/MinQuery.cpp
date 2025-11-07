@@ -21,7 +21,7 @@ QueryResult::Ptr MinQuery::execute()
 {
   try
   {
-    if (validateOperands() != nullptr)
+    if (validateOperands() != nullptr) [[unlikely]]
     {
       return validateOperands();
     }
@@ -32,21 +32,21 @@ QueryResult::Ptr MinQuery::execute()
 
     auto result = initCondition(table);
 
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<NullQueryResult>();
     }
 
     auto fieldId = getFieldIndices(table);
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldId);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
 
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, fieldId);
     }
@@ -87,7 +87,7 @@ std::string MinQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr MinQuery::validateOperands() const
 {
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "No operand (? operands)."_f % getOperands().size());
@@ -98,9 +98,9 @@ std::string MinQuery::toString()
 [[nodiscard]] std::vector<Table::FieldIndex> MinQuery::getFieldIndices(const Table& table) const
 {
   std::vector<Table::FieldIndex> fieldId;
-  for (const auto& operand : this->getOperands())
+  for (const auto& operand : this->getOperands()) [[likely]]
   {
-    if (operand == "KEY")
+    if (operand == "KEY") [[unlikely]]
     {
       throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
     }
@@ -116,20 +116,20 @@ MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
   std::vector<Table::ValueType> minValue(fids.size(),
                                          Table::ValueTypeMax); // each has its own min value
 
-  for (const auto& row : table)
+  for (const auto& row : table) [[likely]]
   {
-    if (this->evalCondition(row))
+    if (this->evalCondition(row)) [[likely]]
     {
       found = true;
 
-      for (size_t i = 0; i < fids.size(); ++i)
+      for (size_t i = 0; i < fids.size(); ++i) [[likely]]
       {
         minValue[i] = std::min(minValue[i], row[fids[i]]);
       }
     }
   }
 
-  if (!found)
+  if (!found) [[unlikely]]
   {
     return std::make_unique<NullQueryResult>();
   }
@@ -147,11 +147,11 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   // Create chunks and submit tasks
   std::vector<std::future<std::vector<Table::ValueType>>> futures;
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -162,11 +162,11 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         [this, fids, chunk_begin, chunk_end, num_fields]()
         {
           std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
-          for (auto it = chunk_begin; it != chunk_end; ++it)
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
           {
-            if (this->evalCondition(*it))
+            if (this->evalCondition(*it)) [[likely]]
             {
-              for (size_t i = 0; i < num_fields; ++i)
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
               {
                 local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
               }
@@ -176,19 +176,19 @@ MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         }));
   }
   bool any_found = false;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     auto local_min = future.get();
-    for (size_t i = 0; i < num_fields; ++i)
+    for (size_t i = 0; i < num_fields; ++i) [[likely]]
     {
-      if (!any_found && local_min[i] != Table::ValueTypeMax)
+      if (!any_found && local_min[i] != Table::ValueTypeMax) [[unlikely]]
       {
         any_found = true;
       }
       minValues[i] = std::min(minValues[i], local_min[i]);
     }
   }
-  if (!any_found)
+  if (!any_found) [[unlikely]]
   {
     return std::make_unique<NullQueryResult>();
   }

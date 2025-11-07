@@ -114,11 +114,11 @@ std::string extractQueryString(std::istream& input_stream)
   while (true)
   {
     const int character = input_stream.get();
-    if (character == ';')
+    if (character == ';') [[likely]]
     {
       return buf;
     }
-    if (character == EOF)
+    if (character == EOF) [[unlikely]]
     {
       throw std::ios_base::failure("End of input");
     }
@@ -136,12 +136,12 @@ int main(int argc, char* argv[])
 
   std::ifstream fin;
   std::istream* input = &std::cin;
-  if (!parsedArgs.listen.empty())
+  if (!parsedArgs.listen.empty()) [[unlikely]]
   {
     // Construct a new ifstream and assign to fin to ensure all internal
     // members are properly initialized (avoids MSan use-of-uninitialized warnings).
     fin = std::ifstream(parsedArgs.listen);
-    if (!fin.is_open())
+    if (!fin.is_open()) [[unlikely]]
     {
       std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
       std::exit(-1);
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
   QueryResultCollector g_result_collector;
   std::atomic<size_t> g_query_counter{0};
 
-  while (input_stream && !database.isEnd())
+  while (input_stream && !database.isEnd()) [[likely]]
   {
     try
     {
@@ -200,13 +200,13 @@ int main(int argc, char* argv[])
       // This ensures no data races between queries
       executeQueryAsync(std::move(query), query_id, g_result_collector);
     }
-    catch (const std::ios_base::failure& e)
+    catch (const std::ios_base::failure& exc)
     {
       break;
     }
-    catch (const std::exception& e)
+    catch (const std::exception& exc)
     {
-      std::cerr << "Error parsing query: " << e.what() << '\n';
+      std::cerr << "Error parsing query: " << exc.what() << '\n';
     }
   }
 

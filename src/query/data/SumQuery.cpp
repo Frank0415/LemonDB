@@ -24,7 +24,7 @@
   {
     // Validate operands
     auto validation_result = validateOperands();
-    if (validation_result != nullptr)
+    if (validation_result != nullptr) [[unlikely]]
     {
       return validation_result;
     }
@@ -33,7 +33,7 @@
     auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       const size_t num_fields = getFieldIndices(table).size();
       const std::vector<Table::ValueType> sums(num_fields, 0);
@@ -44,13 +44,13 @@
     auto fids = getFieldIndices(table);
 
     // Check if ThreadPool is available and has multiple threads
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, fids);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, fids);
     }
@@ -66,14 +66,14 @@
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "No such field.");
   }
-  catch (const IllFormedQueryCondition& e)
+  catch (const IllFormedQueryCondition& exc)
   {
-    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), e.what());
+    return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), exc.what());
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(),
-                                            "Unknown error '?'"_f % e.what());
+                                            "Unknown error '?'"_f % exc.what());
   }
 }
 
@@ -84,13 +84,13 @@
 
 [[nodiscard]] QueryResult::Ptr SumQuery::validateOperands() const
 {
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(),
                                             "Invalid number of fields");
   }
   if (std::any_of(this->getOperands().begin(), this->getOperands().end(),
-                  [](const auto& field) { return field == "KEY"; }))
+                  [](const auto& field) { return field == "KEY"; })) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>("SUM", this->targetTableRef(), "KEY cannot be summed.");
   }
@@ -101,7 +101,7 @@
 {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
-  for (const auto& field : this->getOperands())
+  for (const auto& field : this->getOperands()) [[likely]]
   {
     fids.emplace_back(table.getFieldIndex(field));
   }
@@ -114,11 +114,11 @@ SumQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
-    if (this->evalCondition(row))
+    if (this->evalCondition(row)) [[likely]]
     {
-      for (size_t idx = 0; idx < num_fields; ++idx)
+      for (size_t idx = 0; idx < num_fields; ++idx) [[likely]]
       {
         sums[idx] += row[fids[idx]];
       }
@@ -140,11 +140,11 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -155,11 +155,11 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         [this, fids, chunk_begin, chunk_end, num_fields]()
         {
           std::vector<Table::ValueType> local_sums(num_fields, 0);
-          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
-            if (this->evalCondition(*iter))
+            if (this->evalCondition(*iter)) [[likely]]
             {
-              for (size_t i = 0; i < num_fields; ++i)
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
               {
                 local_sums[i] += (*iter)[fids[i]];
               }
@@ -170,10 +170,10 @@ SumQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   }
 
   // Combine results from all threads
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     auto local_sums = future.get();
-    for (size_t i = 0; i < num_fields; ++i)
+    for (size_t i = 0; i < num_fields; ++i) [[likely]]
     {
       sums[i] += local_sums[i];
     }

@@ -22,7 +22,7 @@
 QueryResult::Ptr InsertQuery::execute()
 {
   const int DECIMAL_BASE = 10;
-  if (this->getOperands().empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "No operand (? operands)."_f % getOperands().size());
@@ -36,7 +36,7 @@ QueryResult::Ptr InsertQuery::execute()
     const auto& key = this->getOperands().front();
     std::vector<Table::ValueType> data;
     data.reserve(this->getOperands().size() - 1);
-    for (auto it = ++this->getOperands().begin(); it != this->getOperands().end(); ++it)
+    for (auto it = ++this->getOperands().begin(); it != this->getOperands().end(); ++it) [[likely]]
     {
       data.emplace_back(strtol(it->c_str(), nullptr, DECIMAL_BASE));
     }

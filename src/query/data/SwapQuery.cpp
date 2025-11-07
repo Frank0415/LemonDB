@@ -22,7 +22,7 @@ QueryResult::Ptr SwapQuery::execute()
   try
   {
     auto validation_result = validateOperands();
-    if (validation_result != nullptr)
+    if (validation_result != nullptr) [[unlikely]]
     {
       return validation_result;
     }
@@ -32,7 +32,7 @@ QueryResult::Ptr SwapQuery::execute()
     auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<RecordCountResult>(0);
     }
@@ -46,11 +46,11 @@ QueryResult::Ptr SwapQuery::execute()
     const bool handled = this->testKeyCondition(table,
                                                 [&](bool success, Table::Object::Ptr obj)
                                                 {
-                                                  if (!success)
+                                                  if (!success) [[unlikely]]
                                                   {
                                                     return;
                                                   }
-                                                  if (obj)
+                                                  if (obj) [[likely]]
                                                   {
                                                     auto tmp = (*obj)[field_index_1];
                                                     (*obj)[field_index_1] = (*obj)[field_index_2];
@@ -59,19 +59,19 @@ QueryResult::Ptr SwapQuery::execute()
                                                   }
                                                 });
 
-    if (handled)
+    if (handled) [[unlikely]]
     {
       return std::make_unique<RecordCountResult>(static_cast<int>(counter));
     }
 
     // Use ThreadPool if available
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, field_index_1, field_index_2);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, field_index_1, field_index_2);
     }
@@ -104,7 +104,7 @@ std::string SwapQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr SwapQuery::validateOperands() const
 {
-  if (this->getOperands().size() != 2)
+  if (this->getOperands().size() != 2) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
@@ -116,7 +116,7 @@ std::string SwapQuery::toString()
 [[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
 SwapQuery::getFieldIndices(Table& table) const
 {
-  if (getOperands()[0] == "KEY" || getOperands()[1] == "KEY")
+  if (getOperands()[0] == "KEY" || getOperands()[1] == "KEY") [[unlikely]]
   {
     throw std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                            "Ill-formed query: KEY cannot be swapped.");
@@ -129,9 +129,9 @@ SwapQuery::getFieldIndices(Table& table) const
 {
   Table::SizeType counter = 0;
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
-    if (this->evalCondition(row))
+    if (this->evalCondition(row)) [[likely]]
     {
       auto tmp = row[field_index_1];
       row[field_index_1] = row[field_index_2];
@@ -151,11 +151,11 @@ SwapQuery::getFieldIndices(Table& table) const
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -166,9 +166,9 @@ SwapQuery::getFieldIndices(Table& table) const
         [this, chunk_begin, chunk_end, field_index_1, field_index_2]()
         {
           Table::SizeType local_counter = 0;
-          for (auto it = chunk_begin; it != chunk_end; ++it)
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
           {
-            if (this->evalCondition(*it))
+            if (this->evalCondition(*it)) [[likely]]
             {
               auto tmp = (*it)[field_index_1];
               (*it)[field_index_1] = (*it)[field_index_2];
@@ -180,7 +180,7 @@ SwapQuery::getFieldIndices(Table& table) const
         }));
   }
   Table::SizeType counter = 0;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     counter += future.get();
   }

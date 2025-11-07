@@ -26,7 +26,7 @@ QueryResult::Ptr PrintTableQuery::execute()
     std::cout << "================\n" << '\n';
     return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const TableNameNotFound& e)
+  catch (const TableNameNotFound& exc)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             std::string("No such table."));
