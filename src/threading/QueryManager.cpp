@@ -174,3 +174,48 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
       }
       result_str = oss.str();
 
+      // std::cerr << "[QueryManager] Query " << query_id << " executed successfully\n";
+    }
+    catch (const std::exception& exc)
+    {
+      // Check if this is a WaitQuery completion exception
+      if (std::string(exc.what()).find("WaitQuery completed") != std::string::npos)
+      {
+        // WaitQuery completed - don't add to OutputPool
+        // std::cerr << "[QueryManager] WaitQuery completed for table '" << table_name << "'\n";
+        is_wait_query = true;
+      }
+      else
+      {
+        std::ostringstream oss;
+        oss << "Error: " << exc.what() << "\n";
+        result_str = oss.str();
+
+        // std::cerr << "[QueryManager] Query " << query_id << " failed: " << exc.what() << "\n";
+      }
+    }
+
+    // Clean up query
+    delete query_ptr;
+
+    // Only store result and increment count if it's not a WaitQuery
+    if (!is_wait_query)
+    {
+      manager->output_pool.addResult(query_id, result_str);
+      // std::cerr << "[QueryManager] Result queued for output (query " << query_id << ")\n";
+
+      // Increment completed query count (only for real queries, not WaitQuery)
+      manager->completed_query_count.fetch_add(1);
+      // std::cerr << "[QueryManager] Completed queries: " << manager->completed_query_count.load()
+      //           << "\n";
+    }
+    else
+    {
+      // std::cerr << "[QueryManager] WaitQuery result NOT queued for output (query " << query_id
+      //           << ")\n";
+      // std::cerr << "[QueryManager] WaitQuery does NOT increment completed count\n";
+    }
+  }
+
+  // std::cerr << "[QueryManager] Table '" << table_name << "' thread exiting normally\n";
+}
