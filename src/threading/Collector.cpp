@@ -12,7 +12,7 @@ void executeQueryAsync(Query::Ptr query, size_t query_id, QueryResultCollector& 
     QueryResult::Ptr result = query->execute();
 
     std::ostringstream oss;
-    if (result && result->display())
+    if (result && result->display()) [[likely]]
     {
       oss << *result;
     }

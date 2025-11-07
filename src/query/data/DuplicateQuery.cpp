@@ -23,7 +23,7 @@ QueryResult::Ptr DuplicateQuery::execute()
   try
   {
     auto validationResult = validateOperands();
-    if (validationResult != nullptr)
+    if (validationResult != nullptr) [[unlikely]]
     {
       return validationResult;
     }
@@ -33,7 +33,7 @@ QueryResult::Ptr DuplicateQuery::execute()
     auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
@@ -41,18 +41,18 @@ QueryResult::Ptr DuplicateQuery::execute()
     // Decide between single-threaded and multi-threaded execution
     std::vector<RecordPair> recordsToDuplicate;
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       recordsToDuplicate = executeSingleThreaded(table);
     }
-    else
+    else [[likely]]
     {
       const ThreadPool& pool = ThreadPool::getInstance();
-      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
       {
         recordsToDuplicate = executeSingleThreaded(table);
       }
-      else
+      else [[likely]]
       {
         recordsToDuplicate = executeMultiThreaded(table);
       }
@@ -60,7 +60,7 @@ QueryResult::Ptr DuplicateQuery::execute()
 
     // Insert all duplicated records (in order preserved by helpers)
     Table::SizeType counter = 0;
-    for (auto& record : recordsToDuplicate)
+    for (auto& record : recordsToDuplicate) [[likely]]
     {
       try
       {
@@ -110,7 +110,7 @@ std::string DuplicateQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr DuplicateQuery::validateOperands() const
 {
-  if (!this->getOperands().empty())
+  if (!this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Invalid number of operands (? operands)."_f %
@@ -125,9 +125,9 @@ DuplicateQuery::executeSingleThreaded(Table& table)
   std::vector<RecordPair> recordsToDuplicate;
   auto row_size = table.field().size();
 
-  for (auto it = table.begin(); it != table.end(); ++it)
+  for (auto it = table.begin(); it != table.end(); ++it) [[likely]]
   {
-    if (!this->evalCondition(*it))
+    if (!this->evalCondition(*it)) [[unlikely]]
     {
       continue;
     }
@@ -136,14 +136,14 @@ DuplicateQuery::executeSingleThreaded(Table& table)
     auto newKey = originalKey + "_copy";
 
     // if a "_copy" already exists, skip this key
-    if (table[newKey] != nullptr)
+    if (table[newKey] != nullptr) [[unlikely]]
     {
       continue;
     }
 
     // Copy the values from the original record
     std::vector<Table::ValueType> values(row_size);
-    for (size_t i = 0; i < row_size; ++i)
+    for (size_t i = 0; i < row_size; ++i) [[likely]]
     {
       values[i] = (*it)[i];
     }
@@ -167,11 +167,11 @@ DuplicateQuery::executeMultiThreaded(Table& table)
 
   size_t chunk_index = 0;
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -183,9 +183,9 @@ DuplicateQuery::executeMultiThreaded(Table& table)
                                                 [this, &table, chunk_begin, chunk_end, row_size]()
                                                 {
                                                   std::vector<RecordPair> local_records;
-                                                  for (auto it = chunk_begin; it != chunk_end; ++it)
+                                                  for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
                                                   {
-                                                    if (!this->evalCondition(*it))
+                                                    if (!this->evalCondition(*it)) [[unlikely]]
                                                     {
                                                       continue;
                                                     }
@@ -194,14 +194,14 @@ DuplicateQuery::executeMultiThreaded(Table& table)
                                                     auto newKey = originalKey + "_copy";
 
                                                     // Check if _copy already exists
-                                                    if (table[newKey] != nullptr)
+                                                    if (table[newKey] != nullptr) [[unlikely]]
                                                     {
                                                       continue;
                                                     }
 
                                                     // Copy the values
                                                     std::vector<Table::ValueType> values(row_size);
-                                                    for (size_t i = 0; i < row_size; ++i)
+                                                    for (size_t i = 0; i < row_size; ++i) [[likely]]
                                                     {
                                                       values[i] = (*it)[i];
                                                     }
@@ -216,7 +216,7 @@ DuplicateQuery::executeMultiThreaded(Table& table)
 
   // Merge results in order (preserve chunk order)
   std::vector<RecordPair> allRecords;
-  for (auto& [idx, future] : tasks)
+  for (auto& [idx, future] : tasks) [[likely]]
   {
     auto local_records = future.get();
     allRecords.insert(allRecords.end(), make_move_iterator(local_records.begin()),

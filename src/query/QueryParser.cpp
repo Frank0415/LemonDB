@@ -12,12 +12,12 @@ QueryParser::QueryParser() = default;
 
 Query::Ptr QueryParser::parseQuery(const std::string& queryString)
 {
-  if (first == nullptr)
+  if (first == nullptr) [[unlikely]]
   {
     throw QueryBuilderMatchFailed(queryString);
   }
   auto tokenized = tokenizeQueryString(queryString);
-  if (tokenized.token.empty())
+  if (tokenized.token.empty()) [[unlikely]]
   {
     throw QueryBuilderMatchFailed("");
   }
@@ -27,13 +27,13 @@ Query::Ptr QueryParser::parseQuery(const std::string& queryString)
 
 void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
 {
-  if (first == nullptr)
+  if (first == nullptr) [[unlikely]]
   {
     first = std::move(qBuilder);
     last = first.get();
     last->setNext(FailedQueryBuilder::getDefault());
   }
-  else
+  else [[likely]]
   {
     QueryBuilder* temp = last;
     last = qBuilder.get();
@@ -49,7 +49,7 @@ TokenizedQueryString QueryParser::tokenizeQueryString(const std::string& querySt
   std::stringstream stream;
   stream.str(queryString);
   std::string tStr;
-  while (stream >> tStr)
+  while (stream >> tStr) [[likely]]
   {
     result.token.push_back(tStr);
   }
