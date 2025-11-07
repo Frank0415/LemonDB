@@ -1,19 +1,19 @@
 #include "OutputPool.h"
 
+#include <cstddef>
 #include <iostream>
+#include <mutex>
+#include <string>
 
 void OutputPool::addResult(size_t query_id, const std::string& result)
 {
   const std::scoped_lock lock(results_mutex);
   results[query_id] = result;
-  // std::cerr << "[OutputPool] Added result for query " << query_id << " (total: " << result
-  //           << ")\n";
 }
 
 void OutputPool::outputAllResults()
 {
   const std::scoped_lock lock(results_mutex);
-  // std::cerr << "[OutputPool] Outputting " << results.size() << " results\n";
   for (const auto& [query_id, result_string] : results)
   {
     // Don't print query number for QUIT queries
@@ -30,12 +30,7 @@ void OutputPool::outputAllResults()
     }
 
     std::cout.flush();
-
-    // std::cerr << "[OutputPool] Printed result for query " << query_id
-    //           << (is_quit ? " (QUIT - no number)" : "") << "\n";
   }
-
-  // std::cerr << "[OutputPool] All results output complete\n";
 }
 
 size_t OutputPool::getResultCount() const
