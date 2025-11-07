@@ -1,5 +1,7 @@
 
+#include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -12,8 +14,9 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 #include "DeleteQuery.h"
+#include "threading/Threadpool.h"
 
-QueryResult::Ptr DeleteQuery::execute()
+[[nodiscard]] QueryResult::Ptr DeleteQuery::execute()
 {
   if (!this->getOperands().empty())
   {
@@ -24,32 +27,27 @@ QueryResult::Ptr DeleteQuery::execute()
 
   try
   {
-    Database& database = Database::getInstance();
+    auto& database = Database::getInstance();
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
-    Table::SizeType counter = 0;
     auto& table = database[this->targetTableRef()];
     auto result = initCondition(table);
-    if (result.second)
-    {
-      std::vector<Table::KeyType> keysToDelete;
-      for (auto it = table.begin(); it != table.end(); it++)
-      {
-        if (this->evalCondition(*it))
-        {
-          keysToDelete.push_back(it->key());
-          ++counter;
-        }
-      }
-      for (const auto& key : keysToDelete)
-      {
-        table.deleteByIndex(key);
-      }
-    }
-    else
+    if (!result.second)
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
-    return std::make_unique<RecordCountResult>(counter);
+
+    if (!ThreadPool::isInitialized())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    const ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    {
+      return executeSingleThreaded(table);
+    }
+
+    return executeMultiThreaded(table);
   }
   catch (const NotFoundKey& e)
   {
@@ -74,6 +72,30 @@ QueryResult::Ptr DeleteQuery::execute()
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
+}
+
+[[nodiscard]] QueryResult::Ptr DeleteQuery::executeSingleThreaded(Table& table)
+{
+  Table::SizeType counter = 0;
+  std::vector<Table::KeyType> keysToDelete;
+
+  // Single-threaded collection of keys to delete
+  for (auto it = table.begin(); it != table.end(); ++it)
+  {
+    if (this->evalCondition(*it))
+    {
+      keysToDelete.push_back(it->key());
+      ++counter;
+    }
+  }
+
+  // Single-threaded deletion of collected keys
+  for (const auto& key : keysToDelete)
+  {
+    table.deleteByIndex(key);
+  }
+
+  return std::make_unique<RecordCountResult>(counter);
 }
 
 std::string DeleteQuery::toString()
