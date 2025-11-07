@@ -25,7 +25,6 @@
 #include "management/TruncateTableQuery.h"
 #include "utils/formatter.h"
 #include "utils/uexception.h"
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>

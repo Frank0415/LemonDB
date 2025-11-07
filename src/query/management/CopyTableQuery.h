@@ -39,7 +39,7 @@ public:
   QueryResult::Ptr execute() override;
   std::string toString() override;
 
-  std::shared_ptr<std::counting_semaphore<>> getWaitSemaphore() const
+  [[nodiscard]] std::shared_ptr<std::counting_semaphore<>> getWaitSemaphore() const
   {
     return wait_sem;
   }

@@ -1,12 +1,14 @@
-#include "WaitQuery.h"
+#include <exception>
+#include <string>
 
+#include "WaitQuery.h"
 #include "query/QueryResult.h"
 
 // Custom exception for WaitQuery completion
 class WaitQueryCompleted : public std::exception
 {
 public:
-  const char* what() const noexcept override
+  [[nodiscard]] const char* what() const noexcept override
   {
     return "WaitQuery completed - queries can now proceed on new table";
   }

@@ -6,6 +6,10 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <mutex>
+#include <deque>
+#include <memory>
+#include <semaphore>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"
@@ -27,7 +31,7 @@ void QueryManager::addQuery(size_t query_id, const std::string& table_name, Quer
   query_counter.fetch_add(1);
 
   {
-    std::lock_guard lock(table_map_mutex);
+    const std::scoped_lock lock(table_map_mutex);
 
     // Create table structures if this is the first query for this table
     if (!table_query_map.contains(table_name))
@@ -71,7 +75,7 @@ void QueryManager::waitForCompletion()
 
   // Release all semaphores to wake up threads
   {
-    std::lock_guard lock(table_map_mutex);
+    const std::scoped_lock lock(table_map_mutex);
     for (auto& sem_pair : table_query_sem)
     {
       sem_pair.second->release();
@@ -95,7 +99,7 @@ void QueryManager::shutdown()
 
   // Release all semaphores to wake up threads
   {
-    std::lock_guard lock(table_map_mutex);
+    const std::scoped_lock lock(table_map_mutex);
     for (auto& sem_pair : table_query_sem)
     {
       sem_pair.second->release();
@@ -111,7 +115,7 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
     // Get semaphore pointer while holding lock to avoid race
     std::counting_semaphore<>* sem_ptr = nullptr;
     {
-      std::lock_guard lock(manager->table_map_mutex);
+      const std::scoped_lock lock(manager->table_map_mutex);
       auto sem_iter = manager->table_query_sem.find(table_name);
       if (sem_iter == manager->table_query_sem.end())
       {
@@ -134,7 +138,7 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
     // Get the next query for this table
     QueryEntry query_entry{};
     {
-      std::lock_guard lock(manager->table_map_mutex);
+      const std::scoped_lock lock(manager->table_map_mutex);
 
       auto& queue = manager->table_query_map[table_name];
       if (queue.empty())

@@ -10,6 +10,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <span>
 #include <string>
 #include <thread>
@@ -81,24 +82,6 @@ void parseArgs(int argc, char** argv, Args& args)
     {
       (void)arg;
     }
-  }
-}
-
-void validateAndPrintThreads(std::int64_t threads)
-{
-  if (threads < 0)
-  {
-    (void)threads;
-    std::exit(-1);
-  }
-  else if (threads == 0)
-  {
-    // @TODO Auto detect the thread num
-    (void)threads;
-  }
-  else
-  {
-    (void)threads;
   }
 }
 
@@ -268,8 +251,6 @@ int main(int argc, char* argv[])
 #endif
 
   std::istream& input_stream = *input;
-
-  validateAndPrintThreads(parsedArgs.threads);
 
   QueryParser parser;
   setupParser(parser);
