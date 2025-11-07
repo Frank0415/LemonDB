@@ -56,3 +56,63 @@ void QueryManager::setExpectedQueryCount(size_t count)
   expected_query_count.store(count);
   // std::cerr << "[QueryManager] Expected query count set to: " << count << "\n";
 }
+
+void QueryManager::waitForCompletion()
+{
+  const size_t expected = expected_query_count.load();
+  // std::cerr << "[QueryManager] Waiting for " << expected << " queries to complete...\n";
+
+  constexpr int poll_interval_ms = 10;
+
+  // Wait until all queries have been executed and results added to OutputPool
+  while (completed_query_count.load() < expected)
+  {
+    // std::cerr << "[QueryManager] Progress: " << completed_query_count.load() << "/" << expected
+    //           << " queries completed\n";
+    std::this_thread::sleep_for(std::chrono::milliseconds(poll_interval_ms));
+  }
+
+  // std::cerr << "[QueryManager] All " << expected << " queries completed!\n";
+  // std::cerr << "[QueryManager] Signaling all table threads to shutdown\n";
+
+  // Signal shutdown flag
+  is_end.store(true);
+
+  // Release all semaphores to wake up table threads so they can exit
+  {
+    std::lock_guard lock(table_map_mutex);
+    for (auto& sem_pair : table_query_sem)
+    {
+      // std::cerr << "[QueryManager] Releasing semaphore for table: " << sem_pair.first << "\n";
+      sem_pair.second->release();
+    }
+  }
+
+  // Join all table execution threads
+  // std::cerr << "[QueryManager] Joining " << table_threads.size() << " table threads\n";
+  for (auto& thread : table_threads)
+  {
+    if (thread.joinable())
+    {
+      // std::cerr << "[QueryManager] Joining a table thread...\n";
+      thread.join();
+      // std::cerr << "[QueryManager] Table thread joined\n";
+    }
+  }
+
+  // std::cerr << "[QueryManager] All table threads completed\n";
+}
+
+void QueryManager::shutdown()
+{
+  is_end.store(true);
+
+  // Release all semaphores to wake up threads
+  {
+    std::lock_guard lock(table_map_mutex);
+    for (auto& sem_pair : table_query_sem)
+    {
+      sem_pair.second->release();
+    }
+  }
+}
