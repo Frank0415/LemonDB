@@ -48,7 +48,73 @@ private:
   // Map: table_name → counting_semaphore (tracks available queries in queue)
   std::unordered_map<std::string, std::unique_ptr<std::counting_semaphore<>>> table_query_sem;
 
+  // Protects table_query_map and table_query_sem
+  mutable std::mutex table_map_mutex;
 
+  // ============ Lifecycle Management ============
+  std::vector<std::thread> table_threads;
+
+  std::atomic<bool> is_end{false};
+  std::atomic<bool> read_end{false};
+  std::atomic<size_t> query_counter{0};
+  std::atomic<size_t> expected_query_count{0};
+  std::atomic<size_t> completed_query_count{0};
+
+  // Reference to OutputPool (passed in constructor, not owned)
+  OutputPool& output_pool;
+  size_t printed_count{0};
+
+  // ============ Static Thread Functions ============
+  /**
+   * Execute queries for a specific table
+   * Runs in a per-table thread
+   */
+  static void executeQueryForTable(QueryManager* manager, const std::string& table_name);
+
+  /**
+   * Print results in order
+   * Runs in a dedicated print thread
+   */
+  static void printResults(QueryManager* manager);
+
+public:
+  QueryManager() = delete;
+
+  // Explicit constructor taking OutputPool reference
+  explicit QueryManager(OutputPool& pool) : output_pool(pool)
+  {
+  }
+
+  // Deleted copy/move operations
+  QueryManager(const QueryManager&) = delete;
+  QueryManager& operator=(const QueryManager&) = delete;
+  QueryManager(QueryManager&&) = delete;
+  QueryManager& operator=(QueryManager&&) = delete;
+
+  ~QueryManager();
+
+  /**
+   * Submit a query to the appropriate table queue
+   * Creates table's execution thread if needed
+   * Does NOT block - returns immediately
+   */
+  void addQuery(size_t query_id, const std::string& table_name, Query* query_ptr);
+
+  /**
+   * Set the expected number of queries (to know when all are done)
+   */
+  void setExpectedQueryCount(size_t count);
+
+  /**
+   * Wait for all queries to be executed
+   * Blocks main thread until all table threads complete
+   */
+  void waitForCompletion();
+
+  /**
+   * Shutdown and cleanup
+   */
+  void shutdown();
 };
 
 #endif // PROJECT_QUERY_MANAGER_H
