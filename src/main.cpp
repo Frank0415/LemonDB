@@ -2,38 +2,28 @@
 // Created by liu on 18-10-21.
 //
 
-#include <algorithm>
 #include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <fstream>
-#include <future>
-#include <getopt.h>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
-#include <vector>
+#include <thread>
 
 #include "db/Database.h"
+#include "db/QueryBase.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
-#include "threading/Collector.h"
+#include "query/management/CopyTableQuery.h"
+#include "query/management/WaitQuery.h"
+#include "threading/OutputPool.h"
+#include "threading/QueryManager.h"
 #include "threading/Threadpool.h"
-#include <unistd.h>
-
-#include "query/Query.h"
-
-#ifdef __has_feature
-#if __has_feature(memory_sanitizer)
-#define LEMONDB_WITH_MSAN 1
-#endif
-#endif
-#ifdef __SANITIZE_MEMORY__
-#define LEMONDB_WITH_MSAN 1
-#endif
 
 namespace
 {
@@ -43,55 +33,63 @@ struct Args
   std::int64_t threads = 0;
 };
 
-void parseArgs(int argc, char* argv[], Args& args)
+void parseArgs(int argc, char** argv, Args& args)
 {
-  const option longOpts[] = {{"listen", required_argument, nullptr, 'l'},
-                             {"threads", required_argument, nullptr, 't'},
-                             {nullptr, no_argument, nullptr, 0}};
-  const char* shortOpts = "l:t:";
-  int opt = 0;
-  int longIndex = 0;
-  while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
+  // Manual argument parser supporting both long and short forms
+  // --listen=<file> or --listen <file> or -l <file>
+  // --threads=<num> or --threads <num> or -t <num>
+
+  constexpr size_t listen_prefix_len = 9;   // Length of "--listen="
+  constexpr size_t threads_prefix_len = 10; // Length of "--threads="
+  constexpr int decimal_base = 10;
+
+  for (int i = 1; i < argc; ++i)
   {
-    if (opt == 'l')
+    const std::string arg(
+        std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
+
+    // Helper lambda to get next argument value
+    auto getNextArg = [&]() -> std::string
     {
-      args.listen = optarg;
+      if (i + 1 < argc)
+      {
+        ++i;
+        return {std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]};
+      }
+      (void)arg;
+      std::exit(-1);
+    };
+
+    // Handle --listen=<value> or --listen <value>
+    if (arg.starts_with("--listen="))
+    {
+      args.listen = arg.substr(listen_prefix_len);
     }
-    else if (opt == 't')
+    else if (arg == "--listen" || arg == "-l")
     {
-      constexpr int decimal_base = 10;
-      args.threads = std::strtol(optarg, nullptr, decimal_base);
+      args.listen = getNextArg();
+    }
+    // Handle --threads=<value> or --threads <value>
+    else if (arg.starts_with("--threads="))
+    {
+      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(), nullptr, decimal_base);
+    }
+    else if (arg == "--threads" || arg == "-t")
+    {
+      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
+      (void)arg;
     }
-  }
-}
-
-void validateAndPrintThreads(std::int64_t threads)
-{
-  if (threads < 0)
-  {
-    std::cerr << "lemondb: error: threads num can not be negative value " << threads << '\n';
-    std::exit(-1);
-  }
-  else if (threads == 0)
-  {
-    // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num" << '\n';
-  }
-  else
-  {
-    std::cerr << "lemondb: info: running in " << threads << " threads" << '\n';
   }
 }
 
 void setupParser(QueryParser& parser)
 {
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  parser.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
 }
 
 std::string extractQueryString(std::istream& input_stream)
@@ -100,15 +98,111 @@ std::string extractQueryString(std::istream& input_stream)
   while (true)
   {
     const int character = input_stream.get();
-    if (character == ';')
+    if (character == ';') [[likely]]
     {
       return buf;
     }
-    if (character == EOF)
+    if (character == EOF) [[unlikely]]
     {
       throw std::ios_base::failure("End of input");
     }
     buf.push_back(static_cast<char>(character));
+  }
+}
+
+void handleCopyTable(QueryManager& query_manager,
+                     const std::string& trimmed,
+                     const std::string& table_name,
+                     CopyTableQuery* copy_query)
+{
+  if (copy_query != nullptr)
+  {
+    auto wait_sem = copy_query->getWaitSemaphore();
+    constexpr size_t copytable_prefix_len = 9;
+    auto new_table_name = trimmed.substr(copytable_prefix_len); // Skip "COPYTABLE"
+    // Extract new table name - it's after first whitespace(s) and the source table
+    size_t space_pos = new_table_name.find_first_not_of(" \t");
+    if (space_pos != std::string::npos)
+    {
+      new_table_name = new_table_name.substr(space_pos);
+      space_pos = new_table_name.find_first_of(" \t");
+      if (space_pos != std::string::npos)
+      {
+        new_table_name = new_table_name.substr(space_pos);
+        space_pos = new_table_name.find_first_not_of(" \t;");
+        if (space_pos != std::string::npos)
+        {
+          new_table_name = new_table_name.substr(space_pos);
+          space_pos = new_table_name.find_first_of(" \t;");
+          if (space_pos != std::string::npos)
+          {
+            new_table_name = new_table_name.substr(0, space_pos);
+          }
+        }
+      }
+    }
+
+    // Submit a WaitQuery to the new table's queue BEFORE the COPYTABLE query
+    // NOTE: WaitQuery uses a special ID (0) since it's not a user query
+    const size_t wait_query_id = 0; // Special ID for WaitQuery - not counted as user query
+    auto wait_query = std::make_unique<WaitQuery>(table_name, wait_sem);
+    query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
+  }
+}
+
+void processQueries(std::istream& input_stream,
+                    const Database& database,
+                    QueryParser& parser,
+                    QueryManager& query_manager,
+                    std::atomic<size_t>& g_query_counter)
+{
+  while (input_stream && !database.isEnd()) [[likely]]
+  {
+    try
+    {
+      const std::string queryStr = extractQueryString(input_stream);
+
+      Query::Ptr query = parser.parseQuery(queryStr);
+
+      // Use a case-insensitive check for "QUIT"
+      std::string trimmed = queryStr;
+      // Trim leading whitespace
+      const size_t start = trimmed.find_first_not_of(" \t\n\r");
+      if (start != std::string::npos)
+      {
+        trimmed = trimmed.substr(start);
+      }
+
+      if (query->isInstant() && trimmed.starts_with("QUIT"))
+      {
+        // Don't submit QUIT query - just break the loop
+        break;
+      }
+
+      const size_t query_id = g_query_counter.fetch_add(1) + 1;
+
+      // Get the target table for this query
+      const std::string table_name = query->targetTableRef();
+
+      // Handle COPYTABLE specially: add WaitQuery to the new table's queue
+      if (trimmed.starts_with("COPYTABLE"))
+      {
+        auto* copy_query = dynamic_cast<CopyTableQuery*>(query.get());
+        handleCopyTable(query_manager, trimmed, table_name, copy_query);
+      }
+
+      // Submit query to manager (async - doesn't block)
+      // Manager will create per-table thread if needed
+      query_manager.addQuery(query_id, table_name, query.release());
+    }
+    catch (const std::ios_base::failure& exc)
+    {
+      break;
+    }
+    catch (const std::exception& exc)
+    {
+      (void)exc;
+    }
   }
 }
 } // namespace
@@ -116,19 +210,20 @@ std::string extractQueryString(std::istream& input_stream)
 int main(int argc, char* argv[])
 {
   std::ios_base::sync_with_stdio(true);
+  std::ios_base::sync_with_stdio(true);
 
   Args parsedArgs{};
   parseArgs(argc, argv, parsedArgs);
 
   std::ifstream fin;
   std::istream* input = &std::cin;
-  if (!parsedArgs.listen.empty())
+  if (!parsedArgs.listen.empty()) [[unlikely]]
   {
-    fin.open(parsedArgs.listen);
-    if (!fin.is_open())
+    fin = std::ifstream(parsedArgs.listen);
+    if (!fin.is_open()) [[unlikely]]
     {
       std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
-      exit(-1);
+      std::exit(-1);
     }
     input = &fin;
   }
@@ -157,45 +252,26 @@ int main(int argc, char* argv[])
 
   std::istream& input_stream = *input;
 
-  validateAndPrintThreads(parsedArgs.threads);
-
   QueryParser parser;
   setupParser(parser);
 
-  // Main loop: SEQUENTIAL query execution
-  // Each query runs to completion before the next one starts
-  // (but queries can use ThreadPool internally for parallelism)
-  Database& database = Database::getInstance();
+  // Main loop: ASYNC query submission with table-level parallelism
+  const Database& database = Database::getInstance();
 
-  QueryResultCollector g_result_collector;
+  // Create OutputPool (not a global singleton - passed by reference)
+  OutputPool output_pool;
+
+  // Create QueryManager with reference to OutputPool
+  QueryManager query_manager(output_pool);
+
   std::atomic<size_t> g_query_counter{0};
 
-  while (input_stream && !database.isEnd())
-  {
-    try
-    {
-      std::string queryStr = extractQueryString(input_stream);
+  processQueries(input_stream, database, parser, query_manager, g_query_counter);
 
-      Query::Ptr query = parser.parseQuery(queryStr);
-
-      size_t query_id = g_query_counter.fetch_add(1) + 1;
-
-      // ALL queries execute synchronously one after another
-      // This ensures no data races between queries
-      executeQueryAsync(std::move(query), query_id, g_result_collector);
-    }
-    catch (const std::ios_base::failure& e)
-    {
-      break;
-    }
-    catch (const std::exception& e)
-    {
-      std::cerr << "Error parsing query: " << e.what() << '\n';
-    }
-  }
-
-  // Output all results in order
-  g_result_collector.outputAllResults();
+  const size_t total_queries = g_query_counter.load();
+  query_manager.setExpectedQueryCount(total_queries);
+  query_manager.waitForCompletion();
+  output_pool.outputAllResults();
 
   return 0;
 }

@@ -9,27 +9,29 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../../utils/formatter.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/TableLockManager.h"
+#include "utils/formatter.h"
+#include "query/QueryResult.h"
 
 QueryResult::Ptr DumpTableQuery::execute()
 {
   const auto& database = Database::getInstance();
   try
   {
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
     std::ofstream outfile(this->fileName);
-    if (!outfile.is_open())
+    if (!outfile.is_open()) [[unlikely]]
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
-    outfile << database[this->targetTable];
+    outfile << database[this->targetTableRef()];
     outfile.close();
-    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 

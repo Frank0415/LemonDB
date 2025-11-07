@@ -32,7 +32,7 @@ protected:
 
 class FailedQueryResult : public QueryResult
 {
-  const std::string data;
+  std::string data;
 
 public:
   bool success() override
@@ -148,7 +148,7 @@ protected:
 
 class RecordCountResult : public SucceededQueryResult
 {
-  const int affectedRows;
+  int affectedRows;
 
 public:
   bool display() override

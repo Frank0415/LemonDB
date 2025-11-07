@@ -1,11 +1,16 @@
 #include "CountQuery.h"
 
+#include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
@@ -15,61 +20,59 @@ QueryResult::Ptr CountQuery::execute()
   // Use a try-catch block to handle potential exceptions gracefully
   try
   {
-    // According to the PDF, COUNT should not have any operands
-    if (!this->operands.empty())
+    // Validate operands
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr) [[unlikely]]
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "COUNT query does not take any operands.");
+      return validation_result;
     }
 
     // Get a reference to the database singleton instance
     Database& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
     // Access the target table using the table name
-    Table& table = database[this->targetTable];
+    Table& table = database[this->targetTableRef()];
 
     // Initialize the WHERE clause condition. The 'second' member of the
     // returned pair is a flag indicating if the condition can ever be true.
     auto condition = this->initCondition(table);
 
-    // Initialize a counter for the records that match the condition
-    int record_count = 0;
-
     // An optimization: only proceed with iteration if the condition isn't
     // always false (e.g., WHERE (KEY = "a") (KEY = "b"))
-    if (condition.second)
+    if (!condition.second) [[unlikely]]
     {
-      // Iterate through each row (record) in the table
-      for (const auto& row : table)
-      {
-        // Evaluate the WHERE clause for the current row.
-        // If there's no WHERE clause, evalCondition returns true.
-        if (this->evalCondition(row))
-        {
-          // If the condition is met, increment the counter
-          record_count++;
-        }
-      }
+      return std::make_unique<TextRowsResult>("ANSWER = 0\n");
     }
 
-    // According to p2.pdf, the output format is "ANSWER = <numRecords>".
-    // We use TextRowsResult to format this string and ensure it's printed to
-    // standard output, as its display() method returns true.
-    return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(record_count) + "\n");
+    // Check if ThreadPool is available and has multiple threads
+    if (!ThreadPool::isInitialized()) [[unlikely]]
+    {
+      return executeSingleThreaded(table);
+    }
+
+    const ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
+    {
+      return executeSingleThreaded(table);
+    }
+
+    // Multi-threaded execution
+    return executeMultiThreaded(table);
   }
   catch (const TableNameNotFound& e)
   {
     // If the specified table does not exist, return an error message
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Table not found.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Table not found.");
   }
   catch (const IllFormedQueryCondition& e)
   {
     // Handle errors in the WHERE clause, e.g., invalid field name
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::exception& e)
   {
     // Catch any other standard exceptions and return a generic error message
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
 }
 
@@ -77,5 +80,76 @@ QueryResult::Ptr CountQuery::execute()
 std::string CountQuery::toString()
 {
   // Returns a string representation of the query, useful for debugging.
-  return "QUERY = COUNT, Table = " + this->targetTable;
+  return "QUERY = COUNT, Table = " + this->targetTableRef();
+}
+
+[[nodiscard]] QueryResult::Ptr CountQuery::validateOperands() const
+{
+  if (!this->getOperands().empty()) [[unlikely]]
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "COUNT query does not take any operands.");
+  }
+  return nullptr;
+}
+
+[[nodiscard]] QueryResult::Ptr CountQuery::executeSingleThreaded(Table& table)
+{
+  int record_count = 0;
+
+  for (auto row : table) [[likely]]
+  {
+    if (this->evalCondition(row)) [[likely]]
+    {
+      record_count++;
+    }
+  }
+
+  return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(record_count) + "\n");
+}
+
+[[nodiscard]] QueryResult::Ptr CountQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  int total_count = 0;
+
+  // Create chunks and submit tasks
+  std::vector<std::future<int>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end()) [[likely]]
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_begin, chunk_end]()
+        {
+          int local_count = 0;
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
+          {
+            if (this->evalCondition(*iter)) [[likely]]
+            {
+              local_count++;
+            }
+          }
+          return local_count;
+        }));
+  }
+
+  // Combine results from all threads
+  for (auto& future : futures) [[likely]]
+  {
+    total_count += future.get();
+  }
+
+  return std::make_unique<TextRowsResult>("ANSWER = " + std::to_string(total_count) + "\n");
 }

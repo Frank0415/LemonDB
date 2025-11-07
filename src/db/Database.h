@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <memory>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
@@ -24,6 +25,16 @@ private:
    * The map of tableName -> table unique ptr
    */
   std::unordered_map<std::string, Table::Ptr> tables;
+
+  /**
+   * Mutex to protect the tables map
+   */
+  mutable std::shared_mutex tablesMutex;
+
+  /**
+   * Mutex to protect the fileTableNameMap
+   */
+  mutable std::shared_mutex fileTableNameMutex;
 
   /**
    * The map of fileName -> tableName

@@ -14,6 +14,7 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -21,48 +22,50 @@
 QueryResult::Ptr InsertQuery::execute()
 {
   const int DECIMAL_BASE = 10;
-  using std::string_literals::operator""s;
-  if (this->operands.empty())
+  if (this->getOperands().empty()) [[unlikely]]
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "No operand (? operands)."_f % operands.size());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
+                                            "No operand (? operands)."_f % getOperands().size());
   }
+
   Database& database = Database::getInstance();
   try
   {
-    auto& table = database[this->targetTable];
-    auto& key = this->operands.front();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
+    const auto& key = this->getOperands().front();
     std::vector<Table::ValueType> data;
-    data.reserve(this->operands.size() - 1);
-    for (auto it = ++this->operands.begin(); it != this->operands.end(); ++it)
+    data.reserve(this->getOperands().size() - 1);
+    for (auto it = ++this->getOperands().begin(); it != this->getOperands().end(); ++it) [[likely]]
     {
       data.emplace_back(strtol(it->c_str(), nullptr, DECIMAL_BASE));
     }
     table.insertByIndex(key, std::move(data));
-    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                            "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string InsertQuery::toString()
 {
-  return "QUERY = INSERT " + this->targetTable + "\"";
+  return "QUERY = INSERT " + this->targetTableRef();
 }

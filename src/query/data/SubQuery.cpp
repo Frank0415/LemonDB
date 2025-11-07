@@ -2,81 +2,177 @@
 
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 QueryResult::Ptr SubQuery::execute()
 {
-  using std::string_literals::operator""s;
   try
   {
-    if (this->operands.size() < 2)
+    auto validationResult = validateOperands();
+    if (validationResult != nullptr) [[unlikely]]
     {
-      return std::make_unique<ErrorMsgResult>(
-          qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+      return validationResult;
     }
     auto& database = Database::getInstance();
-    auto& table = database[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
-      // No valid conditions, return 0
       return std::make_unique<RecordCountResult>(0);
     }
-    // Lookup
-    int count = 0;
 
-    for (auto it = table.begin(); it != table.end(); ++it)
+    auto indices = getFieldIndices(table);
+
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
-      if (!this->evalCondition(*it))
-      {
-        continue;
-      }
-      // perform SUB operation
-      int diff = (*it)[table.getFieldIndex(this->operands[0])];
-      for (size_t i = 1; i < this->operands.size() - 1; ++i)
-      {
-        auto fieldIndex = table.getFieldIndex(this->operands[i]);
-        diff -= (*it)[fieldIndex];
-      }
-      (*it)[table.getFieldIndex(this->operands.back())] = diff;
-      count++;
+      return executeSingleThreaded(table, indices);
     }
-    return std::make_unique<RecordCountResult>(count);
+
+    const ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
+    {
+      return executeSingleThreaded(table, indices);
+    }
+
+    return executeMultiThreaded(table, indices);
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("Key not found."));
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                            "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string SubQuery::toString()
 {
-  return "QUERY = SUB TABLE \"" + this->targetTable + "\"";
+  return "QUERY = SUB TABLE \"" + this->targetTableRef() + "\"";
+}
+
+[[nodiscard]] QueryResult::Ptr SubQuery::validateOperands() const
+{
+  if (this->getOperands().size() < 2) [[unlikely]]
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                getOperands().size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> SubQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> indices;
+  indices.reserve(this->getOperands().size());
+  for (const auto& operand : this->getOperands()) [[likely]]
+  {
+    indices.push_back(table.getFieldIndex(operand));
+  }
+  return indices;
+}
+
+[[nodiscard]] QueryResult::Ptr
+SubQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  int count = 0;
+
+  for (auto row : table) [[likely]]
+  {
+    if (!this->evalCondition(row)) [[unlikely]]
+    {
+      continue;
+    }
+    // perform SUB operation
+    int diff = row[fids[0]];
+    for (size_t idx = 1; idx < this->getOperands().size() - 1; ++idx) [[likely]]
+    {
+      diff -= row[fids[idx]];
+    }
+    row[fids.back()] = diff;
+    count++;
+  }
+  return std::make_unique<RecordCountResult>(count);
+}
+
+[[nodiscard]] QueryResult::Ptr
+SubQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<int>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end()) [[likely]]
+  {
+    auto chunk_start = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+    futures.push_back(pool.submit(
+        [this, chunk_start, chunk_end, fids]()
+        {
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
+          {
+            if (!this->evalCondition(*it)) [[unlikely]]
+            {
+              continue;
+            }
+            // perform SUB operation
+            int diff = (*it)[fids[0]];
+            for (size_t i = 1; i < this->getOperands().size() - 1; ++i) [[likely]]
+            {
+              diff -= (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = diff;
+            local_count++;
+          }
+          return local_count;
+        }));
+  }
+
+  // Wait for all tasks to complete and aggregate results
+  int total_count = 0;
+  for (auto& future : futures) [[likely]]
+  {
+    total_count += future.get();
+  }
+  return std::make_unique<RecordCountResult>(total_count);
 }

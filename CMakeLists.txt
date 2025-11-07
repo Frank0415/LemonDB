@@ -90,10 +90,16 @@ target_compile_options(lemondb_lib PRIVATE
     ${LEMONDB_COMMON_COMPILE_OPTIONS}
 )
 
-# Options to build sanitizer variants (ASAN/MSAN/UBSAN)
+# Options to build sanitizer variants (ASAN/MSAN/UBSAN/TSAN)
 option(ENABLE_ASAN "Build AddressSanitizer instrumented binaries" OFF)
 option(ENABLE_MSAN "Build MemorySanitizer instrumented binaries" OFF)
 option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF)
+option(ENABLE_TSAN "Build ThreadSanitizer instrumented binaries" OFF)
+
+# Profiling options
+option(ENABLE_GPROF "Enable GProf profiling" OFF)
+option(ENABLE_CALLGRIND "Enable Callgrind-compatible profiling" OFF)
+option(ENABLE_GPERFTOOLS "Enable gperftools (Google profiler) support" OFF)
 
 if(ENABLE_ASAN)
     message(STATUS "Configuring ASAN build targets")
@@ -143,6 +149,59 @@ if(ENABLE_UBSAN)
     target_link_libraries(lemondb_ubsan PRIVATE lemondb_lib_ubsan)
     target_compile_options(lemondb_ubsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_UBSAN_FLAGS})
     target_link_options(lemondb_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
+endif()
+
+if(ENABLE_TSAN)
+    message(STATUS "Configuring TSAN build targets")
+    set(LEMONDB_TSAN_FLAGS -fsanitize=thread -g)
+    add_library(lemondb_lib_tsan STATIC ${LIB_SOURCES})
+    target_include_directories(lemondb_lib_tsan PUBLIC ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(lemondb_lib_tsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_TSAN_FLAGS})
+    target_link_options(lemondb_lib_tsan PRIVATE ${LEMONDB_TSAN_FLAGS})
+
+    add_executable(lemondb_tsan ${MAIN_SOURCES})
+    target_link_libraries(lemondb_tsan PRIVATE lemondb_lib_tsan)
+    target_compile_options(lemondb_tsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_TSAN_FLAGS})
+    target_link_options(lemondb_tsan PRIVATE ${LEMONDB_TSAN_FLAGS})
+endif()
+
+# Profiling flags
+set(PROFILING_FLAGS "")
+if(ENABLE_GPROF)
+    list(APPEND PROFILING_FLAGS -pg)
+endif()
+if(ENABLE_CALLGRIND OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND PROFILING_FLAGS -g)
+endif()
+if(ENABLE_GPERFTOOLS)
+    list(APPEND PROFILING_FLAGS -g)
+    # try to link profiler library for convenience when enabled
+    find_library(GPERFTOOLS_PROFILER profiler)
+    if(GPERFTOOLS_PROFILER)
+        target_link_libraries(lemondb_lib PUBLIC ${GPERFTOOLS_PROFILER})
+    endif()
+endif()
+
+# Apply profiling flags to main targets
+target_compile_options(lemondb_lib PRIVATE ${PROFILING_FLAGS})
+target_compile_options(lemondb PRIVATE ${PROFILING_FLAGS})
+
+# Also apply to sanitizer variants if profiling is enabled
+if(ENABLE_ASAN)
+    target_compile_options(lemondb_lib_asan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_asan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_MSAN)
+    target_compile_options(lemondb_lib_msan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_msan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_UBSAN)
+    target_compile_options(lemondb_lib_ubsan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_ubsan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_TSAN)
+    target_compile_options(lemondb_lib_tsan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_tsan PRIVATE ${PROFILING_FLAGS})
 endif()
 
 # Google Test Setup

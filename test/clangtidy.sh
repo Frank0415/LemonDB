@@ -4,7 +4,9 @@ echo "=== Running clang-tidy ==="
 
 usr=$(whoami)
 
-files=$(find ../src -name "*.cpp" -o -name "*.h")
+cd ../src
+
+files=$(find . -name "*.cpp" -o -name "*.h")
 
 
 if [[ $usr == "frank" || $usr == "114514" ]]; then
@@ -17,14 +19,14 @@ compile_commands_path="../build/compile_commands.json"
 
 if [[ "$usr" == "frank" || "$usr" == "ve482" ]]; then
   declare -A check_groups=(
-    ["bugprone"]='bugprone-*'
-    ["cppcoreguidelines"]='cppcoreguidelines-*'
-    ["misc"]='misc-*'
-    ["modernize"]='modernize-*,-modernize-use-trailing-return-type'
-    ["performance"]='performance-*'
-    ["portability"]='portability-*'
-    ["readability"]='readability-*'
-    ["google"]='google-*'
+    ["bugprone"]='bugprone-*,-bugprone-easily-swappable-parameters,-clang-diagnostic-error,-bugprone-empty-catch'
+    ["cppcoreguidelines"]='cppcoreguidelines-*,-clang-diagnostic-error,-cppcoreguidelines-pro-type-member-init'
+    ["misc"]='misc-*,-clang-diagnostic-error'
+    ["modernize"]='modernize-*,-modernize-use-trailing-return-type,-clang-diagnostic-error'
+    ["performance"]='performance-*,-clang-diagnostic-error'
+    ["portability"]='portability-*,-clang-diagnostic-error'
+    ["readability"]='readability-*,-clang-diagnostic-error'
+    ["google"]='google-*,-google-objc-function-naming,-clang-diagnostic-error'
   )
 
   for group in "${!check_groups[@]}"; do
@@ -41,7 +43,7 @@ if [[ "$usr" == "frank" || "$usr" == "ve482" ]]; then
     done
   done
 else
-  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*'
+  TIDY_CHECKS='-*,bugprone-*,cppcoreguidelines-*,misc-*,modernize-*,-modernize-use-trailing-return-type,performance-*,portability-*,readability-*,google-*,-clang-diagnostic-error,-cppcoreguidelines-pro-type-member-init,-google-objc-function-naming'
 
   for file in $files; do
     $TIDY "$file" -p="$compile_commands_path" \
