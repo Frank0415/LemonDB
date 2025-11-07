@@ -166,6 +166,62 @@ void handleCopyTable(QueryManager& query_manager,
     query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
   }
 }
+
+void processQueries(std::istream& input_stream,
+                    const Database& database,
+                    QueryParser& parser,
+                    QueryManager& query_manager,
+                    std::atomic<size_t>& g_query_counter)
+{
+  while (input_stream && !database.isEnd()) [[likely]]
+  {
+    try
+    {
+      const std::string queryStr = extractQueryString(input_stream);
+
+      Query::Ptr query = parser.parseQuery(queryStr);
+
+      // Use a case-insensitive check for "QUIT"
+      std::string trimmed = queryStr;
+      // Trim leading whitespace
+      size_t start = trimmed.find_first_not_of(" \t\n\r");
+      if (start != std::string::npos)
+      {
+        trimmed = trimmed.substr(start);
+      }
+
+      if (query->isInstant() && trimmed.find("QUIT") == 0)
+      {
+        // Don't submit QUIT query - just break the loop
+        break;
+      }
+
+      const size_t query_id = g_query_counter.fetch_add(1) + 1;
+
+      // Get the target table for this query
+      const std::string table_name = query->targetTableRef();
+
+      // Handle COPYTABLE specially: add WaitQuery to the new table's queue
+      if (trimmed.find("COPYTABLE") == 0)
+      {
+        auto* copy_query = dynamic_cast<CopyTableQuery*>(query.get());
+        handleCopyTable(query_manager, trimmed, table_name, copy_query);
+      }
+
+      // Submit query to manager (async - doesn't block)
+      // Manager will create per-table thread if needed
+      query_manager.addQuery(query_id, table_name, query.release());
+    }
+    catch (const std::ios_base::failure& exc)
+    {
+      break;
+    }
+    catch (const std::exception& exc)
+    {
+      std::cerr << "Error parsing query: " << exc.what() << '\n';
+    }
+  }
+}
 } // namespace
 
 int main(int argc, char* argv[])
