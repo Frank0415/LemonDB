@@ -82,19 +82,24 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 
 bool ComplexQuery::evalCondition(const Table::Object& object)
 {
-  bool ret = true;
   for (const auto& cond : condition)
   {
     if (cond.field != "KEY")
     {
-      ret = ret && cond.comp(object[cond.fieldId], cond.valueParsed);
+      if (!cond.comp(object[cond.fieldId], cond.valueParsed))
+      {
+        return false;
+      }
     }
     else
     {
-      ret = ret && (object.key() == cond.value);
+      if (object.key() != cond.value)
+      {
+        return false;
+      }
     }
   }
-  return ret;
+  return true;
 }
 
 bool ComplexQuery::testKeyCondition(Table& table,
