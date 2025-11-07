@@ -116,3 +116,61 @@ void QueryManager::shutdown()
     }
   }
 }
+
+void QueryManager::executeQueryForTable(QueryManager* manager, const std::string& table_name)
+{
+  // std::cerr << "[QueryManager] Table thread started for '" << table_name << "'\n";
+
+  while (!manager->is_end.load())
+  {
+    // Block until a query is available for this table
+    manager->table_query_sem[table_name]->acquire();
+
+    // Check if shutdown was signaled
+    if (manager->is_end.load())
+    {
+      // std::cerr << "[QueryManager] Table '" << table_name << "' thread exiting (shutdown)\n";
+      break;
+    }
+
+    // Get the next query for this table
+    QueryEntry query_entry{};
+    {
+      std::lock_guard lock(manager->table_map_mutex);
+
+      auto& queue = manager->table_query_map[table_name];
+      if (queue.empty())
+      {
+        // Spurious wakeup or shutdown - continue
+        // std::cerr << "[QueryManager] WARNING: Queue empty after acquire for '" << table_name
+        //           << "' - spurious wakeup\n";
+        continue;
+      }
+
+      query_entry = queue.front();
+      queue.pop_front();
+
+      // std::cerr << "[QueryManager] Dequeued query " << query_entry.query_id << " from table '"
+      //           << table_name << "', remaining in queue: " << queue.size() << "\n";
+    }
+
+    const size_t query_id = query_entry.query_id;
+    Query* query_ptr = query_entry.query_ptr;
+
+    // std::cerr << "[QueryManager] Executing query " << query_id << " for table '" << table_name
+    //           << "'\n";
+
+    // Execute the query
+    std::string result_str;
+    bool is_wait_query = false;
+    try
+    {
+      QueryResult::Ptr result = query_ptr->execute();
+
+      std::ostringstream oss;
+      if (result && result->display())
+      {
+        oss << *result;
+      }
+      result_str = oss.str();
+
