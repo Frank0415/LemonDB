@@ -18,7 +18,7 @@
 
 [[nodiscard]] QueryResult::Ptr DeleteQuery::execute()
 {
-  if (!this->getOperands().empty())
+  if (!this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
                                             "Invalid number of operands (? operands)."_f %
@@ -31,12 +31,12 @@
     auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     auto& table = database[this->targetTableRef()];
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table);
     }
