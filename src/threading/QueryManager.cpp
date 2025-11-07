@@ -1,9 +1,10 @@
 #include "QueryManager.h"
 
 #include <chrono>
+#include <cstddef>
 #include <exception>
-#include <iostream>
 #include <sstream>
+#include <string>
 #include <thread>
 
 #include "OutputPool.h"
@@ -119,7 +120,6 @@ void QueryManager::shutdown()
 
 void QueryManager::executeQueryForTable(QueryManager* manager, const std::string& table_name)
 {
-  // std::cerr << "[QueryManager] Table thread started for '" << table_name << "'\n";
 
   while (!manager->is_end.load())
   {
@@ -168,7 +168,8 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
     }
 
     const size_t query_id = query_entry.query_id;
-    Query* query_ptr = query_entry.query_ptr;
+    std::unique_ptr<Query> query_ptr(query_entry.query_ptr);
+    query_entry.query_ptr = nullptr;
 
     // std::cerr << "[QueryManager] Executing query " << query_id << " for table '" << table_name
     //           << "'\n";
@@ -208,8 +209,7 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
       }
     }
 
-    // Clean up query
-    delete query_ptr;
+    // Clean up query is handled by unique_ptr
 
     // Only store result and increment count if it's not a WaitQuery
     if (!is_wait_query)
@@ -221,12 +221,6 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
       manager->completed_query_count.fetch_add(1);
       // std::cerr << "[QueryManager] Completed queries: " << manager->completed_query_count.load()
       //           << "\n";
-    }
-    else
-    {
-      // std::cerr << "[QueryManager] WaitQuery result NOT queued for output (query " << query_id
-      //           << ")\n";
-      // std::cerr << "[QueryManager] WaitQuery does NOT increment completed count\n";
     }
   }
 

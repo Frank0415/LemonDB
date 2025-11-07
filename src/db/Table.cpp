@@ -5,6 +5,7 @@
 #include "Table.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <sstream>

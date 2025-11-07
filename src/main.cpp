@@ -55,7 +55,7 @@ void parseArgs(int argc, char** argv, Args& args)
         ++i;
         return {std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]};
       }
-      std::cerr << "lemondb: error: " << arg << " requires an argument\n";
+      (void)arg;
       std::exit(-1);
     };
 
@@ -79,7 +79,7 @@ void parseArgs(int argc, char** argv, Args& args)
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << arg << '\n';
+      (void)arg;
     }
   }
 }
@@ -88,17 +88,17 @@ void validateAndPrintThreads(std::int64_t threads)
 {
   if (threads < 0)
   {
-    std::cerr << "lemondb: error: threads num can not be negative value " << threads << '\n';
+    (void)threads;
     std::exit(-1);
   }
   else if (threads == 0)
   {
     // @TODO Auto detect the thread num
-    std::cerr << "lemondb: info: auto detect thread num" << '\n';
+    (void)threads;
   }
   else
   {
-    std::cerr << "lemondb: info: running in " << threads << " threads" << '\n';
+    (void)threads;
   }
 }
 
@@ -218,7 +218,7 @@ void processQueries(std::istream& input_stream,
     }
     catch (const std::exception& exc)
     {
-      std::cerr << "Error parsing query: " << exc.what() << '\n';
+      (void)exc;
     }
   }
 }
