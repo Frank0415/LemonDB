@@ -98,6 +98,58 @@
   return std::make_unique<RecordCountResult>(counter);
 }
 
+[[nodiscard]] QueryResult::Ptr DeleteQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<std::vector<Table::KeyType>>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end())
+  {
+    auto chunk_start = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE)
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+    futures.push_back(pool.submit(
+        [this, chunk_start, chunk_end]()
+        {
+          std::vector<Table::KeyType> local_keys;
+          for (auto it = chunk_start; it != chunk_end; ++it)
+          {
+            if (this->evalCondition(*it))
+            {
+              local_keys.push_back(it->key());
+            }
+          }
+          return local_keys;
+        }));
+  }
+
+  // Collect all keys from parallel tasks
+  std::vector<Table::KeyType> allKeysToDelete;
+  for (auto& future : futures)
+  {
+    auto keys = future.get();
+    allKeysToDelete.insert(allKeysToDelete.end(), keys.begin(), keys.end());
+  }
+
+  // Single-threaded deletion of all collected keys
+  Table::SizeType counter = 0;
+  for (const auto& key : allKeysToDelete)
+  {
+    table.deleteByIndex(key);
+    ++counter;
+  }
+
+  return std::make_unique<RecordCountResult>(counter);
+}
+
 std::string DeleteQuery::toString()
 {
   return "QUERY = DELETE " + this->targetTableRef() + "\"";
