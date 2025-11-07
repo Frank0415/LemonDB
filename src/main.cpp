@@ -10,17 +10,18 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <span>
 #include <string>
 #include <thread>
-#include <utility>
 
 #include "db/Database.h"
 #include "db/QueryBase.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
-#include "threading/Collector.h"
+#include "query/management/CopyTableQuery.h"
+#include "query/management/WaitQuery.h"
+#include "threading/OutputPool.h"
+#include "threading/QueryManager.h"
 #include "threading/Threadpool.h"
 
 namespace
@@ -178,12 +179,18 @@ int main(int argc, char* argv[])
   QueryParser parser;
   setupParser(parser);
 
-  // Main loop: SEQUENTIAL query execution
-  // Each query runs to completion before the next one starts
-  // (but queries can use ThreadPool internally for parallelism)
+  // Main loop: ASYNC query submission with table-level parallelism
+  // - Each table has its own execution thread
+  // - Queries for different tables execute in parallel
+  // - Results are buffered in OutputPool and printed at the end
   const Database& database = Database::getInstance();
 
-  QueryResultCollector g_result_collector;
+  // Create OutputPool (not a global singleton - passed by reference)
+  OutputPool output_pool;
+
+  // Create QueryManager with reference to OutputPool
+  QueryManager query_manager(output_pool);
+
   std::atomic<size_t> g_query_counter{0};
 
   while (input_stream && !database.isEnd())
@@ -192,13 +199,49 @@ int main(int argc, char* argv[])
     {
       const std::string queryStr = extractQueryString(input_stream);
 
-      Query::Ptr query = parser.parseQuery(queryStr);
 
       const size_t query_id = g_query_counter.fetch_add(1) + 1;
 
-      // ALL queries execute synchronously one after another
-      // This ensures no data races between queries
-      executeQueryAsync(std::move(query), query_id, g_result_collector);
+      // Get the target table for this query
+      const std::string table_name = query->targetTableRef();
+
+      // Handle COPYTABLE specially: add WaitQuery to the new table's queue
+      if (trimmed.find("COPYTABLE") == 0)
+      {
+        // Cast to CopyTableQuery to get the wait semaphore
+        auto* copy_query = dynamic_cast<CopyTableQuery*>(query.get());
+        if (copy_query != nullptr)
+        {
+          auto wait_sem = copy_query->getWaitSemaphore();
+          auto new_table_name = trimmed.substr(9);  // Skip "COPYTABLE"
+          // Extract new table name - it's after first whitespace(s) and the source table
+          size_t space_pos = new_table_name.find_first_not_of(" \t");
+          if (space_pos != std::string::npos)
+          {
+            new_table_name = new_table_name.substr(space_pos);
+            space_pos = new_table_name.find_first_of(" \t");
+            if (space_pos != std::string::npos)
+            {
+              new_table_name = new_table_name.substr(space_pos);
+              space_pos = new_table_name.find_first_not_of(" \t;");
+              if (space_pos != std::string::npos)
+              {
+                new_table_name = new_table_name.substr(space_pos);
+                space_pos = new_table_name.find_first_of(" \t;");
+                if (space_pos != std::string::npos)
+                {
+                  new_table_name = new_table_name.substr(0, space_pos);
+                }
+              }
+            }
+          }
+
+        }
+      }
+
+      // Submit query to manager (async - doesn't block)
+      // Manager will create per-table thread if needed
+      query_manager.addQuery(query_id, table_name, query.release());
     }
     catch (const std::ios_base::failure& e)
     {
@@ -210,8 +253,7 @@ int main(int argc, char* argv[])
     }
   }
 
-  // Output all results in order
-  g_result_collector.outputAllResults();
+
 
   return 0;
 }
