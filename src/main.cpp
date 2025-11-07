@@ -13,6 +13,7 @@
 #include <span>
 #include <string>
 #include <thread>
+#include <typeinfo>
 
 #include "db/Database.h"
 #include "db/QueryBase.h"
@@ -199,6 +200,30 @@ int main(int argc, char* argv[])
     {
       const std::string queryStr = extractQueryString(input_stream);
 
+      // std::cerr << "[Main] Parsed query string (length=" << queryStr.length() << "): '"
+      //           << queryStr << "'\n";
+
+      Query::Ptr query = parser.parseQuery(queryStr);
+
+      // Check if this is a QUIT query - need to check after trimming whitespace
+      // Use a case-insensitive check for "QUIT"
+      std::string trimmed = queryStr;
+      // Trim leading whitespace
+      size_t start = trimmed.find_first_not_of(" \t\n\r");
+      if (start != std::string::npos)
+      {
+        trimmed = trimmed.substr(start);
+      }
+
+      if (query->isInstant() && trimmed.find("QUIT") == 0)
+      {
+        // std::cerr << "[Main] ========== QUIT DETECTED ==========\n";
+        // std::cerr << "[Main] Breaking main loop, waiting for all queries to complete\n";
+        // std::cerr << "[Main] ====================================\n";
+
+        // Don't submit QUIT query - just break the loop
+        break;
+      }
 
       const size_t query_id = g_query_counter.fetch_add(1) + 1;
 
@@ -236,6 +261,17 @@ int main(int argc, char* argv[])
             }
           }
 
+          std::cerr << "[Main] COPYTABLE detected: source='" << table_name << "' target='"
+                    << new_table_name << "'\n";
+
+          // Submit a WaitQuery to the new table's queue BEFORE the COPYTABLE query
+          // NOTE: WaitQuery uses a special ID (0) since it's not a user query and shouldn't be counted
+          const size_t wait_query_id = 0;  // Special ID for WaitQuery - not counted as user query
+          auto wait_query = std::make_unique<WaitQuery>(table_name, wait_sem);
+          query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
+
+          // std::cerr << "[Main] WaitQuery submitted for new table '" << new_table_name
+          //           << "' (query_id=" << wait_query_id << " - internal, not counted)\n";
         }
       }
 
@@ -253,7 +289,26 @@ int main(int argc, char* argv[])
     }
   }
 
+  // Tell manager how many queries we submitted
+  const size_t total_queries = g_query_counter.load();
+  // std::cerr << "[Main] Total queries submitted: " << total_queries << "\n";
+  query_manager.setExpectedQueryCount(total_queries);
 
+  // std::cerr << "[Main] All queries submitted, waiting for execution\n";
+
+  // Wait for all queries to execute
+  query_manager.waitForCompletion();
+
+  // std::cerr << "[Main] ========== ALL QUERIES EXECUTED ==========\n";
+  // std::cerr << "[Main] Dumping results from OutputPool\n";
+  // std::cerr << "[Main] ===========================================\n";
+
+  // Output all results in order (buffered via OutputPool)
+  output_pool.outputAllResults();
+
+  // std::cerr << "[Main] ========== RESULTS DUMPED ==========\n";
+  // std::cerr << "[Main] Exiting program\n";
+  // std::cerr << "[Main] =======================================\n";
 
   return 0;
 }
