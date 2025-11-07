@@ -23,11 +23,11 @@ private:
 
   [[nodiscard]] QueryResult::Ptr validateSourceTable(const Table& src) const;
 
-  [[nodiscard]] std::vector<RowData> static collectSingleThreaded(const Table& src,
-                                                           const std::vector<std::string>& fields);
+  [[nodiscard]] std::vector<RowData> static collectSingleThreaded(
+      const Table& src, const std::vector<std::string>& fields);
 
-  [[nodiscard]] std::vector<RowData> static collectMultiThreaded(const Table& src,
-                                                          const std::vector<std::string>& fields);
+  [[nodiscard]] std::vector<RowData> static collectMultiThreaded(
+      const Table& src, const std::vector<std::string>& fields);
 
 public:
   explicit CopyTableQuery(std::string sourceTable, std::string newTable)
@@ -38,7 +38,7 @@ public:
 
   QueryResult::Ptr execute() override;
   std::string toString() override;
-  
+
   std::shared_ptr<std::counting_semaphore<>> getWaitSemaphore() const
   {
     return wait_sem;
