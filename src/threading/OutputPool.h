@@ -8,12 +8,9 @@
 /**
  * OutputPool: Thread-safe result buffering and ordering
  *
- * NOT a singleton - passed by reference to avoid global state
  * - Each thread adds results as they complete: addResult(query_id, result_string)
  * - Results are stored in an ordered map (by query_id)
  * - At the end, call outputAllResults() to print everything in order
- *
- * This eliminates the need for a dedicated print thread and semaphore polling.
  */
 class OutputPool
 {
@@ -52,4 +49,4 @@ public:
   [[nodiscard]] size_t getResultCount() const;
 };
 
-#endif  // PROJECT_OUTPUT_POOL_H
+#endif // PROJECT_OUTPUT_POOL_H
