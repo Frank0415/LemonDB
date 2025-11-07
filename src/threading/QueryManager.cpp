@@ -48,6 +48,7 @@ void QueryManager::addQuery(size_t query_id, const std::string& table_name, Quer
   }
 
   // Signal the semaphore to wake up the table's execution thread
+  // Must hold lock while accessing semaphore
   table_query_sem[table_name]->release();
 }
 
@@ -62,7 +63,7 @@ void QueryManager::waitForCompletion()
   const size_t expected = expected_query_count.load();
   // std::cerr << "[QueryManager] Waiting for " << expected << " queries to complete...\n";
 
-  constexpr int poll_interval_ms = 10;
+  constexpr int poll_interval_ms = 5;
 
   // Wait until all queries have been executed and results added to OutputPool
   while (completed_query_count.load() < expected)
@@ -78,12 +79,11 @@ void QueryManager::waitForCompletion()
   // Signal shutdown flag
   is_end.store(true);
 
-  // Release all semaphores to wake up table threads so they can exit
+  // Release all semaphores to wake up threads
   {
     std::lock_guard lock(table_map_mutex);
     for (auto& sem_pair : table_query_sem)
     {
-      // std::cerr << "[QueryManager] Releasing semaphore for table: " << sem_pair.first << "\n";
       sem_pair.second->release();
     }
   }
@@ -123,10 +123,23 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
 
   while (!manager->is_end.load())
   {
-    // Block until a query is available for this table
-    manager->table_query_sem[table_name]->acquire();
+    // Get semaphore pointer while holding lock to avoid race
+    std::counting_semaphore<>* sem_ptr = nullptr;
+    {
+      std::lock_guard lock(manager->table_map_mutex);
+      auto sem_iter = manager->table_query_sem.find(table_name);
+      if (sem_iter == manager->table_query_sem.end())
+      {
+        // Table was removed, exit
+        break;
+      }
+      sem_ptr = sem_iter->second.get();
+    }
 
-    // Check if shutdown was signaled
+    // Acquire semaphore outside lock to avoid deadlock
+    sem_ptr->acquire();
+
+    // Check if shutdown was signaled after acquiring
     if (manager->is_end.load())
     {
       // std::cerr << "[QueryManager] Table '" << table_name << "' thread exiting (shutdown)\n";

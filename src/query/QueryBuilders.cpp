@@ -191,7 +191,7 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   }
   catch (const IllFormedQuery& e)
   {
-    std::cerr << e.what() << '\n';
+    // std::cerr << e.what() << '\n';
     return getNextBuilder()->tryExtractQuery(query);
   }
   const std::string operation = query.token.front();
@@ -249,28 +249,28 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     return std::make_unique<SwapQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  std::cerr << "Complicated query found!" << '\n';
-  std::cerr << "Operation = " << query.token.front() << '\n';
-  std::cerr << "    Operands : ";
-  for (const auto& oprand : this->operandToken)
-  {
-    std::cerr << oprand << " ";
-  }
-  std::cerr << '\n';
-  std::cerr << "Target Table = " << this->targetTable << '\n';
-  if (this->conditionToken.empty())
-  {
-    std::cerr << "No WHERE clause specified." << '\n';
-  }
-  else
-  {
-    std::cerr << "Conditions = ";
-  }
-  for (const auto& cond : this->conditionToken)
-  {
-    std::cerr << cond.field << cond.op << cond.value << " ";
-  }
-  std::cerr << '\n';
+  // std::cerr << "Complicated query found!" << '\n';
+  // std::cerr << "Operation = " << query.token.front() << '\n';
+  // std::cerr << "    Operands : ";
+  // for (const auto& oprand : this->operandToken)
+  // {
+  //   std::cerr << oprand << " ";
+  // }
+  // std::cerr << '\n';
+  // std::cerr << "Target Table = " << this->targetTable << '\n';
+  // if (this->conditionToken.empty())
+  // {
+  //   std::cerr << "No WHERE clause specified." << '\n';
+  // }
+  // else
+  // {
+  //   std::cerr << "Conditions = ";
+  // }
+  // for (const auto& cond : this->conditionToken)
+  // {
+  //   std::cerr << cond.field << cond.op << cond.value << " ";
+  // }
+  // std::cerr << '\n';
 
   return getNextBuilder()->tryExtractQuery(query);
 }

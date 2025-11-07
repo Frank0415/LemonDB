@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "Datum.h"
+#include "QueryBase.h"
 #include "utils/formatter.h"
 #include "utils/uexception.h"
-#include "QueryBase.h"
 
 class Table
 {
