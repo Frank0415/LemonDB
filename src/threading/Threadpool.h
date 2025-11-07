@@ -27,14 +27,14 @@ private:
   // a manager for threads to constantly work until the ThreadPool is destructed
   void thread_manager()
   {
-    while (!done.load())
+    while (!done.load()) [[likely]]
     {
       std::function<void()> task;
       {
         std::unique_lock<std::mutex> lock(lockx);
         cv.wait(lock, [this]() { return !Task_assemble.empty() || done.load(); });
 
-        if (done.load() && Task_assemble.empty())
+        if (done.load() && Task_assemble.empty()) [[unlikely]]
         {
           return;
         }
@@ -70,7 +70,7 @@ public:
   static void initialize(size_t num_threads = std::thread::hardware_concurrency())
   {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
-    if (initialized)
+    if (initialized) [[unlikely]]
     {
       return;
     }
@@ -81,7 +81,7 @@ public:
   static ThreadPool& getInstance()
   {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
-    if (!initialized)
+    if (!initialized) [[unlikely]]
     {
       throw std::runtime_error("ThreadPool not initialized. Call initialize() first.");
     }

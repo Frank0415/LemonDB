@@ -25,7 +25,8 @@ public:
   }
 
   void wait() {
-    while (completed_ < total_) {
+    while (completed_ < total_) [[likely]]
+    {
       std::this_thread::yield();
     }
   }
