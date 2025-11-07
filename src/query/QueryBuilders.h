@@ -102,24 +102,24 @@ class FakeQueryBuilder : public BasicQueryBuilder
 
 inline Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
-  std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
-  std::cerr << "Tokens:\n";
-  constexpr int column_width = 10;
-  constexpr int tokens_per_line = 5;
-  int count = 0;
-  for (const auto& tok : query.token)
-  {
-    std::cerr << std::setw(column_width) << "\"" << tok << "\"";
-    count = (count + 1) % tokens_per_line;
-    if (count == 4)
-    {
-      std::cerr << '\n';
-    }
-  }
-  if (count != 4)
-  {
-    std::cerr << '\n';
-  }
+//   std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
+//   std::cerr << "Tokens:\n";
+//   constexpr int column_width = 10;
+//   constexpr int tokens_per_line = 5;
+//   int count = 0;
+//   for (const auto& tok : query.token)
+//   {
+//     std::cerr << std::setw(column_width) << "\"" << tok << "\"";
+//     count = (count + 1) % tokens_per_line;
+//     if (count == 4)
+//     {
+//       std::cerr << '\n';
+//     }
+//   }
+//   if (count != 4)
+//   {
+//     std::cerr << '\n';
+//   }
   return getNextBuilder()->tryExtractQuery(query);
 }
 

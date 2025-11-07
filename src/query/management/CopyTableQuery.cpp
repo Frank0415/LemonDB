@@ -85,8 +85,6 @@ QueryResult::Ptr CopyTableQuery::execute()
     database.registerTable(std::move(dup));
 
     // Release the wait semaphore to allow queries on the new table to proceed
-    // std::cerr << "[CopyTableQuery] COPY completed for table '" << this->newTableName
-    //           << "', releasing wait semaphore\n";
     wait_sem->release();
 
     return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());

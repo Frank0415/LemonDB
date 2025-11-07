@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
         if (copy_query != nullptr)
         {
           auto wait_sem = copy_query->getWaitSemaphore();
-          auto new_table_name = trimmed.substr(9);  // Skip "COPYTABLE"
+          auto new_table_name = trimmed.substr(9); // Skip "COPYTABLE"
           // Extract new table name - it's after first whitespace(s) and the source table
           size_t space_pos = new_table_name.find_first_not_of(" \t");
           if (space_pos != std::string::npos)
@@ -261,12 +261,13 @@ int main(int argc, char* argv[])
             }
           }
 
-          std::cerr << "[Main] COPYTABLE detected: source='" << table_name << "' target='"
-                    << new_table_name << "'\n";
+          // std::cerr << "[Main] COPYTABLE detected: source='" << table_name << "' target='"
+          //           << new_table_name << "'\n";
 
           // Submit a WaitQuery to the new table's queue BEFORE the COPYTABLE query
-          // NOTE: WaitQuery uses a special ID (0) since it's not a user query and shouldn't be counted
-          const size_t wait_query_id = 0;  // Special ID for WaitQuery - not counted as user query
+          // NOTE: WaitQuery uses a special ID (0) since it's not a user query and shouldn't be
+          // counted
+          const size_t wait_query_id = 0; // Special ID for WaitQuery - not counted as user query
           auto wait_query = std::make_unique<WaitQuery>(table_name, wait_sem);
           query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
 
