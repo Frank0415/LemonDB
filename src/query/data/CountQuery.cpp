@@ -22,7 +22,7 @@ QueryResult::Ptr CountQuery::execute()
   {
     // Validate operands
     auto validation_result = validateOperands();
-    if (validation_result != nullptr)
+    if (validation_result != nullptr) [[unlikely]]
     {
       return validation_result;
     }
@@ -39,19 +39,19 @@ QueryResult::Ptr CountQuery::execute()
 
     // An optimization: only proceed with iteration if the condition isn't
     // always false (e.g., WHERE (KEY = "a") (KEY = "b"))
-    if (!condition.second)
+    if (!condition.second) [[unlikely]]
     {
       return std::make_unique<TextRowsResult>("ANSWER = 0\n");
     }
 
     // Check if ThreadPool is available and has multiple threads
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table);
     }
@@ -85,7 +85,7 @@ std::string CountQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr CountQuery::validateOperands() const
 {
-  if (!this->getOperands().empty())
+  if (!this->getOperands().empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "COUNT query does not take any operands.");
@@ -97,9 +97,9 @@ std::string CountQuery::toString()
 {
   int record_count = 0;
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
-    if (this->evalCondition(row))
+    if (this->evalCondition(row)) [[likely]]
     {
       record_count++;
     }
@@ -119,11 +119,11 @@ std::string CountQuery::toString()
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -134,9 +134,9 @@ std::string CountQuery::toString()
         [this, chunk_begin, chunk_end]()
         {
           int local_count = 0;
-          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
-            if (this->evalCondition(*iter))
+            if (this->evalCondition(*iter)) [[likely]]
             {
               local_count++;
             }
@@ -146,7 +146,7 @@ std::string CountQuery::toString()
   }
 
   // Combine results from all threads
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     total_count += future.get();
   }

@@ -21,7 +21,7 @@ QueryResult::Ptr DumpTableQuery::execute()
   {
     auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
     std::ofstream outfile(this->fileName);
-    if (!outfile.is_open())
+    if (!outfile.is_open()) [[unlikely]]
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
@@ -29,9 +29,9 @@ QueryResult::Ptr DumpTableQuery::execute()
     outfile.close();
     return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 

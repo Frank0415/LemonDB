@@ -26,7 +26,7 @@ QueryResult::Ptr CopyTableQuery::execute()
 
     // Validate source table
     auto validation_result = validateSourceTable(src);
-    if (validation_result != nullptr)
+    if (validation_result != nullptr) [[unlikely]]
     {
       return validation_result;
     }
@@ -44,7 +44,7 @@ QueryResult::Ptr CopyTableQuery::execute()
       // Intentionally ignore: table doesn't exist, which is expected
       (void)0;
     }
-    if (targetExists)
+    if (targetExists) [[unlikely]]
     {
       wait_sem->release();
       return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
@@ -56,18 +56,18 @@ QueryResult::Ptr CopyTableQuery::execute()
 
     // Collect data from source table
     std::vector<RowData> collected_rows;
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       collected_rows = collectSingleThreaded(src, fields);
     }
-    else
+    else [[likely]]
     {
       const ThreadPool& pool = ThreadPool::getInstance();
-      if (!is_multithreaded || pool.getThreadCount() <= 1 || src.size() < Table::splitsize())
+      if (!is_multithreaded || pool.getThreadCount() <= 1 || src.size() < Table::splitsize()) [[unlikely]]
       {
         collected_rows = collectSingleThreaded(src, fields);
       }
-      else
+      else [[likely]]
       {
         collected_rows = collectMultiThreaded(src, fields);
       }
@@ -76,7 +76,7 @@ QueryResult::Ptr CopyTableQuery::execute()
     // Create target table and insert all collected rows
     auto dup = std::make_unique<Table>(this->newTableName, fields);
 
-    for (auto& [key, row] : collected_rows)
+    for (auto& [key, row] : collected_rows) [[likely]]
     {
       dup->insertByIndex(key, std::move(row));
     }
@@ -94,7 +94,7 @@ QueryResult::Ptr CopyTableQuery::execute()
     wait_sem->release();
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
     wait_sem->release();
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Unknown error");
@@ -109,7 +109,7 @@ std::string CopyTableQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr CopyTableQuery::validateSourceTable(const Table& src) const
 {
-  if (src.empty())
+  if (src.empty()) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Source table is empty.");
@@ -123,13 +123,13 @@ CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::s
   std::vector<RowData> results;
   results.reserve(src.size());
 
-  for (const auto& obj : src)
+  for (const auto& obj : src) [[likely]]
   {
     std::vector<Table::ValueType> row;
     row.reserve(fields.size());
-    for (size_t i = 0; i < fields.size(); ++i)
+    for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx) [[likely]]
     {
-      row.push_back(obj[i]);
+      row.push_back(obj[field_idx]);
     }
     results.emplace_back(obj.key(), std::move(row));
   }
@@ -150,11 +150,11 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
 
   auto iterator = src.begin();
   size_t chunk_index = 0;
-  while (iterator != src.end())
+  while (iterator != src.end()) [[likely]]
   {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != src.end() && count < CHUNK_SIZE)
+    while (iterator != src.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -165,13 +165,13 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
                                         [chunk_begin, chunk_end, &fields]()
                                         {
                                           std::vector<RowData> local_results;
-                                          for (auto iter = chunk_begin; iter != chunk_end; ++iter)
+                                          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
                                           {
                                             std::vector<Table::ValueType> row;
                                             row.reserve(fields.size());
-                                            for (size_t i = 0; i < fields.size(); ++i)
+                                            for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx) [[likely]]
                                             {
-                                              row.push_back((*iter)[i]);
+                                              row.push_back((*iter)[field_idx]);
                                             }
                                             local_results.emplace_back(iter->key(), std::move(row));
                                           }
@@ -181,7 +181,7 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
   }
 
   // Collect results in order by chunk_index
-  for (auto& [idx, future] : tasks)
+  for (auto& [idx, future] : tasks) [[likely]]
   {
     auto local_results = future.get();
     results.insert(results.end(), std::make_move_iterator(local_results.begin()),

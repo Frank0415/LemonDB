@@ -22,14 +22,14 @@ QueryResult::Ptr DropTableQuery::execute()
     database.dropTable(this->targetTableRef());
     return std::make_unique<SuccessMsgResult>(qname);
   }
-  catch (const TableNameNotFound& e)
+  catch (const TableNameNotFound& exc)
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             std::string("No such table."));
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 

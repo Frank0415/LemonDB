@@ -20,7 +20,7 @@
   try
   {
     auto validationResult = validateOperands();
-    if (validationResult != nullptr)
+    if (validationResult != nullptr) [[unlikely]]
     {
       return validationResult;
     }
@@ -29,7 +29,7 @@
     auto& table = database[this->targetTableRef()];
 
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       return std::make_unique<RecordCountResult>(0);
     }
@@ -42,13 +42,13 @@
 
     auto indices = getFieldIndices(table);
 
-    if (!ThreadPool::isInitialized())
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
       return executeSingleThreaded(table, indices);
     }
 
     const ThreadPool& pool = ThreadPool::getInstance();
-    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
       return executeSingleThreaded(table, indices);
     }
@@ -89,7 +89,7 @@ std::string AddQuery::toString()
 
 [[nodiscard]] QueryResult::Ptr AddQuery::validateOperands() const
 {
-  if (this->getOperands().size() < 2)
+  if (this->getOperands().size() < 2) [[unlikely]]
   {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Invalid number of operands (? operands)."_f %
@@ -102,7 +102,7 @@ std::string AddQuery::toString()
 {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
-  for (const auto& operand : this->getOperands())
+  for (const auto& operand : this->getOperands()) [[likely]]
   {
     indices.push_back(table.getFieldIndex(operand));
   }
@@ -114,15 +114,15 @@ AddQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldInde
 {
   int count = 0;
 
-  for (auto row : table)
+  for (auto row : table) [[likely]]
   {
-    if (!this->evalCondition(row))
+    if (!this->evalCondition(row)) [[unlikely]]
     {
       continue;
     }
     // perform ADD operation
     int sum = 0;
-    for (size_t idx = 0; idx < this->getOperands().size() - 1; ++idx)
+    for (size_t idx = 0; idx < this->getOperands().size() - 1; ++idx) [[likely]]
     {
       sum += row[fids[idx]];
     }
@@ -141,11 +141,11 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
   futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
 
   auto iterator = table.begin();
-  while (iterator != table.end())
+  while (iterator != table.end()) [[likely]]
   {
     auto chunk_start = iterator;
     size_t count = 0;
-    while (iterator != table.end() && count < CHUNK_SIZE)
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
     {
       ++iterator;
       ++count;
@@ -155,15 +155,15 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
         [this, chunk_start, chunk_end, fids]()
         {
           int local_count = 0;
-          for (auto it = chunk_start; it != chunk_end; ++it)
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
           {
-            if (!this->evalCondition(*it))
+            if (!this->evalCondition(*it)) [[unlikely]]
             {
               continue;
             }
             // perform ADD operation
             int sum = 0;
-            for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
+            for (size_t i = 0; i < this->getOperands().size() - 1; ++i) [[likely]]
             {
               sum += (*it)[fids[i]];
             }
@@ -176,7 +176,7 @@ AddQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex
 
   // Wait for all tasks to complete and aggregate results
   int total_count = 0;
-  for (auto& future : futures)
+  for (auto& future : futures) [[likely]]
   {
     total_count += future.get();
   }
