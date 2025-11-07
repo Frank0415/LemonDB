@@ -126,10 +126,51 @@ std::string extractQueryString(std::istream& input_stream)
     buf.push_back(static_cast<char>(character));
   }
 }
+
+void handleCopyTable(QueryManager& query_manager,
+                     const std::string& trimmed,
+                     const std::string& table_name,
+                     CopyTableQuery* copy_query)
+{
+  if (copy_query != nullptr)
+  {
+    auto wait_sem = copy_query->getWaitSemaphore();
+    constexpr size_t copytable_prefix_len = 9;
+    auto new_table_name = trimmed.substr(copytable_prefix_len); // Skip "COPYTABLE"
+    // Extract new table name - it's after first whitespace(s) and the source table
+    size_t space_pos = new_table_name.find_first_not_of(" \t");
+    if (space_pos != std::string::npos)
+    {
+      new_table_name = new_table_name.substr(space_pos);
+      space_pos = new_table_name.find_first_of(" \t");
+      if (space_pos != std::string::npos)
+      {
+        new_table_name = new_table_name.substr(space_pos);
+        space_pos = new_table_name.find_first_not_of(" \t;");
+        if (space_pos != std::string::npos)
+        {
+          new_table_name = new_table_name.substr(space_pos);
+          space_pos = new_table_name.find_first_of(" \t;");
+          if (space_pos != std::string::npos)
+          {
+            new_table_name = new_table_name.substr(0, space_pos);
+          }
+        }
+      }
+    }
+
+    // Submit a WaitQuery to the new table's queue BEFORE the COPYTABLE query
+    // NOTE: WaitQuery uses a special ID (0) since it's not a user query
+    const size_t wait_query_id = 0; // Special ID for WaitQuery - not counted as user query
+    auto wait_query = std::make_unique<WaitQuery>(table_name, wait_sem);
+    query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
+  }
+}
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  std::ios_base::sync_with_stdio(true);
   std::ios_base::sync_with_stdio(true);
 
   Args parsedArgs{};
@@ -188,87 +229,7 @@ int main(int argc, char* argv[])
 
   std::atomic<size_t> g_query_counter{0};
 
-  while (input_stream && !database.isEnd()) [[likely]]
-  {
-    try
-    {
-      const std::string queryStr = extractQueryString(input_stream);
-
-      Query::Ptr query = parser.parseQuery(queryStr);
-
-      // Use a case-insensitive check for "QUIT"
-      std::string trimmed = queryStr;
-      // Trim leading whitespace
-      size_t start = trimmed.find_first_not_of(" \t\n\r");
-      if (start != std::string::npos)
-      {
-        trimmed = trimmed.substr(start);
-      }
-
-      if (query->isInstant() && trimmed.find("QUIT") == 0)
-      {
-        // Don't submit QUIT query - just break the loop
-        break;
-      }
-
-      const size_t query_id = g_query_counter.fetch_add(1) + 1;
-
-      // Get the target table for this query
-      const std::string table_name = query->targetTableRef();
-
-      // Handle COPYTABLE specially: add WaitQuery to the new table's queue
-      if (trimmed.find("COPYTABLE") == 0)
-      {
-        // Cast to CopyTableQuery to get the wait semaphore
-        auto* copy_query = dynamic_cast<CopyTableQuery*>(query.get());
-        if (copy_query != nullptr)
-        {
-          auto wait_sem = copy_query->getWaitSemaphore();
-          constexpr size_t copytable_prefix_len = 9;
-          auto new_table_name = trimmed.substr(copytable_prefix_len); // Skip "COPYTABLE"
-          // Extract new table name - it's after first whitespace(s) and the source table
-          size_t space_pos = new_table_name.find_first_not_of(" \t");
-          if (space_pos != std::string::npos)
-          {
-            new_table_name = new_table_name.substr(space_pos);
-            space_pos = new_table_name.find_first_of(" \t");
-            if (space_pos != std::string::npos)
-            {
-              new_table_name = new_table_name.substr(space_pos);
-              space_pos = new_table_name.find_first_not_of(" \t;");
-              if (space_pos != std::string::npos)
-              {
-                new_table_name = new_table_name.substr(space_pos);
-                space_pos = new_table_name.find_first_of(" \t;");
-                if (space_pos != std::string::npos)
-                {
-                  new_table_name = new_table_name.substr(0, space_pos);
-                }
-              }
-            }
-          }
-
-          // Submit a WaitQuery to the new table's queue BEFORE the COPYTABLE query
-          // NOTE: WaitQuery uses a special ID (0) since it's not a user query
-          const size_t wait_query_id = 0; // Special ID for WaitQuery - not counted as user query
-          auto wait_query = std::make_unique<WaitQuery>(table_name, wait_sem);
-          query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
-        }
-      }
-
-      // Submit query to manager (async - doesn't block)
-      // Manager will create per-table thread if needed
-      query_manager.addQuery(query_id, table_name, query.release());
-    }
-    catch (const std::ios_base::failure& exc)
-    {
-      break;
-    }
-    catch (const std::exception& exc)
-    {
-      std::cerr << "Error parsing query: " << exc.what() << '\n';
-    }
-  }
+  processQueries(input_stream, database, parser, query_manager, g_query_counter);
 
   const size_t total_queries = g_query_counter.load();
   query_manager.setExpectedQueryCount(total_queries);
