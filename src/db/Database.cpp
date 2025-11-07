@@ -33,7 +33,7 @@ void Database::testDuplicate(const std::string& tableName)
 
 Table& Database::registerTable(Table::Ptr&& table)
 {
-  std::unique_lock lock(tablesMutex);
+  const std::unique_lock lock(tablesMutex);
   auto name = table->name();
   this->testDuplicate(table->name());
   auto result = this->tables.emplace(name, std::move(table));
@@ -42,7 +42,7 @@ Table& Database::registerTable(Table::Ptr&& table)
 
 Table& Database::operator[](const std::string& tableName)
 {
-  std::shared_lock lock(tablesMutex);
+  const std::shared_lock lock(tablesMutex);
   auto iterator = this->tables.find(tableName);
   if (iterator == this->tables.end()) [[unlikely]]
   {
@@ -53,7 +53,7 @@ Table& Database::operator[](const std::string& tableName)
 
 const Table& Database::operator[](const std::string& tableName) const
 {
-  std::shared_lock lock(tablesMutex);
+  const std::shared_lock lock(tablesMutex);
   auto iterator = this->tables.find(tableName);
   if (iterator == this->tables.end()) [[unlikely]]
   {
@@ -64,7 +64,7 @@ const Table& Database::operator[](const std::string& tableName) const
 
 void Database::dropTable(const std::string& tableName)
 {
-  std::unique_lock lock(tablesMutex);
+  const std::unique_lock lock(tablesMutex);
   auto iterator = this->tables.find(tableName);
   if (iterator == this->tables.end()) [[unlikely]]
   {
@@ -76,7 +76,7 @@ void Database::dropTable(const std::string& tableName)
 
 void Database::printAllTable()
 {
-  std::shared_lock lock(tablesMutex);
+  const std::shared_lock lock(tablesMutex);
   const int width = 15;
   std::cout << "Database overview:" << '\n';
   std::cout << "=========================" << '\n';
@@ -104,13 +104,13 @@ Database& Database::getInstance()
 
 void Database::updateFileTableName(const std::string& fileName, const std::string& tableName)
 {
-  std::unique_lock lock(fileTableNameMutex);
+  const std::unique_lock lock(fileTableNameMutex);
   fileTableNameMap[fileName] = tableName;
 }
 
 std::string Database::getFileTableName(const std::string& fileName)
 {
-  std::unique_lock lock(fileTableNameMutex);
+  const std::unique_lock lock(fileTableNameMutex);
   auto iterator = fileTableNameMap.find(fileName);
   if (iterator == fileTableNameMap.end()) [[unlikely]]
   {

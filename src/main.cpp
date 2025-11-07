@@ -167,13 +167,13 @@ void processQueries(std::istream& input_stream,
       // Use a case-insensitive check for "QUIT"
       std::string trimmed = queryStr;
       // Trim leading whitespace
-      size_t start = trimmed.find_first_not_of(" \t\n\r");
+      const size_t start = trimmed.find_first_not_of(" \t\n\r");
       if (start != std::string::npos)
       {
         trimmed = trimmed.substr(start);
       }
 
-      if (query->isInstant() && trimmed.find("QUIT") == 0)
+      if (query->isInstant() && trimmed.starts_with("QUIT"))
       {
         // Don't submit QUIT query - just break the loop
         break;
@@ -185,7 +185,7 @@ void processQueries(std::istream& input_stream,
       const std::string table_name = query->targetTableRef();
 
       // Handle COPYTABLE specially: add WaitQuery to the new table's queue
-      if (trimmed.find("COPYTABLE") == 0)
+      if (trimmed.starts_with("COPYTABLE"))
       {
         auto* copy_query = dynamic_cast<CopyTableQuery*>(query.get());
         handleCopyTable(query_manager, trimmed, table_name, copy_query);
