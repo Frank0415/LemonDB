@@ -2,14 +2,14 @@
 
 #include <chrono>
 #include <cstddef>
+#include <deque>
 #include <exception>
+#include <memory>
+#include <mutex>
+#include <semaphore>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <mutex>
-#include <deque>
-#include <memory>
-#include <semaphore>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"
@@ -198,4 +198,20 @@ void QueryManager::executeQueryForTable(QueryManager* manager, const std::string
       manager->completed_query_count.fetch_add(1);
     }
   }
+}
+
+bool QueryManager::isComplete() const
+{
+  return completed_query_count.load(std::memory_order_acquire) >=
+         expected_query_count.load(std::memory_order_acquire);
+}
+
+size_t QueryManager::getCompletedQueryCount() const
+{
+  return completed_query_count.load(std::memory_order_acquire);
+}
+
+size_t QueryManager::getExpectedQueryCount() const
+{
+  return expected_query_count.load(std::memory_order_acquire);
 }

@@ -115,6 +115,10 @@ public:
    * Shutdown and cleanup
    */
   void shutdown();
+
+  [[nodiscard]] bool isComplete() const;
+  [[nodiscard]] size_t getCompletedQueryCount() const;
+  [[nodiscard]] size_t getExpectedQueryCount() const;
 };
 
 #endif // PROJECT_QUERY_MANAGER_H
