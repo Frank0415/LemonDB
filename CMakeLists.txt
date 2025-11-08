@@ -68,6 +68,7 @@ file(GLOB LIB_SOURCES_TEMP CONFIGURE_DEPENDS
     # src/query/management/*.h
     src/threading/*.cpp
     src/query/utils/*.cpp
+    src/utils/*.cpp
     # src/threading/*.h
     # src/utils/*.h
 )
