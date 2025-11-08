@@ -12,12 +12,14 @@
 
 #include "Query.h"
 #include "QueryParser.h"
-#include <iomanip>
-#include <iostream>
 
 class FailedQueryBuilder : public QueryBuilder
 {
 public:
+  /**
+   * Get the default failed query builder instance
+   * @return Unique pointer to FailedQueryBuilder
+   */
   static QueryBuilder::Ptr getDefault()
   {
     return std::make_unique<FailedQueryBuilder>();
