@@ -1,49 +1,67 @@
 #include "ListenQuery.h"
 
+#include <cctype>
 #include <exception>
 #include <fstream>
 #include <memory>
+#include <stdexcept>
 #include <string>
-#include <vector>
+#include <string_view>
 
+#include "db/Database.h"
+#include "query/QueryParser.h"
 #include "query/QueryResult.h"
+#include "query/management/CopyTableQuery.h"
+#include "query/management/WaitQuery.h"
+#include "threading/QueryManager.h"
 #include "utils/formatter.h"
 
-// constexpr const char *ListenQuery::qname;
+
 
 QueryResult::Ptr ListenQuery::execute()
 {
+  if (query_manager == nullptr || query_parser == nullptr || database == nullptr)
+  {
+    throw std::runtime_error("ListenQuery dependencies are not set");
+  }
+
+  std::ifstream infile(fileName);
+  if (!infile.is_open())
+  {
+    return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % fileName);
+  }
+
+  scheduled_query_count = 0;
+  std::string raw_statement;
+
   try
   {
-    std::ifstream infile(this->fileName);
-    if (!infile.is_open())
+    while (readNextStatement(infile, raw_statement))
     {
-      return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
-    }
-    //// TODO: work on this query file
-    std::vector<std::string> listen_results;
-    // std::string const pure_file_name =
-    // this->fileName.substr(this->fileName.find_last_of('/') + 1);
+      std::string trimmed = trimCopy(raw_statement);
+      if (trimmed.empty())
+      {
+        continue;
+      }
+      if (trimmed.front() == '#')
+      {
+        continue;
+      }
 
-    std::string line;
-    while (std::getline(infile, line))
-    {
-      listen_results.push_back(line);
-    }
+      try
+      {
+        Query::Ptr query = query_parser->parseQuery(trimmed);
 
-    infile.close();
-    // For now just return a ListenResult with the filename; Manager integration
-    // is not available in this build. The lines read are discarded.
-    (void)listen_results;
-    return std::make_unique<ListenResult>(fileName);
-  }
-  catch (const std::exception& e)
+
+  catch (const std::ios_base::failure&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, "Unexpected EOF in listen file '?'"_f % fileName);
   }
+
+  return std::make_unique<ListenResult>(fileName);
 }
 
 std::string ListenQuery::toString()
 {
-  return "QUERY = Listen, FILE = \"" + this->fileName + "\"";
+  return "QUERY = Listen, FILE = \"" + fileName + "\"";
 }
