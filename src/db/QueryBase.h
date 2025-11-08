@@ -1,7 +1,6 @@
 #ifndef PROJECT_QUERY_BASE_H
 #define PROJECT_QUERY_BASE_H
 
-
 #include <memory>
 #include <string>
 
@@ -29,6 +28,10 @@ public:
     return targetTable;
   }
 
+  /**
+   * Constructor for Query with target table
+   * @param targetTable The name of the target table for this query
+   */
   explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
   {
   }
