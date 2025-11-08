@@ -3,7 +3,6 @@
 //
 
 #include <atomic>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -12,13 +11,11 @@
 #include <iostream>
 #include <memory>
 #include <optional>
-#include <span>
 #include <string>
 #include <thread>
 
 #include "db/Database.h"
 #include "db/QueryBase.h"
-#include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
 #include "query/management/CopyTableQuery.h"
 #include "query/management/WaitQuery.h"
@@ -26,6 +23,7 @@
 #include "threading/OutputPool.h"
 #include "threading/QueryManager.h"
 #include "threading/Threadpool.h"
+#include "utils/MainUtils.h"
 #include "utils/OutputConfig.h"
 
 namespace
@@ -35,58 +33,6 @@ struct Args
   std::string listen;
   std::int64_t threads = 0;
 };
-
-void parseArgs(int argc, char** argv, Args& args)
-{
-  // Manual argument parser supporting both long and short forms
-  // --listen=<file> or --listen <file> or -l <file>
-  // --threads=<num> or --threads <num> or -t <num>
-
-  constexpr size_t listen_prefix_len = 9;   // Length of "--listen="
-  constexpr size_t threads_prefix_len = 10; // Length of "--threads="
-  constexpr int decimal_base = 10;
-
-  for (int i = 1; i < argc; ++i)
-  {
-    const std::string arg(
-        std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
-
-    // Helper lambda to get next argument value
-    auto getNextArg = [&]() -> std::string
-    {
-      if (i + 1 < argc)
-      {
-        ++i;
-        return {std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]};
-      }
-      (void)arg;
-      std::exit(-1);
-    };
-
-    // Handle --listen=<value> or --listen <value>
-    if (arg.starts_with("--listen="))
-    {
-      args.listen = arg.substr(listen_prefix_len);
-    }
-    else if (arg == "--listen" || arg == "-l")
-    {
-      args.listen = getNextArg();
-    }
-    // Handle --threads=<value> or --threads <value>
-    else if (arg.starts_with("--threads="))
-    {
-      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(), nullptr, decimal_base);
-    }
-    else if (arg == "--threads" || arg == "-t")
-    {
-      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
-    }
-    else
-    {
-      (void)arg;
-    }
-  }
-}
 
 void setupParser(QueryParser& parser)
 {
@@ -238,7 +184,7 @@ int main(int argc, char* argv[])
   std::ios_base::sync_with_stdio(true);
 
   Args parsedArgs{};
-  parseArgs(argc, argv, parsedArgs);
+  MainUtils::parseArgs(argc, argv, parsedArgs);
 
   std::ifstream fin;
   std::istream* input = &std::cin;
@@ -278,7 +224,7 @@ int main(int argc, char* argv[])
   std::istream& input_stream = *input;
 
   QueryParser parser;
-  setupParser(parser);
+  MainUtils::setupParser(parser);
 
   // Main loop: ASYNC query submission with table-level parallelism
   Database& database = Database::getInstance();
