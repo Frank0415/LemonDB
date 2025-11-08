@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <thread>
@@ -21,6 +22,7 @@
 #include "query/QueryParser.h"
 #include "query/management/CopyTableQuery.h"
 #include "query/management/WaitQuery.h"
+#include "query/utils/ListenQuery.h"
 #include "threading/OutputPool.h"
 #include "threading/QueryManager.h"
 #include "threading/Threadpool.h"
@@ -152,7 +154,7 @@ void handleCopyTable(QueryManager& query_manager,
 }
 
 void processQueries(std::istream& input_stream,
-                    const Database& database,
+                    Database& database,
                     QueryParser& parser,
                     QueryManager& query_manager,
                     std::atomic<size_t>& g_query_counter)
@@ -206,6 +208,28 @@ void processQueries(std::istream& input_stream,
     }
   }
 }
+
+std::optional<size_t> setupListenMode(const Args& args,
+                                      QueryParser& parser,
+                                      Database& database,
+                                      QueryManager& query_manager)
+{
+  if (args.listen.empty())
+  {
+    return std::nullopt;
+  }
+
+  auto listen_query = std::make_unique<ListenQuery>(args.listen);
+  listen_query->setDependencies(&query_manager, &parser, &database);
+
+  auto listen_result = listen_query->execute();
+  if (listen_result && listen_result->display())
+  {
+    std::cout << *listen_result;
+  }
+
+  return listen_query->getScheduledQueryCount();
+}
 } // namespace
 
 int main(int argc, char* argv[])
@@ -257,7 +281,7 @@ int main(int argc, char* argv[])
   setupParser(parser);
 
   // Main loop: ASYNC query submission with table-level parallelism
-  const Database& database = Database::getInstance();
+  Database& database = Database::getInstance();
 
   // Create OutputPool (not a global singleton - passed by reference)
   OutputPool output_pool;
@@ -267,9 +291,14 @@ int main(int argc, char* argv[])
 
   std::atomic<size_t> g_query_counter{0};
 
-  processQueries(input_stream, database, parser, query_manager, g_query_counter);
+  const auto listen_scheduled = setupListenMode(parsedArgs, parser, database, query_manager);
+  if (!listen_scheduled.has_value())
+  {
+    processQueries(input_stream, database, parser, query_manager, g_query_counter);
+  }
 
-  const size_t total_queries = g_query_counter.load();
+  const size_t total_queries =
+      listen_scheduled.has_value() ? listen_scheduled.value() : g_query_counter.load();
   query_manager.setExpectedQueryCount(total_queries);
 
   OutputConfig output_config{};
