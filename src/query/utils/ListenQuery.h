@@ -30,13 +30,19 @@ public:
 
   void setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr);
 
-  [[nodiscard]] size_t getScheduledQueryCount() const { return scheduled_query_count; }
+  [[nodiscard]] size_t getScheduledQueryCount() const
+  {
+    return scheduled_query_count;
+  }
 
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
 
-  [[nodiscard]] bool isInstant() const override { return true; }
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  }
 };
 
 #endif // LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
