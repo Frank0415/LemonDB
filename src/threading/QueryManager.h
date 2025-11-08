@@ -41,17 +41,15 @@ private:
     Query* query_ptr; // Raw pointer, owned by deque
   };
 
-  // ============ Per-Table Execution ============
-  // Map: table_name → queue of (query_id, query_ptr)
+  // Map: table_name -> queue of (query_id, query_ptr)
   std::unordered_map<std::string, std::deque<QueryEntry>> table_query_map;
 
-  // Map: table_name → counting_semaphore (tracks available queries in queue)
+  // Map: table_name -> counting_semaphore (tracks available queries in queue)
   std::unordered_map<std::string, std::unique_ptr<std::counting_semaphore<>>> table_query_sem;
 
   // Protects table_query_map and table_query_sem
   mutable std::mutex table_map_mutex;
 
-  // ============ Lifecycle Management ============
   std::vector<std::thread> table_threads;
 
   std::atomic<bool> is_end{false};
@@ -64,7 +62,6 @@ private:
   OutputPool& output_pool;
   size_t printed_count{0};
 
-  // ============ Static Thread Functions ============
   /**
    * Execute queries for a specific table
    * Runs in a per-table thread
@@ -95,7 +92,7 @@ public:
 
   /**
    * Submit a query to the appropriate table queue
-   * Creates table's execution thread if needed
+   * Creates table'st execution thread if needed
    * Does NOT block - returns immediately
    */
   void addQuery(size_t query_id, const std::string& table_name, Query* query_ptr);
