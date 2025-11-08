@@ -78,6 +78,10 @@ public:
   QueryManager() = delete;
 
   // Explicit constructor taking OutputPool reference
+  /**
+   * Construct QueryManager with reference to OutputPool
+   * @param pool Reference to the OutputPool for result collection
+   */
   explicit QueryManager(OutputPool& pool) : output_pool(pool)
   {
   }
@@ -94,11 +98,15 @@ public:
    * Submit a query to the appropriate table queue
    * Creates table'st execution thread if needed
    * Does NOT block - returns immediately
+   * @param query_id Unique identifier for the query
+   * @param table_name Name of the table this query operates on
+   * @param query_ptr Pointer to the query object to execute
    */
   void addQuery(size_t query_id, const std::string& table_name, Query* query_ptr);
 
   /**
    * Set the expected number of queries (to know when all are done)
+   * @param count The total number of queries expected to be executed
    */
   void setExpectedQueryCount(size_t count);
 
@@ -113,8 +121,19 @@ public:
    */
   void shutdown();
 
+  /**
+   * Check if all expected queries have been completed
+   */
   [[nodiscard]] bool isComplete() const;
+
+  /**
+   * Get the number of queries that have been completed
+   */
   [[nodiscard]] size_t getCompletedQueryCount() const;
+
+  /**
+   * Get the expected number of queries to be executed
+   */
   [[nodiscard]] size_t getExpectedQueryCount() const;
 };
 

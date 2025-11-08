@@ -15,22 +15,41 @@ class WaitQuery : public Query
   std::shared_ptr<std::counting_semaphore<>> target_sem;
 
 public:
+  /**
+   * Constructor for WAIT query
+   * @param sourceTable Name of the table to wait for
+   * @param sem Semaphore to wait on for synchronization
+   */
   explicit WaitQuery(std::string sourceTable, std::shared_ptr<std::counting_semaphore<>> sem)
       : Query(std::move(sourceTable)), target_sem(std::move(sem))
   {
   }
 
+  /**
+   * Execute the WAIT query to synchronize on table operations
+   * @return QueryResult with wait operation results
+   */
   QueryResult::Ptr execute() override;
 
+  /**
+   * Convert query to string representation
+   * @return String representation of the WAIT query
+   */
   std::string toString() override;
 
-  // WaitQuery is destructive - must execute serially
+  /**
+   * Check if this query modifies data
+   * @return Always returns true for WAIT queries (destructive)
+   */
   [[nodiscard]] bool isWriter() const override
   {
     return true;
   }
 
-  // WaitQuery is instant - must execute immediately
+  /**
+   * Check if this query must execute immediately
+   * @return Always returns true for WAIT queries
+   */
   [[nodiscard]] bool isInstant() const override
   {
     return true;

@@ -36,6 +36,8 @@ public:
   /**
    * Add a result to the output pool
    * Thread-safe - can be called from multiple threads simultaneously
+   * @param query_id The unique identifier for the query result
+   * @param result The result string to add to the pool
    */
   void addResult(size_t query_id, const std::string& result);
 
