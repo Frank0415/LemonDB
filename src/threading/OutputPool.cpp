@@ -9,7 +9,7 @@
 
 void OutputPool::addResult(size_t query_id, const std::string& result)
 {
-  //std::cerr << "Adding result for query_id " << query_id << "\n";
+  // std::cerr << "Adding result for query_id " << query_id << "\n";
   const std::scoped_lock lock(results_mutex);
   results[query_id] = result;
 }
@@ -72,3 +72,13 @@ size_t OutputPool::getResultCount() const
   return results.size();
 }
 
+size_t OutputPool::getNextOutputId() const
+{
+  const std::scoped_lock lock(results_mutex);
+  return next_output_id;
+}
+
+size_t OutputPool::getTotalOutputCount() const
+{
+  return total_output_count.load(std::memory_order_relaxed);
+}

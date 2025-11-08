@@ -24,6 +24,7 @@
 #include "threading/OutputPool.h"
 #include "threading/QueryManager.h"
 #include "threading/Threadpool.h"
+#include "utils/OutputConfig.h"
 
 namespace
 {
@@ -270,6 +271,27 @@ int main(int argc, char* argv[])
 
   const size_t total_queries = g_query_counter.load();
   query_manager.setExpectedQueryCount(total_queries);
+
+  OutputConfig output_config{};
+  while (true)
+  {
+    const size_t current_output_count = output_pool.getTotalOutputCount();
+    const auto interval = calculateOutputInterval(current_output_count, output_config);
+
+    const size_t flushed = output_pool.flushContinuousResults();
+    if (query_manager.isComplete())
+    {
+      if (flushed == 0U)
+      {
+        break;
+      }
+    }
+    else if (flushed == 0U)
+    {
+      std::this_thread::sleep_for(interval);
+    }
+  }
+
   query_manager.waitForCompletion();
   output_pool.outputAllResults();
 

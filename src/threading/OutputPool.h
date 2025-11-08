@@ -1,6 +1,7 @@
 #ifndef PROJECT_OUTPUT_POOL_H
 #define PROJECT_OUTPUT_POOL_H
 
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <string>
@@ -17,7 +18,9 @@ class OutputPool
 private:
   // Ordered map: query_id -> result_string
   std::map<size_t, std::string> results;
+  size_t next_output_id = 1;
   mutable std::mutex results_mutex;
+  std::atomic<size_t> total_output_count{0};
 
 public:
   OutputPool() = default;
@@ -37,9 +40,15 @@ public:
   void addResult(size_t query_id, const std::string& result);
 
   /**
-   * Output all results in order (query_id ascending)
-   * Should be called after all queries have finished
-   * Does NOT print query numbers for QUIT queries
+   * Flush ready results in order (streaming)
+   * Prints and frees continuous results starting from next_output_id
+   * Returns the number of results flushed this call
+   */
+  size_t flushContinuousResults();
+
+  /**
+   * Output all currently buffered results in order.
+   * Provided for compatibility with call sites expecting a bulk flush.
    */
   void outputAllResults();
 
@@ -47,6 +56,16 @@ public:
    * Get number of results collected
    */
   [[nodiscard]] size_t getResultCount() const;
+
+  /**
+   * Returns the next query id expected to be printed.
+   */
+  [[nodiscard]] size_t getNextOutputId() const;
+
+  /**
+   * Returns the total number of results that have been flushed.
+   */
+  [[nodiscard]] size_t getTotalOutputCount() const;
 };
 
 #endif // PROJECT_OUTPUT_POOL_H
