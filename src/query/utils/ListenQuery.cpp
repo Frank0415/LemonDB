@@ -16,7 +16,46 @@
 #include "threading/QueryManager.h"
 #include "utils/formatter.h"
 
+namespace
+{
+std::string trimCopy(std::string_view input)
+{
+  const auto first = input.find_first_not_of(" \t\n\r");
+  if (first == std::string_view::npos)
+  {
+    return "";
+  }
+  const auto last = input.find_last_not_of(" \t\n\r");
+  return std::string(input.substr(first, last - first + 1));
+}
 
+bool startsWithCaseInsensitive(std::string_view value, std::string_view prefix)
+{
+  if (value.size() < prefix.size())
+  {
+    return false;
+  }
+  for (size_t index = 0; index < prefix.size(); ++index)
+  {
+    const auto lhs = static_cast<unsigned char>(value[index]);
+    const auto rhs = static_cast<unsigned char>(prefix[index]);
+    if (std::toupper(lhs) != std::toupper(rhs))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+} // namespace
+
+void ListenQuery::setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr)
+{
+  query_manager = manager;
+  query_parser = parser;
+  database = database_ptr;
+}
 
 QueryResult::Ptr ListenQuery::execute()
 {
@@ -52,7 +91,27 @@ QueryResult::Ptr ListenQuery::execute()
       {
         Query::Ptr query = query_parser->parseQuery(trimmed);
 
+        if (startsWithCaseInsensitive(trimmed, "QUIT"))
+        {
+          database->exit();
+          break;
+        }
 
+        if (startsWithCaseInsensitive(trimmed, "COPYTABLE"))
+        {
+          handleCopyTable(*query_manager, trimmed, query->targetTableRef(),
+                          dynamic_cast<CopyTableQuery*>(query.get()));
+        }
+
+        const size_t query_id = ++scheduled_query_count;
+        query_manager->addQuery(query_id, query->targetTableRef(), query.release());
+      }
+      catch (const std::exception& /*ignored*/)
+      {
+        continue;
+      }
+    }
+  }
   catch (const std::ios_base::failure&)
   {
     return std::make_unique<ErrorMsgResult>(qname, "Unexpected EOF in listen file '?'"_f % fileName);
