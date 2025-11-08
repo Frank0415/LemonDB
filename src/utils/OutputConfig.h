@@ -24,7 +24,14 @@ struct OutputConfig
   std::chrono::milliseconds interval4{kDefaultInterval4};
 };
 
-[[nodiscard]] std::chrono::milliseconds
-calculateOutputInterval(size_t total_output_count, const OutputConfig& config = OutputConfig{});
+[[nodiscard]] std::chrono::
+    milliseconds
+    /**
+     * Calculate adaptive output interval based on total output count
+     * @param total_output_count Number of output items processed
+     * @param config Output configuration with thresholds and intervals
+     * @return Appropriate interval duration for output flushing
+     */
+    calculateOutputInterval(size_t total_output_count, const OutputConfig& config = OutputConfig{});
 
 #endif // PROJECT_OUTPUT_CONFIG_H
