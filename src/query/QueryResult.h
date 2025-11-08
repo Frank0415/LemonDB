@@ -190,7 +190,7 @@ protected:
 
 class ListenResult : public SucceededQueryResult
 {
-  const std::string listen_name;
+  std::string listen_name;
 
 public:
   bool display() override
@@ -203,10 +203,10 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& ostring) const override
   {
-    os << "ANSWER = ( listening from " << listen_name << " )\n";
-    return os;
+    ostring << "ANSWER = ( listening from " << listen_name << " )\n";
+    return ostring;
   }
 };
 

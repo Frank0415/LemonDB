@@ -1,14 +1,13 @@
 #include "ListenQuery.h"
 
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
+#include <exception>
 
-#include "../../db/Database.h"
-#include "../../query/QueryResult.h"
+#include "utils/formatter.h"
+#include "query/QueryResult.h"
 
 // constexpr const char *ListenQuery::qname;
 

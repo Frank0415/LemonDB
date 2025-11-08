@@ -9,7 +9,7 @@
 class ListenQuery : public Query
 {
   static constexpr const char* qname = "LISTEN";
-  const std::string fileName;
+  std::string fileName;
 
 public:
   explicit ListenQuery(std::string filename)
