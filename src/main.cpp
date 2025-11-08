@@ -1,7 +1,3 @@
-//
-// Created by liu on 18-10-21.
-//
-
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
@@ -28,19 +24,6 @@
 
 namespace
 {
-struct Args
-{
-  std::string listen;
-  std::int64_t threads = 0;
-};
-
-void setupParser(QueryParser& parser)
-{
-  parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
-  parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
-  parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
-}
-
 std::string extractQueryString(std::istream& input_stream)
 {
   std::string buf;
