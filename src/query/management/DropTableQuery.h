@@ -17,12 +17,35 @@ class DropTableQuery : public Query
 public:
   using Query::Query;
 
+  /**
+   * Execute the DROP query to remove table from database
+   * @return QueryResult with drop operation results
+   */
   QueryResult::Ptr execute() override;
 
+  /**
+   * Convert query to string representation
+   * @return String representation of the DROP query
+   */
   std::string toString() override;
 
-  [[nodiscard]] bool isWriter() const override { return true; }
-  [[nodiscard]] bool isInstant() const override { return true; }
+  /**
+   * Check if this query modifies data
+   * @return Always returns true for DROP queries
+   */
+  [[nodiscard]] bool isWriter() const override
+  {
+    return true;
+  }
+
+  /**
+   * Check if this query must execute immediately
+   * @return Always returns true for DROP queries
+   */
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  }
 };
 
 #endif // PROJECT_DROPTABLEQUERY_H
