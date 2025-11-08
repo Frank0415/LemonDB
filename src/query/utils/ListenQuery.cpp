@@ -47,10 +47,77 @@ bool startsWithCaseInsensitive(std::string_view value, std::string_view prefix)
   return true;
 }
 
+bool readNextStatement(std::istream& stream, std::string& out_statement)
+{
+  out_statement.clear();
+  while (true)
+  {
+    const int character = stream.get();
+    if (character == ';')
+    {
+      return true;
+    }
+    if (character == EOF)
+    {
+      if (out_statement.empty())
+      {
+        return false;
+      }
+      throw std::ios_base::failure("Unexpected end of input before ';'");
+    }
+    out_statement.push_back(static_cast<char>(character));
+  }
+}
 
+void handleCopyTable(QueryManager& query_manager,
+                     const std::string& trimmed,
+                     const std::string& source_table,
+                     CopyTableQuery* copy_query)
+{
+  if (copy_query == nullptr)
+  {
+    return;
+  }
+
+  constexpr size_t copytable_prefix_len = 9; // length of "COPYTABLE"
+  std::string new_table_name = trimmed.substr(copytable_prefix_len);
+
+  size_t position = new_table_name.find_first_not_of(" \t");
+  if (position == std::string::npos)
+  {
+    return;
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_of(" \t");
+  if (position == std::string::npos)
+  {
+    return;
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_not_of(" \t;");
+  if (position == std::string::npos)
+  {
+    return;
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_of(" \t;");
+  if (position != std::string::npos)
+  {
+    new_table_name = new_table_name.substr(0, position);
+  }
+
+  auto wait_query = std::make_unique<WaitQuery>(source_table, copy_query->getWaitSemaphore());
+  constexpr size_t wait_query_id = 0;
+  query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
+}
 } // namespace
 
-void ListenQuery::setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr)
+void ListenQuery::setDependencies(QueryManager* manager,
+                                  QueryParser* parser,
+                                  Database* database_ptr)
 {
   query_manager = manager;
   query_parser = parser;
@@ -114,7 +181,8 @@ QueryResult::Ptr ListenQuery::execute()
   }
   catch (const std::ios_base::failure&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, "Unexpected EOF in listen file '?'"_f % fileName);
+    return std::make_unique<ErrorMsgResult>(qname,
+                                            "Unexpected EOF in listen file '?'"_f % fileName);
   }
 
   return std::make_unique<ListenResult>(fileName);
