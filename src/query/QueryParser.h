@@ -16,7 +16,7 @@ struct TokenizedQueryString
 class QueryBuilder
 {
 public:
-  typedef std::unique_ptr<QueryBuilder> Ptr;
+  using Ptr = std::unique_ptr<QueryBuilder>;
 
   virtual Query::Ptr tryExtractQuery(TokenizedQueryString& queryString) = 0;
   virtual void setNext(Ptr&& builder) = 0;
@@ -28,9 +28,9 @@ public:
 class QueryParser
 {
   QueryBuilder::Ptr first; // An owning pointer
-  QueryBuilder* last;      // None owning reference
+  QueryBuilder* last = nullptr;      // None owning reference
 
-  TokenizedQueryString tokenizeQueryString(const std::string& queryString);
+  static TokenizedQueryString tokenizeQueryString(const std::string& queryString);
 
 public:
   Query::Ptr parseQuery(const std::string& queryString);

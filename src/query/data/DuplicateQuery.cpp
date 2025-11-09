@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <exception>
+#include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -10,61 +12,55 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 QueryResult::Ptr DuplicateQuery::execute()
 {
-  using std::string_literals::operator""s;
   try
   {
-    if (!this->operands.empty())
+    auto validationResult = validateOperands();
+    if (validationResult != nullptr) [[unlikely]]
     {
-      return std::make_unique<ErrorMsgResult>(
-          qname, this->targetTable, "Invalid number of operands (? operands)."_f % operands.size());
+      return validationResult;
     }
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+
+    auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
+
     auto result = initCondition(table);
-    if (!result.second)
+    if (!result.second) [[unlikely]]
     {
       throw IllFormedQueryCondition("Error conditions in WHERE clause.");
     }
 
-    Table::SizeType counter = 0;
-    auto row_size = table.field().size();
+    // Decide between single-threaded and multi-threaded execution
+    std::vector<RecordPair> recordsToDuplicate;
 
-    // Collect records to duplicate
-    std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> recordsToDuplicate;
-
-    for (auto it = table.begin(); it != table.end(); ++it)
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
-      if (!this->evalCondition(*it))
+      recordsToDuplicate = executeSingleThreaded(table);
+    }
+    else [[likely]]
+    {
+      const ThreadPool& pool = ThreadPool::getInstance();
+      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
       {
-        continue;
+        recordsToDuplicate = executeSingleThreaded(table);
       }
-      auto originalKey = it->key();
-      auto newKey = originalKey + "_copy";
-
-      // if a "_copy" already exists, skip this key
-      if (table[newKey] != nullptr)
+      else [[likely]]
       {
-        continue;
+        recordsToDuplicate = executeMultiThreaded(table);
       }
-
-      // Copy the values from the original record
-      std::vector<Table::ValueType> values(row_size);
-      for (size_t i = 0; i < row_size; ++i)
-      {
-        values[i] = (*it)[i];
-      }
-
-      recordsToDuplicate.emplace_back(newKey, std::move(values));
     }
 
-    // Insert all duplicated records
-    for (auto& record : recordsToDuplicate)
+    // Insert all duplicated records (in order preserved by helpers)
+    Table::SizeType counter = 0;
+    for (auto& record : recordsToDuplicate) [[likely]]
     {
       try
       {
@@ -82,30 +78,150 @@ QueryResult::Ptr DuplicateQuery::execute()
   }
   catch (const NotFoundKey& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Key not found."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("Key not found."));
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unkonwn error '?'."_f % e.what());
   }
 }
 
 std::string DuplicateQuery::toString()
 {
-  return "QUERY = DUPLICATE " + this->targetTable + "\"";
+  return "QUERY = DUPLICATE " + this->targetTableRef() + "\"";
+}
+
+[[nodiscard]] QueryResult::Ptr DuplicateQuery::validateOperands() const
+{
+  if (!this->getOperands().empty()) [[unlikely]]
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Invalid number of operands (? operands)."_f %
+                                                getOperands().size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<DuplicateQuery::RecordPair>
+DuplicateQuery::executeSingleThreaded(Table& table)
+{
+  std::vector<RecordPair> recordsToDuplicate;
+  auto row_size = table.field().size();
+
+  for (auto it = table.begin(); it != table.end(); ++it) [[likely]]
+  {
+    if (!this->evalCondition(*it)) [[unlikely]]
+    {
+      continue;
+    }
+
+    auto originalKey = it->key();
+    auto newKey = originalKey + "_copy";
+
+    // if a "_copy" already exists, skip this key
+    if (table[newKey] != nullptr) [[unlikely]]
+    {
+      continue;
+    }
+
+    // Copy the values from the original record
+    std::vector<Table::ValueType> values(row_size);
+    for (size_t i = 0; i < row_size; ++i) [[likely]]
+    {
+      values[i] = (*it)[i];
+    }
+
+    recordsToDuplicate.emplace_back(newKey, std::move(values));
+  }
+
+  return recordsToDuplicate;
+}
+
+[[nodiscard]] std::vector<DuplicateQuery::RecordPair>
+DuplicateQuery::executeMultiThreaded(Table& table)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  auto row_size = table.field().size();
+
+  // Collect tasks with their positions to preserve order
+  std::vector<std::pair<size_t, std::future<std::vector<RecordPair>>>> tasks;
+  tasks.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  size_t chunk_index = 0;
+  auto iterator = table.begin();
+  while (iterator != table.end()) [[likely]]
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    const size_t current_chunk_index = chunk_index;
+    tasks.emplace_back(current_chunk_index, pool.submit(
+                                                [this, &table, chunk_begin, chunk_end, row_size]()
+                                                {
+                                                  std::vector<RecordPair> local_records;
+                                                  for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
+                                                  {
+                                                    if (!this->evalCondition(*it)) [[unlikely]]
+                                                    {
+                                                      continue;
+                                                    }
+
+                                                    auto originalKey = it->key();
+                                                    auto newKey = originalKey + "_copy";
+
+                                                    // Check if _copy already exists
+                                                    if (table[newKey] != nullptr) [[unlikely]]
+                                                    {
+                                                      continue;
+                                                    }
+
+                                                    // Copy the values
+                                                    std::vector<Table::ValueType> values(row_size);
+                                                    for (size_t i = 0; i < row_size; ++i) [[likely]]
+                                                    {
+                                                      values[i] = (*it)[i];
+                                                    }
+
+                                                    local_records.emplace_back(newKey,
+                                                                               std::move(values));
+                                                  }
+                                                  return local_records;
+                                                }));
+    ++chunk_index;
+  }
+
+  // Merge results in order (preserve chunk order)
+  std::vector<RecordPair> allRecords;
+  for (auto& [idx, future] : tasks) [[likely]]
+  {
+    auto local_records = future.get();
+    allRecords.insert(allRecords.end(), make_move_iterator(local_records.begin()),
+                      make_move_iterator(local_records.end()));
+  }
+
+  return allRecords;
 }

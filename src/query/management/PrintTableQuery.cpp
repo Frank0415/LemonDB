@@ -8,30 +8,32 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../../utils/uexception.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/TableLockManager.h"
+#include "query/QueryResult.h"
+#include "utils/uexception.h"
 
 QueryResult::Ptr PrintTableQuery::execute()
 {
-  using std::string_literals::operator""s;
-  const Database& db = Database::getInstance();
+  const Database& database = Database::getInstance();
   try
   {
-    const auto& table = db[this->targetTable];
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    const auto& table = database[this->targetTableRef()];
     std::cout << "================\n";
     std::cout << "TABLE = ";
     std::cout << table;
     std::cout << "================\n" << '\n';
-    return std::make_unique<SuccessMsgResult>(qname, this->targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const TableNameNotFound& e)
+  catch (const TableNameNotFound& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
 }
 
 std::string PrintTableQuery::toString()
 {
-  return "QUERY = SHOWTABLE, Table = \"" + this->targetTable + "\"";
+  return "QUERY = SHOWTABLE, Table = \"" + this->targetTableRef() + "\"";
 }

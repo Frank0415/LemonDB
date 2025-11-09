@@ -12,26 +12,8 @@
 
 #include "Query.h"
 #include "QueryParser.h"
-
-#define QueryBuilder(name) name##QueryBuilder
-
-#define QueryBuilderClass(name)                                                                    \
-  class QueryBuilder(name) : public QueryBuilder                                                   \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
-
-#define BasicQueryBuilderClass(name)                                                               \
-  class QueryBuilder(name) : public BasicQueryBuilder                                              \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
-
-#define ComplexQueryBuilderClass(name)                                                             \
-  class QueryBuilder(name) : public ComplexQueryBuilder                                            \
-  {                                                                                                \
-    Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;                              \
-  }
+#include <iostream>
+#include <iomanip>
 
 class FailedQueryBuilder : public QueryBuilder
 {
@@ -41,14 +23,14 @@ public:
     return std::make_unique<FailedQueryBuilder>();
   }
 
-  Query::Ptr tryExtractQuery(TokenizedQueryString& q) final
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) final
   {
-    throw QueryBuilderMatchFailed(q.rawQeuryString);
+    throw QueryBuilderMatchFailed(query.rawQeuryString);
   }
 
   void setNext(QueryBuilder::Ptr&& builder) final
   {
-    (void)builder;
+    (void)std::move(builder);
   }
 
   void clear() override
@@ -60,10 +42,16 @@ public:
 
 class BasicQueryBuilder : public QueryBuilder
 {
-protected:
+private:
   QueryBuilder::Ptr nextBuilder;
 
 public:
+  // Helper method for derived classes to access nextBuilder
+  [[nodiscard]] QueryBuilder::Ptr& getNextBuilder()
+  {
+    return nextBuilder;
+  }
+
   void setNext(Ptr&& builder) override
   {
     nextBuilder = std::move(builder);
@@ -88,7 +76,7 @@ public:
 
 class ComplexQueryBuilder : public BasicQueryBuilder
 {
-protected:
+private:
   std::string targetTable;
   std::vector<std::string> operandToken;
   std::vector<QueryCondition> conditionToken;
@@ -98,7 +86,6 @@ protected:
 public:
   void clear() override;
 
-public:
   // Used as a debugging function.
   // Prints the parsed information
   Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
@@ -108,13 +95,45 @@ public:
 // It does not modify or extract anything
 // It prints current tokenized string
 // Use to examine the queries and tokenizer
-BasicQueryBuilderClass(Fake);
+class FakeQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
+
+inline Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
+{
+  std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
+  std::cerr << "Tokens:\n";
+  constexpr int column_width = 10;
+  constexpr int tokens_per_line = 5;
+  int count = 0;
+  for (const auto& tok : query.token)
+  {
+    std::cerr << std::setw(column_width) << "\"" << tok << "\"";
+    count = (count + 1) % tokens_per_line;
+    if (count == 4)
+    {
+      std::cerr << '\n';
+    }
+  }
+  if (count != 4)
+  {
+    std::cerr << '\n';
+  }
+  return getNextBuilder()->tryExtractQuery(query);
+}
 
 // Debug commands / Utils
-BasicQueryBuilderClass(Debug);
+class DebugQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
 
 // Load, dump, truncate and delete table
-BasicQueryBuilderClass(ManageTable);
+class ManageTableQueryBuilder : public BasicQueryBuilder
+{
+  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+};
 
 // ComplexQueryBuilderClass(UpdateTable);
 // ComplexQueryBuilderClass(Insert);

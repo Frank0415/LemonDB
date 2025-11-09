@@ -3,23 +3,19 @@ Checks: >
   -*,
   bugprone-*,
   cert-*,
+  -bugprone-easily-swappable-parameters,
   clang-analyzer-*,
   cppcoreguidelines-*,
-  google-*,
-  modernize-*,
-  performance-*,
-  readability-*,
   misc-*,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -google-readability-todo,
+  modernize-*,
   -modernize-use-trailing-return-type,
-  -readability-identifier-length,
-  -readability-magic-numbers,
+  performance-*,
+  portability-*,
+  readability-*,
+  google-*,
+  -google-objc-function-naming
   -cert-err58-cpp,
-  -misc-non-private-member-variables-in-classes,
-  -cppcoreguidelines-non-private-member-variables-in-classes
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 HeaderFilterRegex: '^(src|tests)/'
 CheckOptions:
   - key: readability-function-size.LineThreshold
@@ -32,3 +28,7 @@ CheckOptions:
     value: reasonable
   - key: performance-move-const-arg.CheckTriviallyCopyableMove
     value: '0'
+  - key: readability-function-size.LineLimit
+    value: '100'
+  - key: readability-function-cognitive-complexity.Limit
+    value: '25'

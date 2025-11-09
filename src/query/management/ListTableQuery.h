@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "../Query.h"
+#include "query/Query.h"
 
 class ListTableQuery : public Query
 {

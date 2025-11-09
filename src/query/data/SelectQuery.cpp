@@ -1,15 +1,19 @@
 #include "SelectQuery.h"
 
-#include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
@@ -18,90 +22,209 @@ QueryResult::Ptr SelectQuery::execute()
 {
   try
   {
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
-    if (this->operands.empty())
+    auto validation_result = validateOperands();
+    if (validation_result != nullptr) [[unlikely]]
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "Invalid operands.");
-    }
-    std::vector<std::string> fieldsOrder;
-    fieldsOrder.reserve(this->operands.size() + 1);
-    fieldsOrder.emplace_back("KEY");
-    for (const auto& f : this->operands)
-    {
-      if (f != "KEY")
-      {
-        fieldsOrder.emplace_back(f);
-      }
-    }
-    std::vector<Table::FieldIndex> fieldIds;
-    fieldIds.reserve(fieldsOrder.size() - 1);
-    for (size_t i = 1; i < fieldsOrder.size(); ++i)
-    {
-      fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
+      return validation_result;
     }
 
-    std::ostringstream buffer;
+    auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
+
+    auto fieldIds = getFieldIndices(table);
+    auto result = initCondition(table);
+
+    if (!result.second) [[unlikely]]
+    {
+      return std::make_unique<TextRowsResult>("");
+    }
+
+    // Try KEY condition optimization first
+    std::ostringstream key_buffer;
     const bool handled = this->testKeyCondition(table,
-                                                [&](bool ok, Table::Object::Ptr&& obj)
+                                                [&](bool success, Table::Object::Ptr obj)
                                                 {
-                                                  if (!ok)
+                                                  if (!success) [[unlikely]]
                                                   {
                                                     return;
                                                   }
-                                                  if (obj)
+                                                  if (obj) [[likely]]
                                                   {
-                                                    buffer << "( " << obj->key();
-                                                    for (size_t j = 0; j < fieldIds.size(); ++j)
+                                                    key_buffer << "( " << obj->key();
+                                                    for (const auto& field_id : fieldIds)
                                                     {
-                                                      buffer << " " << (*obj)[fieldIds[j]];
+                                                      key_buffer << " " << (*obj)[field_id];
                                                     }
-                                                    buffer << " )\n";
+                                                    key_buffer << " )\n";
                                                   }
                                                 });
-    if (handled)
+
+    if (handled) [[unlikely]]
     {
-      return std::make_unique<TextRowsResult>(buffer.str());
+      return std::make_unique<TextRowsResult>(key_buffer.str());
     }
 
-    std::vector<Table::Iterator> rows;
-    for (auto it = table.begin(); it != table.end(); ++it)
+    // Use ThreadPool if available
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
-      if (this->evalCondition(*it))
-      {
-        rows.push_back(it);
-      }
+      return executeSingleThreaded(table, fieldIds);
     }
-    std::sort(rows.begin(), rows.end(), [](const Table::Iterator& a, const Table::Iterator& b)
-              { return (*a).key() < (*b).key(); });
 
-    for (const auto& it : rows)
+    const ThreadPool& pool = ThreadPool::getInstance();
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
-      buffer << "( " << (*it).key();
-      for (size_t j = 0; j < fieldIds.size(); ++j)
-      {
-        buffer << " " << (*it)[fieldIds[j]];
-      }
-      buffer << " )\n";
+      return executeSingleThreaded(table, fieldIds);
     }
-    return std::make_unique<TextRowsResult>(buffer.str());
+
+    return executeMultiThreaded(table, fieldIds);
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string SelectQuery::toString()
 {
-  return "QUERY = SELECT \"" + this->targetTable + "\"";
+  return "QUERY = SELECT \"" + this->targetTableRef() + "\"";
+}
+
+[[nodiscard]] QueryResult::Ptr SelectQuery::validateOperands() const
+{
+  if (this->getOperands().empty()) [[unlikely]]
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Invalid operands.");
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> SelectQuery::getFieldIndices(Table& table) const
+{
+  std::vector<std::string> fieldsOrder;
+  fieldsOrder.reserve(this->getOperands().size() + 1);
+  fieldsOrder.emplace_back("KEY");
+  for (const auto& field : this->getOperands()) [[likely]]
+  {
+    if (field != "KEY") [[likely]]
+    {
+      fieldsOrder.emplace_back(field);
+    }
+  }
+
+  std::vector<Table::FieldIndex> fieldIds;
+  fieldIds.reserve(fieldsOrder.size() - 1);
+  for (size_t i = 1; i < fieldsOrder.size(); ++i) [[likely]]
+  {
+    fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
+  }
+  return fieldIds;
+}
+
+[[nodiscard]] QueryResult::Ptr
+SelectQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds)
+{
+  // Collect matching rows as pairs of (key, values)
+  std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
+
+  for (auto it = table.begin(); it != table.end(); ++it) [[likely]]
+  {
+    if (this->evalCondition(*it)) [[likely]]
+    {
+      std::vector<Table::ValueType> values;
+      values.reserve(fieldIds.size());
+      for (const auto& field_id : fieldIds) [[likely]]
+      {
+        values.emplace_back((*it)[field_id]);
+      }
+      sorted_rows.emplace(it->key(), std::move(values));
+    }
+  }
+
+  // Output in KEY order (already sorted by map)
+  std::ostringstream buffer;
+  for (const auto& [key, values] : sorted_rows) [[likely]]
+  {
+    buffer << "( " << key;
+    for (const auto& value : values) [[likely]]
+    {
+      buffer << " " << value;
+    }
+    buffer << " )\n";
+  }
+
+  return std::make_unique<TextRowsResult>(buffer.str());
+}
+
+[[nodiscard]] QueryResult::Ptr
+SelectQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  std::vector<std::future<std::map<std::string, std::vector<Table::ValueType>>>> futures;
+  futures.reserve((table.size() + CHUNK_SIZE - 1) / CHUNK_SIZE);
+
+  auto iterator = table.begin();
+  while (iterator != table.end()) [[likely]]
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, chunk_begin, chunk_end, &fieldIds]()
+        {
+          std::map<std::string, std::vector<Table::ValueType>> local_rows;
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
+          {
+            if (this->evalCondition(*iter)) [[likely]]
+            {
+              std::vector<Table::ValueType> values;
+              values.reserve(fieldIds.size());
+              for (const auto& field_id : fieldIds) [[likely]]
+              {
+                values.emplace_back((*iter)[field_id]);
+              }
+              local_rows.emplace(iter->key(), std::move(values));
+            }
+          }
+          return local_rows;
+        }));
+  }
+
+  // Merge all results into sorted map
+  std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
+  for (auto& future : futures) [[likely]]
+  {
+    auto local_rows = future.get();
+    sorted_rows.insert(local_rows.begin(), local_rows.end());
+  }
+
+  // Output in KEY order (already sorted by map)
+  std::ostringstream buffer;
+  for (const auto& [key, values] : sorted_rows) [[likely]]
+  {
+    buffer << "( " << key;
+    for (const auto& value : values) [[likely]]
+    {
+      buffer << " " << value;
+    }
+    buffer << " )\n";
+  }
+
+  return std::make_unique<TextRowsResult>(buffer.str());
 }

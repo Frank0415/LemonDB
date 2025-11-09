@@ -11,39 +11,18 @@
 #include <utility>
 #include <vector>
 
-#include "../db/Table.h"
 #include "QueryResult.h"
+#include "db/Table.h"
+#include "db/types.h"
 
 struct QueryCondition
 {
   std::string field;
-  size_t fieldId;
+  size_t fieldId = 0;
   std::string op;
-  std::function<bool(const Table::ValueType&, const Table::ValueType&)> comp;
+  std::function<bool(const ValueType&, const ValueType&)> comp;
   std::string value;
-  Table::ValueType valueParsed;
-};
-
-class Query
-{
-protected:
-  std::string targetTable;
-  int id = -1;
-
-public:
-  Query() = default;
-
-  explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
-  {
-  }
-
-  typedef std::unique_ptr<Query> Ptr;
-
-  virtual QueryResult::Ptr execute() = 0;
-
-  virtual std::string toString() = 0;
-
-  virtual ~Query() = default;
+  ValueType valueParsed = 0;
 };
 
 class NopQuery : public Query
@@ -62,14 +41,14 @@ public:
 
 class ComplexQuery : public Query
 {
-protected:
+private:
   /** The field names in the first () */
   std::vector<std::string> operands;
   /** The function used in where clause */
   std::vector<QueryCondition> condition;
 
 public:
-  typedef std::unique_ptr<ComplexQuery> Ptr;
+  using Ptr = std::unique_ptr<ComplexQuery>;
 
   /**
    * init a fast condition according to the table
@@ -111,7 +90,7 @@ public:
   }
 
   /** Get operands in the query */
-  const std::vector<std::string>& getOperands() const
+  [[nodiscard]] const std::vector<std::string>& getOperands() const
   {
     return operands;
   }

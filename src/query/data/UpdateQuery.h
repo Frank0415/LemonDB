@@ -14,22 +14,33 @@
 class UpdateQuery : public ComplexQuery
 {
   static constexpr const char* qname = "UPDATE";
-  Table::ValueType fieldValue; // = (operands[0]=="KEY")? 0 :std::stoi(operands[1]);
-  Table::FieldIndex fieldId;
+  Table::ValueType fieldValue = 0;
+  Table::FieldIndex fieldId = 0;
   Table::KeyType keyValue;
+
+private:
+  [[nodiscard]] QueryResult::Ptr validateOperands() const;
+
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
 
 public:
   UpdateQuery(std::string table,
               std::vector<std::string> operands,
               std::vector<QueryCondition> conditions)
-      : ComplexQuery(std::move(table), std::move(operands), std::move(conditions)), fieldValue(0),
-        fieldId(0)
+      : ComplexQuery(std::move(table), std::move(operands), std::move(conditions))
   {
   }
 
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  [[nodiscard]] bool isWriter() const override
+  {
+    return true;
+  }
 };
 
 #endif // PROJECT_UPDATEQUERY_H

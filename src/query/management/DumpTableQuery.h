@@ -8,12 +8,12 @@
 #include <string>
 #include <utility>
 
-#include "../Query.h"
+#include "query/Query.h"
 
 class DumpTableQuery : public Query
 {
   static constexpr const char* qname = "DUMP";
-  const std::string fileName;
+  std::string fileName;
 
 public:
   DumpTableQuery(std::string table, std::string filename)
@@ -24,6 +24,15 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  [[nodiscard]] bool isWriter() const override
+  {
+    return false;
+  } // DUMP only reads
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  } // But must be serial
 };
 
 #endif // PROJECT_DUMPTABLEQUERY_H

@@ -2,31 +2,26 @@
 // Created by liu on 18-10-21.
 //
 
-#include <getopt.h>
+#include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
+#include <thread>
+#include <utility>
 
-#include <unistd.h>
-
-#include "query/Query.h"
+#include "db/Database.h"
+#include "db/QueryBase.h"
 #include "query/QueryBuilders.h"
 #include "query/QueryParser.h"
-#include "query/QueryResult.h"
-
-#ifdef __has_feature
-#if __has_feature(memory_sanitizer)
-#define LEMONDB_WITH_MSAN 1
-#endif
-#endif
-#ifdef __SANITIZE_MEMORY__
-#define LEMONDB_WITH_MSAN 1
-#endif
+#include "threading/Collector.h"
+#include "threading/Threadpool.h"
 
 namespace
 {
@@ -36,27 +31,54 @@ struct Args
   std::int64_t threads = 0;
 };
 
-void parseArgs(int argc, char* argv[], Args& args)
+void parseArgs(int argc, char** argv, Args& args)
 {
-  const option longOpts[] = {{"listen", required_argument, nullptr, 'l'},
-                             {"threads", required_argument, nullptr, 't'},
-                             {nullptr, no_argument, nullptr, 0}};
-  const char* shortOpts = "l:t:";
-  int opt = 0;
-  int longIndex = 0;
-  while ((opt = getopt_long(argc, argv, shortOpts, longOpts, &longIndex)) != -1)
+  // Manual argument parser supporting both long and short forms
+  // --listen=<file> or --listen <file> or -l <file>
+  // --threads=<num> or --threads <num> or -t <num>
+
+  constexpr size_t listen_prefix_len = 9;   // Length of "--listen="
+  constexpr size_t threads_prefix_len = 10; // Length of "--threads="
+  constexpr int decimal_base = 10;
+
+  for (int i = 1; i < argc; ++i)
   {
-    if (opt == 'l')
+    const std::string arg(
+        std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]);
+
+    // Helper lambda to get next argument value
+    auto getNextArg = [&]() -> std::string
     {
-      args.listen = optarg;
+      if (i + 1 < argc)
+      {
+        ++i;
+        return {std::span(argv, static_cast<std::size_t>(argc))[static_cast<std::size_t>(i)]};
+      }
+      std::cerr << "lemondb: error: " << arg << " requires an argument\n";
+      std::exit(-1);
+    };
+
+    // Handle --listen=<value> or --listen <value>
+    if (arg.starts_with("--listen="))
+    {
+      args.listen = arg.substr(listen_prefix_len);
     }
-    else if (opt == 't')
+    else if (arg == "--listen" || arg == "-l")
     {
-      args.threads = std::strtol(optarg, nullptr, 10);
+      args.listen = getNextArg();
+    }
+    // Handle --threads=<value> or --threads <value>
+    else if (arg.starts_with("--threads="))
+    {
+      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(), nullptr, decimal_base);
+    }
+    else if (arg == "--threads" || arg == "-t")
+    {
+      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
     }
     else
     {
-      std::cerr << "lemondb: warning: unknown argument " << longOpts[longIndex].name << '\n';
+      std::cerr << "lemondb: warning: unknown argument " << arg << '\n';
     }
   }
 }
@@ -79,28 +101,28 @@ void validateAndPrintThreads(std::int64_t threads)
   }
 }
 
-void setupParser(QueryParser& p)
+void setupParser(QueryParser& parser)
 {
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Debug)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(ManageTable)>());
-  p.registerQueryBuilder(std::make_unique<QueryBuilder(Complex)>());
+  parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
+  parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
 }
 
-std::string extractQueryString(std::istream& is)
+std::string extractQueryString(std::istream& input_stream)
 {
   std::string buf;
   while (true)
   {
-    const int ch = is.get();
-    if (ch == ';')
+    const int character = input_stream.get();
+    if (character == ';') [[likely]]
     {
       return buf;
     }
-    if (ch == EOF)
+    if (character == EOF) [[unlikely]]
     {
       throw std::ios_base::failure("End of input");
     }
-    buf.push_back(static_cast<char>(ch));
+    buf.push_back(static_cast<char>(character));
   }
 }
 } // namespace
@@ -114,16 +136,21 @@ int main(int argc, char* argv[])
 
   std::ifstream fin;
   std::istream* input = &std::cin;
-  if (!parsedArgs.listen.empty())
+  if (!parsedArgs.listen.empty()) [[unlikely]]
   {
-    fin.open(parsedArgs.listen);
-    if (!fin.is_open())
+    // Construct a new ifstream and assign to fin to ensure all internal
+    // members are properly initialized (avoids MSan use-of-uninitialized warnings).
+    fin = std::ifstream(parsedArgs.listen);
+    if (!fin.is_open()) [[unlikely]]
     {
       std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
-      exit(-1);
+      std::exit(-1);
     }
     input = &fin;
   }
+
+  ThreadPool::initialize(parsedArgs.threads > 0 ? static_cast<size_t>(parsedArgs.threads)
+                                                : std::thread::hardware_concurrency());
 
 #ifdef NDEBUG
   // In production mode, listen argument must be defined
@@ -140,60 +167,51 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode\n";
-    //<< std::endl;
     input = &std::cin;
   }
 #endif
 
-  std::istream& is = *input;
+  std::istream& input_stream = *input;
 
   validateAndPrintThreads(parsedArgs.threads);
 
-  QueryParser p;
-  setupParser(p);
+  QueryParser parser;
+  setupParser(parser);
 
-  size_t counter = 0;
+  // Main loop: SEQUENTIAL query execution
+  // Each query runs to completion before the next one starts
+  // (but queries can use ThreadPool internally for parallelism)
+  const Database& database = Database::getInstance();
 
-  while (is)
+  QueryResultCollector g_result_collector;
+  std::atomic<size_t> g_query_counter{0};
+
+  while (input_stream && !database.isEnd()) [[likely]]
   {
     try
     {
-      // A very standard REPL
-      // REPL: Read-Evaluate-Print-Loop
-      const std::string queryStr = extractQueryString(is);
-      Query::Ptr query = p.parseQuery(queryStr);
-      QueryResult::Ptr result = query->execute();
-      std::cout << ++counter << "\n";
-      if (result->success())
-      {
-        if (result->display())
-        {
-          std::cout << *result;
-        }
-        else
-        {
-#ifndef NDEBUG
-          std::cout.flush();
-          std::cerr << *result;
-#endif
-        }
-      }
-      else
-      {
-        std::cout.flush();
-        std::cerr << "QUERY FAILED:\n\t" << *result;
-      }
+      const std::string queryStr = extractQueryString(input_stream);
+
+      Query::Ptr query = parser.parseQuery(queryStr);
+
+      const size_t query_id = g_query_counter.fetch_add(1) + 1;
+
+      // ALL queries execute synchronously one after another
+      // This ensures no data races between queries
+      executeQueryAsync(std::move(query), query_id, g_result_collector);
     }
-    catch (const std::ios_base::failure& e)
+    catch (const std::ios_base::failure& exc)
     {
       break;
     }
-    catch (const std::exception& e)
+    catch (const std::exception& exc)
     {
-      std::cout.flush();
-      std::cerr << e.what() << '\n';
+      std::cerr << "Error parsing query: " << exc.what() << '\n';
     }
   }
+
+  // Output all results in order
+  g_result_collector.outputAllResults();
 
   return 0;
 }

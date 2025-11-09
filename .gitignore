@@ -29,6 +29,11 @@
 !src/utils/*.cpp
 !src/utils/*.h
 
+# Allow threading
+!src/threading
+!src/threading/*.cpp
+!src/threading/*.h
+
 # Allow README.md
 !README.md
 !CHANGELOG.md
@@ -65,6 +70,13 @@
 !test/clangtidy.sh
 !test/cpplint.sh
 !test/cppcheck.sh
+!test/clangtidy_cleanup.sh
+!test/linecount.sh
+!test/test_correctness.sh
+!test/gprof.sh
+!test/gperftools.sh
+!test/valgrind.sh
+!test/verify_tables.py
 !test/data
 !test/gtests
 !test/gtests/

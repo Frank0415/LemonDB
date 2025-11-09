@@ -4,38 +4,36 @@
 #include <string>
 #include <utility>
 
-#include "../utils/uexception.h"
-#include "Query.h"
 #include "QueryBuilders.h"
+#include "db/QueryBase.h"
+#include "utils/uexception.h"
 
-QueryParser::QueryParser() : first(nullptr), last(nullptr)
-{
-}
+QueryParser::QueryParser() = default;
 
 Query::Ptr QueryParser::parseQuery(const std::string& queryString)
 {
-  if (first == nullptr)
+  if (first == nullptr) [[unlikely]]
   {
     throw QueryBuilderMatchFailed(queryString);
   }
-  auto t = tokenizeQueryString(queryString);
-  if (t.token.empty())
+  auto tokenized = tokenizeQueryString(queryString);
+  if (tokenized.token.empty()) [[unlikely]]
   {
     throw QueryBuilderMatchFailed("");
   }
   first->clear();
-  return first->tryExtractQuery(t);
+  return first->tryExtractQuery(tokenized);
 }
 
 void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
 {
-  if (first == nullptr)
+  if (first == nullptr) [[unlikely]]
   {
     first = std::move(qBuilder);
     last = first.get();
     last->setNext(FailedQueryBuilder::getDefault());
   }
-  else
+  else [[likely]]
   {
     QueryBuilder* temp = last;
     last = qBuilder.get();
@@ -46,14 +44,14 @@ void QueryParser::registerQueryBuilder(QueryBuilder::Ptr&& qBuilder)
 
 TokenizedQueryString QueryParser::tokenizeQueryString(const std::string& queryString)
 {
-  TokenizedQueryString t;
-  t.rawQeuryString = queryString;
-  std::stringstream s;
-  s.str(queryString);
+  TokenizedQueryString result;
+  result.rawQeuryString = queryString;
+  std::stringstream stream;
+  stream.str(queryString);
   std::string tStr;
-  while (s >> tStr)
+  while (stream >> tStr) [[likely]]
   {
-    t.token.push_back(tStr);
+    result.token.push_back(tStr);
   }
-  return t;
+  return result;
 }

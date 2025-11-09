@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <future>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -10,115 +11,186 @@
 
 #include "../../db/Database.h"
 #include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 QueryResult::Ptr MinQuery::execute()
 {
-  using std::string_literals::operator""s;
-  if (this->operands.empty())
-  {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable.c_str(),
-                                            "No operand (? operands)."_f % operands.size());
-  }
-  Database& db = Database::getInstance();
   try
   {
-    auto& table = db[this->targetTable];
-
-    // transform into its own Id, avoid lookups in map everytime
-    std::vector<Table::FieldIndex> fieldId;
-
-    try
+    if (validateOperands() != nullptr) [[unlikely]]
     {
-      for (const auto& operand : this->operands)
-      {
-        if (operand == "KEY")
-        {
-          throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
-        }
-        fieldId.push_back(table.getFieldIndex(operand));
-      }
-    }
-    catch (const TableFieldNotFound& e)
-    {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
-    }
-    catch (const std::exception& e)
-    {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "Unkonwn error '?'."_f % e.what());
+      return validateOperands();
     }
 
-    try
+    Database& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
+
+    auto result = initCondition(table);
+
+    if (!result.second) [[unlikely]]
     {
-      auto result = initCondition(table);
-      if (result.second)
-      {
-        bool found = false;
-        std::vector<Table::ValueType> minValue(fieldId.size(),
-                                               Table::ValueTypeMax); // each has its own min value
-
-        for (auto it = table.begin(); it != table.end(); ++it)
-        {
-          if (this->evalCondition(*it))
-          {
-            found = true;
-
-            for (size_t i = 0; i < fieldId.size(); ++i)
-            {
-              minValue[i] = std::min(minValue[i], (*it)[fieldId[i]]);
-            }
-          }
-        }
-
-        if (!found)
-        {
-          return std::make_unique<NullQueryResult>();
-        }
-        return std::make_unique<SuccessMsgResult>(minValue);
-      }
       return std::make_unique<NullQueryResult>();
     }
-    catch (const IllFormedQueryCondition& e)
+
+    auto fieldId = getFieldIndices(table);
+
+    if (!ThreadPool::isInitialized()) [[unlikely]]
     {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+      return executeSingleThreaded(table, fieldId);
     }
-    catch (const std::invalid_argument& e)
+
+    const ThreadPool& pool = ThreadPool::getInstance();
+
+    if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) [[unlikely]]
     {
-      // Cannot convert operand to string
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "Unknown error '?'"_f % e.what());
+      return executeSingleThreaded(table, fieldId);
     }
-    catch (const std::exception& e)
-    {
-      return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                              "Unkonwn error '?'."_f % e.what());
-    }
+    return executeMultiThreaded(table, fieldId);
+
+    return std::make_unique<NullQueryResult>();
   }
   catch (const TableNameNotFound& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
+  }
+  catch (const TableFieldNotFound& e)
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const IllFormedQueryCondition& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), e.what());
   }
   catch (const std::invalid_argument& e)
   {
     // Cannot convert operand to string
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Unknown error '?'"_f % e.what());
   }
   catch (const std::exception& e)
   {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTable,
-                                            "Unkonwn error '?'."_f % e.what());
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Unknown error '?'."_f % e.what());
   }
 }
 
 std::string MinQuery::toString()
 {
-  return "QUERY = MIN " + this->targetTable + "\"";
+  return "QUERY = MIN " + this->targetTableRef();
+}
+
+[[nodiscard]] QueryResult::Ptr MinQuery::validateOperands() const
+{
+  if (this->getOperands().empty()) [[unlikely]]
+  {
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef().c_str(),
+                                            "No operand (? operands)."_f % getOperands().size());
+  }
+  return nullptr;
+}
+
+[[nodiscard]] std::vector<Table::FieldIndex> MinQuery::getFieldIndices(const Table& table) const
+{
+  std::vector<Table::FieldIndex> fieldId;
+  for (const auto& operand : this->getOperands()) [[likely]]
+  {
+    if (operand == "KEY") [[unlikely]]
+    {
+      throw IllFormedQueryCondition("MIN operation not supported on KEY field.");
+    }
+    fieldId.push_back(table.getFieldIndex(operand));
+  }
+  return fieldId;
+}
+
+[[nodiscard]] QueryResult::Ptr
+MinQuery::executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  bool found = false;
+  std::vector<Table::ValueType> minValue(fids.size(),
+                                         Table::ValueTypeMax); // each has its own min value
+
+  for (const auto& row : table) [[likely]]
+  {
+    if (this->evalCondition(row)) [[likely]]
+    {
+      found = true;
+
+      for (size_t i = 0; i < fids.size(); ++i) [[likely]]
+      {
+        minValue[i] = std::min(minValue[i], row[fids[i]]);
+      }
+    }
+  }
+
+  if (!found) [[unlikely]]
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(minValue);
+}
+
+[[nodiscard]] QueryResult::Ptr
+MinQuery::executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fids)
+{
+  constexpr size_t CHUNK_SIZE = Table::splitsize();
+  const ThreadPool& pool = ThreadPool::getInstance();
+  const size_t num_fields = fids.size();
+  std::vector<Table::ValueType> minValues(num_fields, Table::ValueTypeMax);
+
+  // Create chunks and submit tasks
+  std::vector<std::future<std::vector<Table::ValueType>>> futures;
+  auto iterator = table.begin();
+  while (iterator != table.end()) [[likely]]
+  {
+    auto chunk_begin = iterator;
+    size_t count = 0;
+    while (iterator != table.end() && count < CHUNK_SIZE) [[likely]]
+    {
+      ++iterator;
+      ++count;
+    }
+    auto chunk_end = iterator;
+
+    futures.push_back(pool.submit(
+        [this, fids, chunk_begin, chunk_end, num_fields]()
+        {
+          std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
+          {
+            if (this->evalCondition(*it)) [[likely]]
+            {
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
+              {
+                local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+              }
+            }
+          }
+          return local_min;
+        }));
+  }
+  bool any_found = false;
+  for (auto& future : futures) [[likely]]
+  {
+    auto local_min = future.get();
+    for (size_t i = 0; i < num_fields; ++i) [[likely]]
+    {
+      if (!any_found && local_min[i] != Table::ValueTypeMax) [[unlikely]]
+      {
+        any_found = true;
+      }
+      minValues[i] = std::min(minValues[i], local_min[i]);
+    }
+  }
+  if (!any_found) [[unlikely]]
+  {
+    return std::make_unique<NullQueryResult>();
+  }
+  return std::make_unique<SuccessMsgResult>(minValues);
 }

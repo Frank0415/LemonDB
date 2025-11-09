@@ -5,10 +5,10 @@
 #ifndef PROJECT_DB_H
 #define PROJECT_DB_H
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <iostream>
 
 #include "Table.h"
 
@@ -31,6 +31,11 @@ private:
   std::unordered_map<std::string, std::string> fileTableNameMap;
 
   /**
+   * Flag to indicate if QUIT has been called
+   */
+  bool endInput = false;
+
+  /**
    * The default constructor is made private for singleton instance
    */
   Database() = default;
@@ -44,9 +49,9 @@ public:
 
   void printAllTable();
 
-  Table& operator[](const std::string& tableName);
+  [[nodiscard]] Table& operator[](const std::string& tableName);
 
-  const Table& operator[](const std::string& tableName) const;
+  [[nodiscard]] const Table& operator[](const std::string& tableName) const;
 
   Database& operator=(const Database&) = delete;
 
@@ -58,11 +63,11 @@ public:
 
   ~Database() = default;
 
-  static Database& getInstance();
+  [[nodiscard]] static Database& getInstance();
 
   void updateFileTableName(const std::string& fileName, const std::string& tableName);
 
-  std::string getFileTableName(const std::string& fileName);
+  [[nodiscard]] std::string getFileTableName(const std::string& fileName);
 
   /**
    * Load a table from an input stream (i.e., a file)
@@ -70,9 +75,20 @@ public:
    * @param source
    * @return reference of loaded table
    */
-  Table& loadTableFromStream(std::istream& is, const std::string& source = "");
+  static Table& loadTableFromStream(std::istream& input_stream, const std::string& source = "");
 
+  /**
+   * Signal that QUIT has been called and no more queries should be read
+   */
   void exit();
+
+  /**
+   * Check if QUIT has been called
+   */
+  [[nodiscard]] bool isEnd() const
+  {
+    return endInput;
+  }
 };
 
 #endif // PROJECT_DB_H

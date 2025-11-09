@@ -7,13 +7,13 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "query/QueryResult.h"
 
 QueryResult::Ptr ListTableQuery::execute()
 {
-  Database& db = Database::getInstance();
-  db.printAllTable();
+  Database& database = Database::getInstance();
+  database.printAllTable();
   return std::make_unique<SuccessMsgResult>(qname);
 }
 

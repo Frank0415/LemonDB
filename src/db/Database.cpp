@@ -4,7 +4,6 @@
 
 #include "Database.h"
 
-#include <cstdlib>
 #include <deque>
 #include <fstream>
 #include <iomanip>
@@ -23,8 +22,8 @@ std::unique_ptr<Database> Database::instance = nullptr;
 
 void Database::testDuplicate(const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it != this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator != this->tables.end()) [[unlikely]]
   {
     throw DuplicatedTableName("Error when inserting table \"" + tableName +
                               "\". Name already exists.");
@@ -41,33 +40,33 @@ Table& Database::registerTable(Table::Ptr&& table)
 
 Table& Database::operator[](const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end()) [[unlikely]]
   {
     throw TableNameNotFound("Error accesing table \"" + tableName + "\". Table not found.");
   }
-  return *(it->second);
+  return *(iterator->second);
 }
 
 const Table& Database::operator[](const std::string& tableName) const
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end()) [[unlikely]]
   {
     throw TableNameNotFound("Error accesing table \"" + tableName + "\". Table not found.");
   }
-  return *(it->second);
+  return *(iterator->second);
 }
 
 void Database::dropTable(const std::string& tableName)
 {
-  auto it = this->tables.find(tableName);
-  if (it == this->tables.end())
+  auto iterator = this->tables.find(tableName);
+  if (iterator == this->tables.end()) [[unlikely]]
   {
     throw TableNameNotFound("Error when trying to drop table \"" + tableName +
                             "\". Table not found.");
   }
-  this->tables.erase(it);
+  this->tables.erase(iterator);
 }
 
 void Database::printAllTable()
@@ -78,7 +77,7 @@ void Database::printAllTable()
   std::cout << std::setw(width) << "Table name";
   std::cout << std::setw(width) << "# of fields";
   std::cout << std::setw(width) << "# of entries" << '\n';
-  for (const auto& table : this->tables)
+  for (const auto& table : this->tables) [[likely]]
   {
     std::cout << std::setw(width) << table.first;
     std::cout << std::setw(width) << (*table.second).field().size() + 1;
@@ -90,7 +89,7 @@ void Database::printAllTable()
 
 Database& Database::getInstance()
 {
-  if (Database::instance == nullptr)
+  if (Database::instance == nullptr) [[unlikely]]
   {
     instance = std::unique_ptr<Database>(new Database);
   }
@@ -104,11 +103,11 @@ void Database::updateFileTableName(const std::string& fileName, const std::strin
 
 std::string Database::getFileTableName(const std::string& fileName)
 {
-  auto it = fileTableNameMap.find(fileName);
-  if (it == fileTableNameMap.end())
+  auto iterator = fileTableNameMap.find(fileName);
+  if (iterator == fileTableNameMap.end()) [[unlikely]]
   {
     std::ifstream infile(fileName);
-    if (!infile.is_open())
+    if (!infile.is_open()) [[unlikely]]
     {
       return "";
     }
@@ -118,12 +117,12 @@ std::string Database::getFileTableName(const std::string& fileName)
     fileTableNameMap.emplace(fileName, tableName);
     return tableName;
   }
-  return it->second;
+  return iterator->second;
 }
 
-Table& Database::loadTableFromStream(std::istream& is, const std::string& source)
+Table& Database::loadTableFromStream(std::istream& input_stream, const std::string& source)
 {
-  auto& db = Database::getInstance();
+  auto& database = Database::getInstance();
   const std::string errString = !source.empty() ? R"(Invalid table (from "?") format: )"_f % source
                                                 : "Invalid table format: ";
 
@@ -133,39 +132,39 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
 
   std::string line;
   std::stringstream sstream;
-  if (!std::getline(is, line))
+  if (!std::getline(input_stream, line)) [[unlikely]]
   {
     throw LoadFromStreamException(errString + "Failed to read table metadata line.");
   }
 
   sstream.str(line);
   sstream >> tableName >> fieldCount;
-  if (!sstream)
+  if (!sstream) [[unlikely]]
   {
     throw LoadFromStreamException(errString + "Failed to parse table metadata.");
   }
 
   // throw error if tableName duplicates
-  db.testDuplicate(tableName);
+  database.testDuplicate(tableName);
 
-  if (!(std::getline(is, line)))
+  if (!(std::getline(input_stream, line))) [[unlikely]]
   {
     throw LoadFromStreamException(errString + "Failed to load field names.");
   }
 
   sstream.clear();
   sstream.str(line);
-  for (Table::SizeType i = 0; i < fieldCount; ++i)
+  for (Table::SizeType i = 0; i < fieldCount; ++i) [[likely]]
   {
     std::string field;
-    if (!(sstream >> field))
+    if (!(sstream >> field)) [[unlikely]]
     {
       throw LoadFromStreamException(errString + "Failed to load field names.");
     }
     fields.emplace_back(std::move(field));
   }
 
-  if (fields.front() != "KEY")
+  if (fields.front() != "KEY") [[unlikely]]
   {
     throw LoadFromStreamException(errString + "Missing or invalid KEY field.");
   }
@@ -173,42 +172,60 @@ Table& Database::loadTableFromStream(std::istream& is, const std::string& source
   fields.erase(fields.begin()); // Remove leading key
   auto table = std::make_unique<Table>(tableName, fields);
 
+  // Pre-read all data lines to determine table size for pre-allocation
+  std::vector<std::string> dataLines;
   Table::SizeType lineCount = 2;
-  while (std::getline(is, line))
+  while (std::getline(input_stream, line)) [[likely]]
   {
-    if (line.empty())
+    if (line.empty()) [[unlikely]]
     {
       break; // Read to an empty line
     }
     lineCount++;
+    dataLines.emplace_back(std::move(line));
+  }
+
+  // Pre-allocate space for all rows to reduce allocation overhead
+  table->reserve(dataLines.size());
+
+  // Parse all data rows first
+  std::vector<std::pair<Table::KeyType, std::vector<Table::ValueType>>> batchData;
+  batchData.reserve(dataLines.size());
+
+  for (Table::SizeType i = 0; i < dataLines.size(); ++i) [[likely]]
+  {
     sstream.clear();
-    sstream.str(line);
+    sstream.str(dataLines[i]);
     std::string key;
-    if (!(sstream >> key))
+    if (!(sstream >> key)) [[unlikely]]
     {
       throw LoadFromStreamException(errString + "Missing or invalid KEY field.");
     }
     std::vector<Table::ValueType> tuple;
     tuple.reserve(fieldCount - 1);
-    for (Table::SizeType i = 1; i < fieldCount; ++i)
+    for (Table::SizeType j = 1; j < fieldCount; ++j) [[likely]]
     {
       Table::ValueType value = 0;
-      if (!(sstream >> value))
+      if (!(sstream >> value)) [[unlikely]]
       {
         throw LoadFromStreamException(errString + "Invalid row on LINE " +
-                                      std::to_string(lineCount));
+                                      std::to_string(lineCount - dataLines.size() + i + 1));
       }
       tuple.emplace_back(value);
     }
-    table->insertByIndex(key, std::move(tuple));
+    batchData.emplace_back(std::move(key), std::move(tuple));
   }
 
-  return db.registerTable(std::move(table));
+  // Batch insert all rows at once (with duplicate checking)
+  table->insertBatch(std::move(batchData));
+
+  return database.registerTable(std::move(table));
 }
 
 void Database::exit()
 {
-  // We are being lazy here ...
-  // Might cause problem ...
-  std::exit(0);
+  // Set the flag to stop reading new queries
+  endInput = true;
+  // Note: Don't call std::exit(0) here!
+  // Let main() handle waiting for queries and output
 }

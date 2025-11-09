@@ -9,27 +9,29 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../../utils/formatter.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/TableLockManager.h"
+#include "utils/formatter.h"
+#include "query/QueryResult.h"
 
 QueryResult::Ptr LoadTableQuery::execute()
 {
-  Database& db = Database::getInstance();
   try
   {
+    // LOAD creates a new table, so we acquire write lock for the new table name
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     std::ifstream infile(this->fileName);
-    if (!infile.is_open())
+    if (!infile.is_open()) [[unlikely]]
     {
       return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
     }
-    db.loadTableFromStream(infile, this->fileName);
+    Database::loadTableFromStream(infile, this->fileName);
     infile.close();
-    return std::make_unique<SuccessMsgResult>(qname, targetTable);
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 

@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "../Query.h"
-#include "../QueryResult.h"
+#include "query/Query.h"
+#include "query/QueryResult.h"
 
 class QuitQuery : public Query
 {
@@ -20,6 +20,12 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  // QUIT is not a writer (doesn't modify data)
+  [[nodiscard]] bool isWriter() const override { return false; }
+
+  // QUIT must execute immediately and serially (not parallel)
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
 #endif // PROJECT_QUITQUERY_H

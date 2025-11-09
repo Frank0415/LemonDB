@@ -4,9 +4,10 @@
 #include <memory>
 #include <string>
 
-#include "../../db/Database.h"
-#include "../../utils/uexception.h"
-#include "../QueryResult.h"
+#include "db/Database.h"
+#include "db/TableLockManager.h"
+#include "utils/uexception.h"
+#include "query/QueryResult.h"
 
 constexpr const char* qname_tr = "TRUNCATE";
 
@@ -14,23 +15,24 @@ QueryResult::Ptr TruncateTableQuery::execute()
 {
   try
   {
-    auto& db = Database::getInstance();
-    auto& table = db[this->targetTable];
+    auto& database = Database::getInstance();
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    auto& table = database[this->targetTableRef()];
     table.clear();
 
     return std::make_unique<NullQueryResult>(); // silent success
   }
   catch (const TableNameNotFound&)
   {
-    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTable, "No such table.");
+    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "No such table.");
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTable, "Unknown error");
+    return std::make_unique<ErrorMsgResult>(qname_tr, this->targetTableRef(), "Unknown error");
   }
 }
 
 std::string TruncateTableQuery::toString()
 {
-  return "QUERY = TRUNCATE \"" + this->targetTable + "\"";
+  return "QUERY = TRUNCATE \"" + this->targetTableRef() + "\"";
 }

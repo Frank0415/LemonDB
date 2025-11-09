@@ -66,6 +66,8 @@ file(GLOB LIB_SOURCES_TEMP CONFIGURE_DEPENDS
     # src/query/data/*.h
     src/query/management/*.cpp
     # src/query/management/*.h
+    src/threading/*.cpp
+    # src/threading/*.h
     # src/utils/*.h
 )
 set(LIB_SOURCES ${LIB_SOURCES_TEMP})
@@ -91,6 +93,11 @@ target_compile_options(lemondb_lib PRIVATE
 option(ENABLE_ASAN "Build AddressSanitizer instrumented binaries" OFF)
 option(ENABLE_MSAN "Build MemorySanitizer instrumented binaries" OFF)
 option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF)
+
+# Profiling options
+option(ENABLE_GPROF "Enable GProf profiling" OFF)
+option(ENABLE_CALLGRIND "Enable Callgrind-compatible profiling" OFF)
+option(ENABLE_GPERFTOOLS "Enable gperftools (Google profiler) support" OFF)
 
 if(ENABLE_ASAN)
     message(STATUS "Configuring ASAN build targets")
@@ -142,43 +149,37 @@ if(ENABLE_UBSAN)
     target_link_options(lemondb_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
 endif()
 
-# Google Test Setup
-# include(FetchContent)
-# FetchContent_Declare(
-#     googletest
-#     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-#     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-# )
+# Profiling flags
+set(PROFILING_FLAGS "")
+if(ENABLE_GPROF)
+    list(APPEND PROFILING_FLAGS -pg)
+endif()
+if(ENABLE_CALLGRIND OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND PROFILING_FLAGS -g)
+endif()
+if(ENABLE_GPERFTOOLS)
+    list(APPEND PROFILING_FLAGS -g)
+    # try to link profiler library for convenience when enabled
+    find_library(GPERFTOOLS_PROFILER profiler)
+    if(GPERFTOOLS_PROFILER)
+        target_link_libraries(lemondb_lib PUBLIC ${GPERFTOOLS_PROFILER})
+    endif()
+endif()
 
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# Apply profiling flags to main targets
+target_compile_options(lemondb_lib PRIVATE ${PROFILING_FLAGS})
+target_compile_options(lemondb PRIVATE ${PROFILING_FLAGS})
 
-# FetchContent_MakeAvailable(googletest)
-
-# Enable testing
-# enable_testing()
-
-# Create test executable
-# add_executable(lemondb_tests
-#     test/gtests/test_example.cpp
-#     test/gtests/test_count_query.cpp
-#     test/gtests/test_delete_query.cpp
-#     test/gtests/test_limits_query.cpp
-#     test/gtests/test_select_query.cpp
-#     test/gtests/test_duplicate_query.cpp
-#     test/gtests/test_swap_query.cpp
-#     test/gtests/test_arith_query.cpp
-#     test/gtests/test_sum_query.cpp
-#     test/gtests/test_copytable_query.cpp
-#     test/gtests/test_truncate_query.cpp
-# )
-
-# target_include_directories(lemondb_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-# target_link_libraries(lemondb_tests 
-#     lemondb_lib
-#     gtest
-#     gtest_main
-# )
-
-# Register tests with gtest
-# add_test(NAME lemondb_tests COMMAND lemondb_tests)
+# Also apply to sanitizer variants if profiling is enabled
+if(ENABLE_ASAN)
+    target_compile_options(lemondb_lib_asan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_asan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_MSAN)
+    target_compile_options(lemondb_lib_msan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_msan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_UBSAN)
+    target_compile_options(lemondb_lib_ubsan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_ubsan PRIVATE ${PROFILING_FLAGS})
+endif()

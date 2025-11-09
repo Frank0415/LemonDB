@@ -15,6 +15,8 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
 #endif // PROJECT_DELETEQUERY_H

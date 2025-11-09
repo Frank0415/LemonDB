@@ -12,49 +12,50 @@
 #include <unordered_map>
 #include <utility>
 
-#include "../db/Table.h"
-#include "../utils/formatter.h"
-#include "../utils/uexception.h"
+#include "db/Table.h"
+#include "utils/formatter.h"
+#include "utils/uexception.h"
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 {
-  const std::unordered_map<std::string, int> opmap{
+  static const std::unordered_map<std::string, int> opmap{
       {">", '>'}, {"<", '<'}, {"=", '='}, {">=", 'g'}, {"<=", 'l'},
   };
   std::pair<std::string, bool> result = {"", true};
-  for (auto& cond : condition)
+  for (auto& cond : condition) [[likely]]
   {
-    if (cond.field == "KEY")
+    if (cond.field == "KEY") [[unlikely]]
     {
-      if (cond.op != "=")
+      if (cond.op != "=") [[unlikely]]
       {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
       }
-      if (result.first.empty())
+      if (result.first.empty()) [[likely]]
       {
         result.first = cond.value;
       }
-      else if (result.first != cond.value)
+      else if (result.first != cond.value) [[unlikely]]
       {
         result.second = false;
         return result;
       }
+      cond.fieldId = static_cast<size_t>(-1);
     }
-    else
+    else [[likely]]
     {
+      constexpr int decimal_base = 10;
       cond.fieldId = table.getFieldIndex(cond.field);
       cond.valueParsed =
-          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, 10));
-      int op = 0;
-      try
-      {
-        op = opmap.at(cond.op);
-      }
-      catch (const std::out_of_range& e)
+          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, decimal_base));
+      
+      const auto it = opmap.find(cond.op);
+      if (it == opmap.end())
       {
         throw IllFormedQueryCondition(R"("?" is not a valid condition operator.)"_f % cond.op);
       }
-      switch (op)
+      
+      const int operator_index = it->second;
+      switch (operator_index)
       {
       case '>':
         cond.comp = std::greater<>();
@@ -81,38 +82,43 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
 
 bool ComplexQuery::evalCondition(const Table::Object& object)
 {
-  bool ret = true;
-  for (const auto& cond : condition)
+  for (const auto& cond : condition) [[likely]]
   {
-    if (cond.field != "KEY")
+    if (cond.fieldId == static_cast<size_t>(-1)) [[unlikely]]
     {
-      ret = ret && cond.comp(object[cond.fieldId], cond.valueParsed);
+      if (object.key() != cond.value)
+      {
+        return false;
+      }
     }
-    else
+    else [[likely]]
     {
-      ret = ret && (object.key() == cond.value);
+      if (!cond.comp(object[cond.fieldId], cond.valueParsed))
+      {
+        return false;
+      }
     }
   }
-  return ret;
+  return true;
 }
 
 bool ComplexQuery::testKeyCondition(Table& table,
                                     const std::function<void(bool, Table::Object::Ptr&&)>& function)
 {
   auto condResult = initCondition(table);
-  if (!condResult.second)
+  if (!condResult.second) [[unlikely]]
   {
     function(false, nullptr);
     return true;
   }
-  if (!condResult.first.empty())
+  if (!condResult.first.empty()) [[unlikely]]
   {
     auto object = table[condResult.first];
-    if (object != nullptr && evalCondition(*object))
+    if (object != nullptr && evalCondition(*object)) [[likely]]
     {
       function(true, std::move(object));
     }
-    else
+    else [[unlikely]]
     {
       function(false, nullptr);
     }

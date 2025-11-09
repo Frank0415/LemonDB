@@ -16,23 +16,23 @@
 class QueryResult
 {
 public:
-  typedef std::unique_ptr<QueryResult> Ptr;
+  using Ptr = std::unique_ptr<QueryResult>;
 
-  virtual bool success() = 0;
+  [[nodiscard]] virtual bool success() = 0;
 
-  virtual bool display() = 0;
+  [[nodiscard]] virtual bool display() = 0;
 
   virtual ~QueryResult() = default;
 
-  friend std::ostream& operator<<(std::ostream& os, const QueryResult& table);
+  friend std::ostream& operator<<(std::ostream& out, const QueryResult& table);
 
 protected:
-  virtual std::ostream& output(std::ostream& os) const = 0;
+  virtual std::ostream& output(std::ostream& out) const = 0;
 };
 
 class FailedQueryResult : public QueryResult
 {
-  const std::string data;
+  std::string data;
 
 public:
   bool success() override
@@ -64,9 +64,9 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& out) const override
   {
-    return os << "\n";
+    return out << "\n";
   }
 };
 
@@ -86,9 +86,9 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& out) const override
   {
-    return os << msg << "\n";
+    return out << msg << "\n";
   }
 };
 
@@ -110,14 +110,14 @@ public:
 
   explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) : debug_(debug)
   {
-    std::stringstream ss;
-    ss << "ANSWER = ( ";
+    std::stringstream stream;
+    stream << "ANSWER = ( ";
     for (auto result : results)
     {
-      ss << result << " ";
+      stream << result << " ";
     }
-    ss << ")";
-    this->msg = ss.str();
+    stream << ")";
+    this->msg = stream.str();
   }
 
   explicit SuccessMsgResult(const char* qname, bool debug = false) : debug_(debug)
@@ -140,15 +140,15 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& out) const override
   {
-    return os << msg << "\n";
+    return out << msg << "\n";
   }
 };
 
 class RecordCountResult : public SucceededQueryResult
 {
-  const int affectedRows;
+  int affectedRows;
 
 public:
   bool display() override
@@ -161,9 +161,9 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& out) const override
   {
-    return os << "Affected ? rows."_f % affectedRows << "\n";
+    return out << "Affected ? rows."_f % affectedRows << "\n";
   }
 };
 
@@ -177,14 +177,14 @@ public:
     return true;
   }
 
-  explicit TextRowsResult(std::string s) : payload(std::move(s))
+  explicit TextRowsResult(std::string payload_str) : payload(std::move(payload_str))
   {
   }
 
 protected:
-  std::ostream& output(std::ostream& os) const override
+  std::ostream& output(std::ostream& out) const override
   {
-    return os << payload;
+    return out << payload;
   }
 };
 

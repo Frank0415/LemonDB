@@ -9,29 +9,31 @@
 #include <string>
 
 #include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
 QueryResult::Ptr DropTableQuery::execute()
 {
-  using std::string_literals::operator""s;
-  Database& db = Database::getInstance();
+  Database& database = Database::getInstance();
   try
   {
-    db.dropTable(this->targetTable);
+    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    database.dropTable(this->targetTableRef());
     return std::make_unique<SuccessMsgResult>(qname);
   }
-  catch (const TableNameNotFound& e)
+  catch (const TableNameNotFound& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, targetTable, "No such table."s);
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            std::string("No such table."));
   }
-  catch (const std::exception& e)
+  catch (const std::exception& exc)
   {
-    return std::make_unique<ErrorMsgResult>(qname, e.what());
+    return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 
 std::string DropTableQuery::toString()
 {
-  return "QUERY = DROP, Table = \"" + targetTable + "\"";
+  return "QUERY = DROP, Table = \"" + targetTableRef() + "\"";
 }

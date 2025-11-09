@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "../Query.h"
-#include "../QueryResult.h"
+#include "query/Query.h"
+#include "query/QueryResult.h"
 
 class DropTableQuery : public Query
 {
@@ -20,6 +20,9 @@ public:
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
+
+  [[nodiscard]] bool isWriter() const override { return true; }
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
 #endif // PROJECT_DROPTABLEQUERY_H
