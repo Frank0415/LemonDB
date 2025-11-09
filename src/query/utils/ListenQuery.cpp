@@ -1,8 +1,8 @@
 #include "ListenQuery.h"
 
 #include <cctype>
-#include <cstdio>
 #include <cstddef>
+#include <cstdio>
 #include <exception>
 #include <fstream>
 #include <ios>
@@ -132,8 +132,8 @@ void ListenQuery::setDependencies(QueryManager* manager,
 
 QueryResult::Ptr ListenQuery::execute()
 {
-  if (query_manager == nullptr || query_parser == nullptr ||
-      database == nullptr || query_counter == nullptr)
+  if (query_manager == nullptr || query_parser == nullptr || database == nullptr ||
+      query_counter == nullptr)
   {
     throw std::runtime_error("ListenQuery dependencies are not set");
   }

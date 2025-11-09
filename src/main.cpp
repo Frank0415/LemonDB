@@ -221,18 +221,23 @@ int main(int argc, char* argv[])
 
   std::atomic<size_t> g_query_counter{0};
 
-  const auto listen_scheduled = setupListenMode(parsedArgs, parser, database, query_manager, g_query_counter);
+  const auto listen_scheduled =
+      setupListenMode(parsedArgs, parser, database, query_manager, g_query_counter);
   if (!listen_scheduled.has_value())
   {
     processQueries(input_stream, database, parser, query_manager, g_query_counter);
   }
 
   size_t total_queries = g_query_counter.load();
-  try {
-    if (listen_scheduled.has_value()) {
+  try
+  {
+    if (listen_scheduled.has_value())
+    {
       total_queries = listen_scheduled.value();
     }
-  } catch (const std::bad_optional_access& e) {
+  }
+  catch (const std::bad_optional_access& e)
+  {
     std::cerr << "Error accessing listen_scheduled: " << e.what() << "\n";
     return -1;
   }

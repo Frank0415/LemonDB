@@ -45,11 +45,35 @@ void Throwhelper(std::vector<std::string>::const_iterator iterator,
 
 Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
-  if (query.token.size() == 2) [[likely]]
+  if (query.token.size() >= 2) [[likely]]
   {
     if (query.token.front() == "LISTEN") [[unlikely]]
     {
-      return std::make_unique<ListenQuery>(query.token[1]);
+      // Handle: LISTEN ( filename ) or LISTEN filename
+      std::string filename;
+
+      if (query.token.size() >= 3 && query.token[1] == "(")
+      {
+        // Format: LISTEN ( filename )
+        filename = query.token[2];
+        // Remove trailing ) if present
+        if (!filename.empty() && filename.back() == ')')
+        {
+          filename.pop_back();
+        }
+      }
+      else
+      {
+        // Format: LISTEN filename
+        filename = query.token[1];
+        // Remove trailing ) if present
+        if (!filename.empty() && filename.back() == ')')
+        {
+          filename.pop_back();
+        }
+      }
+
+      return std::make_unique<ListenQuery>(filename);
     }
     if (query.token.front() == "LOAD") [[unlikely]]
     {
