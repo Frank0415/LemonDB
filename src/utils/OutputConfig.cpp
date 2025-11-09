@@ -1,5 +1,8 @@
 #include "utils/OutputConfig.h"
 
+#include <chrono>
+#include <cstddef>
+
 std::chrono::milliseconds calculateOutputInterval(size_t total_output_count,
                                                   const OutputConfig& config)
 {

@@ -1,5 +1,6 @@
 #include "QueryManager.h"
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <deque>

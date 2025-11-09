@@ -2,10 +2,12 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <span>
 #include <string>
 
 #include "query/QueryBuilders.h"
+#include "query/QueryParser.h"
 
 namespace MainUtils
 {

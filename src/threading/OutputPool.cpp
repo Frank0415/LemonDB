@@ -1,5 +1,6 @@
 #include "OutputPool.h"
 
+#include <atomic>
 #include <cstddef>
 #include <iostream>
 #include <mutex>
