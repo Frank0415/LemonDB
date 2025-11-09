@@ -141,7 +141,8 @@ void processQueries(std::istream& input_stream,
 std::optional<size_t> setupListenMode(const Args& args,
                                       QueryParser& parser,
                                       Database& database,
-                                      QueryManager& query_manager)
+                                      QueryManager& query_manager,
+                                      std::atomic<size_t>& g_query_counter)
 {
   if (args.listen.empty())
   {
@@ -149,7 +150,7 @@ std::optional<size_t> setupListenMode(const Args& args,
   }
 
   auto listen_query = std::make_unique<ListenQuery>(args.listen);
-  listen_query->setDependencies(&query_manager, &parser, &database);
+  listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
 
   auto listen_result = listen_query->execute();
   if (listen_result && listen_result->display())
@@ -220,17 +221,24 @@ int main(int argc, char* argv[])
 
   std::atomic<size_t> g_query_counter{0};
 
-  const auto listen_scheduled = setupListenMode(parsedArgs, parser, database, query_manager);
+  const auto listen_scheduled = setupListenMode(parsedArgs, parser, database, query_manager, g_query_counter);
   if (!listen_scheduled.has_value())
   {
     processQueries(input_stream, database, parser, query_manager, g_query_counter);
   }
 
-  const size_t total_queries =
-      listen_scheduled.has_value() ? listen_scheduled.value() : g_query_counter.load();
+  size_t total_queries = g_query_counter.load();
+  try {
+    if (listen_scheduled.has_value()) {
+      total_queries = listen_scheduled.value();
+    }
+  } catch (const std::bad_optional_access& e) {
+    std::cerr << "Error accessing listen_scheduled: " << e.what() << "\n";
+    return -1;
+  }
   query_manager.setExpectedQueryCount(total_queries);
 
-  OutputConfig output_config{};
+  const OutputConfig output_config{};
   while (true)
   {
     const size_t current_output_count = output_pool.getTotalOutputCount();
