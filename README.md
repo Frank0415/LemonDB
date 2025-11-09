@@ -1,5 +1,7 @@
 # LemonDB
 
+![Build Status](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg)
+
 ## Build
 
 Currently the project uses `CMake` for building and `GoogleTest` for testing. Run the following commands to build:
