@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include <atomic>
 #include "db/QueryBase.h"
 
 class QueryManager;
@@ -19,6 +20,7 @@ class ListenQuery : public Query
   QueryManager* query_manager = nullptr;
   QueryParser* query_parser = nullptr;
   Database* database = nullptr;
+  std::atomic<size_t>* query_counter = nullptr;  // ADD THIS
 
   size_t scheduled_query_count = 0;
 
@@ -28,7 +30,8 @@ public:
   {
   }
 
-  void setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr);
+  void setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr,
+                       std::atomic<size_t>* counter);  // ADD PARAMETER
 
   [[nodiscard]] size_t getScheduledQueryCount() const
   {

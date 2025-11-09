@@ -1,8 +1,12 @@
 #include "ListenQuery.h"
 
 #include <cctype>
+#include <cstdio>
+#include <cstddef>
 #include <exception>
 #include <fstream>
+#include <ios>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -117,16 +121,19 @@ void handleCopyTable(QueryManager& query_manager,
 
 void ListenQuery::setDependencies(QueryManager* manager,
                                   QueryParser* parser,
-                                  Database* database_ptr)
+                                  Database* database_ptr,
+                                  std::atomic<size_t>* counter)
 {
   query_manager = manager;
   query_parser = parser;
   database = database_ptr;
+  query_counter = counter;
 }
 
 QueryResult::Ptr ListenQuery::execute()
 {
-  if (query_manager == nullptr || query_parser == nullptr || database == nullptr)
+  if (query_manager == nullptr || query_parser == nullptr ||
+      database == nullptr || query_counter == nullptr)
   {
     throw std::runtime_error("ListenQuery dependencies are not set");
   }
@@ -170,8 +177,9 @@ QueryResult::Ptr ListenQuery::execute()
                           dynamic_cast<CopyTableQuery*>(query.get()));
         }
 
-        const size_t query_id = ++scheduled_query_count;
+        const size_t query_id = query_counter->fetch_add(1) + 1;
         query_manager->addQuery(query_id, query->targetTableRef(), query.release());
+        scheduled_query_count++;
       }
       catch (const std::exception& /*ignored*/)
       {
