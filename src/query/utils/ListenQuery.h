@@ -25,6 +25,9 @@ class ListenQuery : public Query
   size_t scheduled_query_count = 0;
   bool quit_encountered = false;
 
+  [[nodiscard]] bool shouldSkipStatement(const std::string& trimmed) const;
+  bool processStatement(const std::string& trimmed);
+
 public:
   explicit ListenQuery(std::string filename)
       : Query("__listen_table"), fileName(std::move(filename))

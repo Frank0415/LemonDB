@@ -73,6 +73,41 @@ bool readNextStatement(std::istream& stream, std::string& out_statement)
   }
 }
 
+std::string extractNewTableName(const std::string& trimmed)
+{
+  constexpr size_t copytable_prefix_len = 9; // length of "COPYTABLE"
+  std::string new_table_name = trimmed.substr(copytable_prefix_len);
+
+  size_t position = new_table_name.find_first_not_of(" \t");
+  if (position == std::string::npos)
+  {
+    return "";
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_of(" \t");
+  if (position == std::string::npos)
+  {
+    return "";
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_not_of(" \t;");
+  if (position == std::string::npos)
+  {
+    return "";
+  }
+  new_table_name = new_table_name.substr(position);
+
+  position = new_table_name.find_first_of(" \t;");
+  if (position != std::string::npos)
+  {
+    new_table_name = new_table_name.substr(0, position);
+  }
+
+  return new_table_name;
+}
+
 void handleCopyTable(QueryManager& query_manager,
                      const std::string& trimmed,
                      const std::string& source_table,
@@ -83,34 +118,10 @@ void handleCopyTable(QueryManager& query_manager,
     return;
   }
 
-  constexpr size_t copytable_prefix_len = 9; // length of "COPYTABLE"
-  std::string new_table_name = trimmed.substr(copytable_prefix_len);
-
-  size_t position = new_table_name.find_first_not_of(" \t");
-  if (position == std::string::npos)
+  const std::string new_table_name = extractNewTableName(trimmed);
+  if (new_table_name.empty())
   {
     return;
-  }
-  new_table_name = new_table_name.substr(position);
-
-  position = new_table_name.find_first_of(" \t");
-  if (position == std::string::npos)
-  {
-    return;
-  }
-  new_table_name = new_table_name.substr(position);
-
-  position = new_table_name.find_first_not_of(" \t;");
-  if (position == std::string::npos)
-  {
-    return;
-  }
-  new_table_name = new_table_name.substr(position);
-
-  position = new_table_name.find_first_of(" \t;");
-  if (position != std::string::npos)
-  {
-    new_table_name = new_table_name.substr(0, position);
   }
 
   auto wait_query = std::make_unique<WaitQuery>(source_table, copy_query->getWaitSemaphore());
@@ -128,6 +139,40 @@ void ListenQuery::setDependencies(QueryManager* manager,
   query_parser = parser;
   database = database_ptr;
   query_counter = counter;
+}
+
+bool ListenQuery::shouldSkipStatement(const std::string& trimmed) const
+{
+  return trimmed.empty() || trimmed.front() == '#';
+}
+
+bool ListenQuery::processStatement(const std::string& trimmed)
+{
+  Query::Ptr query = query_parser->parseQuery(trimmed);
+  // std::cerr << "[LISTEN] Parsed query: " << query->toString() << '\n';
+
+  if (startsWithCaseInsensitive(trimmed, "QUIT"))
+  {
+    // std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
+    database->exit();
+    quit_encountered = true;
+    return false; // Stop processing
+  }
+
+  if (startsWithCaseInsensitive(trimmed, "COPYTABLE"))
+  {
+    handleCopyTable(*query_manager, trimmed, query->targetTableRef(),
+                    dynamic_cast<CopyTableQuery*>(query.get()));
+  }
+
+  const size_t query_id = query_counter->fetch_add(1) + 1;
+  // std::cerr << "[LISTEN] Adding query " << query_id << " to table " <<
+  // query->targetTableRef() << '\n';
+  query_manager->addQuery(query_id, query->targetTableRef(), query.release());
+  scheduled_query_count++;
+  // std::cerr << "[LISTEN] Scheduled query count: " << scheduled_query_count << '\n';
+
+  return true; // Continue processing
 }
 
 QueryResult::Ptr ListenQuery::execute()
@@ -156,40 +201,17 @@ QueryResult::Ptr ListenQuery::execute()
     while (readNextStatement(infile, raw_statement))
     {
       std::string trimmed = trimCopy(raw_statement);
-      if (trimmed.empty())
-      {
-        continue;
-      }
-      if (trimmed.front() == '#')
+      if (shouldSkipStatement(trimmed))
       {
         continue;
       }
 
       try
       {
-        Query::Ptr query = query_parser->parseQuery(trimmed);
-        // std::cerr << "[LISTEN] Parsed query: " << query->toString() << '\n';
-
-        if (startsWithCaseInsensitive(trimmed, "QUIT"))
+        if (!processStatement(trimmed))
         {
-          // std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
-          database->exit();
-          quit_encountered = true;
-          break;
+          break; // QUIT encountered
         }
-
-        if (startsWithCaseInsensitive(trimmed, "COPYTABLE"))
-        {
-          handleCopyTable(*query_manager, trimmed, query->targetTableRef(),
-                          dynamic_cast<CopyTableQuery*>(query.get()));
-        }
-
-        const size_t query_id = query_counter->fetch_add(1) + 1;
-        // std::cerr << "[LISTEN] Adding query " << query_id << " to table " <<
-        // query->targetTableRef() << '\n';
-        query_manager->addQuery(query_id, query->targetTableRef(), query.release());
-        scheduled_query_count++;
-        // std::cerr << "[LISTEN] Scheduled query count: " << scheduled_query_count << '\n';
       }
       catch (const std::exception& /*ignored*/)
       {
