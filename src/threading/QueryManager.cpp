@@ -5,13 +5,13 @@
 #include <cstddef>
 #include <deque>
 #include <exception>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <semaphore>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <iostream>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"

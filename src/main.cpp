@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <thread>
 
@@ -94,6 +95,8 @@ void processQueries(std::istream& input_stream,
     {
       const std::string queryStr = extractQueryString(input_stream);
 
+      std::cerr << "[CONTROL] Read query: " << queryStr << '\n';
+
       Query::Ptr query = parser.parseQuery(queryStr);
 
       // Use a case-insensitive check for "QUIT"
@@ -111,10 +114,43 @@ void processQueries(std::istream& input_stream,
         break;
       }
 
-      const size_t query_id = g_query_counter.fetch_add(1) + 1;
-
       // Get the target table for this query
       const std::string table_name = query->targetTableRef();
+
+      // Handle LISTEN queries eagerly so they are not scheduled again
+      if (trimmed.starts_with("LISTEN"))
+      {
+        auto* listen_query = dynamic_cast<ListenQuery*>(query.get());
+        if (listen_query != nullptr)
+        {
+          const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
+          std::cerr << "[CONTROL] Handing control to LISTEN file " << listen_query->getFileName()
+                    << '\n';
+          listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
+          auto result = listen_query->execute();
+          if (result != nullptr)
+          {
+            const bool should_display = result->display();
+            if (should_display)
+            {
+              std::ostringstream result_stream;
+              result_stream << *result;
+              query_manager.addImmediateResult(listen_query_id, result_stream.str());
+            }
+          }
+          std::cerr << "[CONTROL] Returned from LISTEN file " << listen_query->getFileName()
+                    << '\n';
+
+          if (listen_query->hasEncounteredQuit())
+          {
+            break;
+          }
+
+          continue;
+        }
+      }
+
+      const size_t query_id = g_query_counter.fetch_add(1) + 1;
 
       // Handle COPYTABLE specially: add WaitQuery to the new table's queue
       if (trimmed.starts_with("COPYTABLE"))
@@ -129,10 +165,12 @@ void processQueries(std::istream& input_stream,
     }
     catch (const std::ios_base::failure& exc)
     {
+      std::cerr << "[CONTROL] Input error: " << exc.what() << '\n';
       break;
     }
     catch (const std::exception& exc)
     {
+      std::cerr << "[CONTROL] Query processing error: " << exc.what() << '\n';
       (void)exc;
     }
   }
@@ -152,13 +190,23 @@ std::optional<size_t> setupListenMode(const Args& args,
   auto listen_query = std::make_unique<ListenQuery>(args.listen);
   listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
 
+  const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
+
   auto listen_result = listen_query->execute();
-  if (listen_result && listen_result->display())
+  if (listen_result != nullptr)
   {
-    std::cout << *listen_result;
+    const bool should_display = listen_result->display();
+    if (should_display)
+    {
+      std::ostringstream result_stream;
+      result_stream << *listen_result;
+      query_manager.addImmediateResult(listen_query_id, result_stream.str());
+    }
   }
 
-  return listen_query->getScheduledQueryCount();
+  std::cerr << "Scheduled " << listen_query->getScheduledQueryCount()
+            << " queries from listen file.\n";
+  return listen_query->getScheduledQueryCount() + 1;
 }
 } // namespace
 
