@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <iostream>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"
@@ -27,7 +28,7 @@ void QueryManager::addQuery(size_t query_id, const std::string& table_name, Quer
   {
     return;
   }
-
+  std::cerr << "Adding query for number " << query_counter << "\n";
   // Update query counter
   query_counter.fetch_add(1);
 
@@ -51,6 +52,12 @@ void QueryManager::addQuery(size_t query_id, const std::string& table_name, Quer
   // Signal the semaphore to wake up the table's execution thread
   // Must hold lock while accessing semaphore
   table_query_sem[table_name]->release();
+}
+
+void QueryManager::addImmediateResult(size_t query_id, const std::string& result)
+{
+  output_pool.addResult(query_id, result);
+  completed_query_count.fetch_add(1);
 }
 
 void QueryManager::setExpectedQueryCount(size_t count)

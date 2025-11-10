@@ -105,6 +105,12 @@ public:
   void addQuery(size_t query_id, const std::string& table_name, Query* query_ptr);
 
   /**
+   * Immediately publish a query result without scheduling execution.
+   * Used for instant queries executed on the caller thread (e.g., LISTEN).
+   */
+  void addImmediateResult(size_t query_id, const std::string& result);
+
+  /**
    * Set the expected number of queries (to know when all are done)
    * @param count The total number of queries expected to be executed
    */
