@@ -5,6 +5,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <string>
 #include <thread>
@@ -61,6 +62,13 @@ private:
   // Reference to OutputPool (passed in constructor, not owned)
   OutputPool& output_pool;
   size_t printed_count{0};
+
+  void createTableStructures(const std::string& table_name);
+  void releaseSemaphores();
+  void joinThreads();
+  std::counting_semaphore<>* getSemaphoreForTable(const std::string& table_name);
+  std::optional<QueryEntry> dequeueQuery(const std::string& table_name);
+  void executeAndStoreResult(const QueryEntry& query_entry);
 
   /**
    * Execute queries for a specific table
