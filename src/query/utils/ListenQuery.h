@@ -5,8 +5,8 @@
 #include <string>
 #include <utility>
 
-#include <atomic>
 #include "db/QueryBase.h"
+#include <atomic>
 
 class QueryManager;
 class QueryParser;
@@ -20,9 +20,10 @@ class ListenQuery : public Query
   QueryManager* query_manager = nullptr;
   QueryParser* query_parser = nullptr;
   Database* database = nullptr;
-  std::atomic<size_t>* query_counter = nullptr;  // ADD THIS
+  std::atomic<size_t>* query_counter = nullptr; // ADD THIS
 
   size_t scheduled_query_count = 0;
+  bool quit_encountered = false;
 
 public:
   explicit ListenQuery(std::string filename)
@@ -30,12 +31,24 @@ public:
   {
   }
 
-  void setDependencies(QueryManager* manager, QueryParser* parser, Database* database_ptr,
-                       std::atomic<size_t>* counter);  // ADD PARAMETER
+  void setDependencies(QueryManager* manager,
+                       QueryParser* parser,
+                       Database* database_ptr,
+                       std::atomic<size_t>* counter); // ADD PARAMETER
 
   [[nodiscard]] size_t getScheduledQueryCount() const
   {
     return scheduled_query_count;
+  }
+
+  [[nodiscard]] bool hasEncounteredQuit() const
+  {
+    return quit_encountered;
+  }
+
+  [[nodiscard]] const std::string& getFileName() const
+  {
+    return fileName;
   }
 
   QueryResult::Ptr execute() override;

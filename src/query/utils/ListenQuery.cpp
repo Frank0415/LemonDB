@@ -138,13 +138,17 @@ QueryResult::Ptr ListenQuery::execute()
     throw std::runtime_error("ListenQuery dependencies are not set");
   }
 
+  std::cerr << "[CONTROL] LISTEN query starting, taking control from terminal" << '\n';
+  std::cerr << "[LISTEN] Opening file: " << fileName << '\n';
   std::ifstream infile(fileName);
   if (!infile.is_open())
   {
+    std::cerr << "[LISTEN] Failed to open file" << '\n';
     return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % fileName);
   }
 
   scheduled_query_count = 0;
+  quit_encountered = false;
   std::string raw_statement;
 
   try
@@ -164,10 +168,13 @@ QueryResult::Ptr ListenQuery::execute()
       try
       {
         Query::Ptr query = query_parser->parseQuery(trimmed);
+        // std::cerr << "[LISTEN] Parsed query: " << query->toString() << '\n';
 
         if (startsWithCaseInsensitive(trimmed, "QUIT"))
         {
+          std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
           database->exit();
+          quit_encountered = true;
           break;
         }
 
@@ -178,8 +185,11 @@ QueryResult::Ptr ListenQuery::execute()
         }
 
         const size_t query_id = query_counter->fetch_add(1) + 1;
+        // std::cerr << "[LISTEN] Adding query " << query_id << " to table " <<
+        // query->targetTableRef() << '\n';
         query_manager->addQuery(query_id, query->targetTableRef(), query.release());
         scheduled_query_count++;
+        // std::cerr << "[LISTEN] Scheduled query count: " << scheduled_query_count << '\n';
       }
       catch (const std::exception& /*ignored*/)
       {
@@ -192,6 +202,13 @@ QueryResult::Ptr ListenQuery::execute()
     return std::make_unique<ErrorMsgResult>(qname,
                                             "Unexpected EOF in listen file '?'"_f % fileName);
   }
+
+  if (!quit_encountered)
+  {
+    std::cerr << "[LISTEN] Reached end of file for " << fileName << '\n';
+  }
+
+  std::cerr << "[CONTROL] LISTEN query completed, returning control to caller" << '\n';
 
   return std::make_unique<ListenResult>(fileName);
 }
