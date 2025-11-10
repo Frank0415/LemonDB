@@ -43,6 +43,47 @@ std::string extractQueryString(std::istream& input_stream)
   }
 }
 
+std::string trimLeadingWhitespace(const std::string& str)
+{
+  const size_t start = str.find_first_not_of(" \t\n\r");
+  if (start == std::string::npos)
+  {
+    return str;
+  }
+  return str.substr(start);
+}
+
+void handleListenQuery(ListenQuery* listen_query,
+                       QueryManager& query_manager,
+                       std::atomic<size_t>& g_query_counter,
+                       QueryParser& parser,
+                       Database& database,
+                       bool& should_break)
+{
+  const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
+  // std::cerr << "[CONTROL] Handing control to LISTEN file " << listen_query->getFileName()
+  //           << '\n';
+  listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
+  auto result = listen_query->execute();
+  if (result != nullptr)
+  {
+    const bool should_display = result->display();
+    if (should_display)
+    {
+      std::ostringstream result_stream;
+      result_stream << *result;
+      query_manager.addImmediateResult(listen_query_id, result_stream.str());
+    }
+  }
+  // std::cerr << "[CONTROL] Returned from LISTEN file " << listen_query->getFileName()
+  //           << '\n';
+
+  if (listen_query->hasEncounteredQuit())
+  {
+    should_break = true;
+  }
+}
+
 void handleCopyTable(QueryManager& query_manager,
                      const std::string& trimmed,
                      const std::string& table_name,
@@ -100,13 +141,7 @@ void processQueries(std::istream& input_stream,
       Query::Ptr query = parser.parseQuery(queryStr);
 
       // Use a case-insensitive check for "QUIT"
-      std::string trimmed = queryStr;
-      // Trim leading whitespace
-      const size_t start = trimmed.find_first_not_of(" \t\n\r");
-      if (start != std::string::npos)
-      {
-        trimmed = trimmed.substr(start);
-      }
+      std::string trimmed = trimLeadingWhitespace(queryStr);
 
       if (query->isInstant() && trimmed.starts_with("QUIT"))
       {
@@ -123,25 +158,10 @@ void processQueries(std::istream& input_stream,
         auto* listen_query = dynamic_cast<ListenQuery*>(query.get());
         if (listen_query != nullptr)
         {
-          const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
-          // std::cerr << "[CONTROL] Handing control to LISTEN file " << listen_query->getFileName()
-          //           << '\n';
-          listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
-          auto result = listen_query->execute();
-          if (result != nullptr)
-          {
-            const bool should_display = result->display();
-            if (should_display)
-            {
-              std::ostringstream result_stream;
-              result_stream << *result;
-              query_manager.addImmediateResult(listen_query_id, result_stream.str());
-            }
-          }
-          // std::cerr << "[CONTROL] Returned from LISTEN file " << listen_query->getFileName()
-          //           << '\n';
-
-          if (listen_query->hasEncounteredQuit())
+          bool should_break = false;
+          handleListenQuery(listen_query, query_manager, g_query_counter, parser, database,
+                            should_break);
+          if (should_break)
           {
             break;
           }
@@ -208,32 +228,59 @@ std::optional<size_t> setupListenMode(const Args& args,
   //           << " queries from listen file.\n";
   return listen_query->getScheduledQueryCount() + 1;
 }
-} // namespace
 
-int main(int argc, char* argv[])
+size_t determineExpectedQueryCount(const std::optional<size_t>& listen_scheduled,
+                                   const std::atomic<size_t>& g_query_counter)
 {
-  std::ios_base::sync_with_stdio(true);
-  std::ios_base::sync_with_stdio(true);
+  if (listen_scheduled.has_value())
+  {
+    return listen_scheduled.value();
+  }
+  return g_query_counter.load();
+}
 
-  Args parsedArgs{};
-  MainUtils::parseArgs(argc, argv, parsedArgs);
+void flushOutputLoop(OutputPool& output_pool,
+                     QueryManager& query_manager,
+                     const OutputConfig& output_config)
+{
+  while (true)
+  {
+    const size_t current_output_count = output_pool.getTotalOutputCount();
+    const auto interval = calculateOutputInterval(current_output_count, output_config);
 
-  std::ifstream fin;
-  std::istream* input = &std::cin;
+    const size_t flushed = output_pool.flushContinuousResults();
+    if (query_manager.isComplete())
+    {
+      if (flushed == 0U)
+      {
+        break;
+      }
+    }
+    else if (flushed == 0U)
+    {
+      std::this_thread::sleep_for(interval);
+    }
+  }
+}
+
+std::istream* initializeInputStream(const Args& parsedArgs, std::ifstream& fin)
+{
   if (!parsedArgs.listen.empty()) [[unlikely]]
   {
     fin = std::ifstream(parsedArgs.listen);
     if (!fin.is_open()) [[unlikely]]
     {
-      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory" << '\n';
+      std::cerr << "lemondb: error: " << parsedArgs.listen << ": no such file or directory"
+                << '\n';
       std::exit(-1);
     }
-    input = &fin;
+    return &fin;
   }
+  return &std::cin;
+}
 
-  ThreadPool::initialize(parsedArgs.threads > 0 ? static_cast<size_t>(parsedArgs.threads)
-                                                : std::thread::hardware_concurrency());
-
+void validateProductionMode(const Args& parsedArgs)
+{
 #ifdef NDEBUG
   // In production mode, listen argument must be defined
   if (parsedArgs.listen.empty())
@@ -249,9 +296,26 @@ int main(int argc, char* argv[])
   {
     std::cerr << "lemondb: warning: --listen argument not found, use stdin "
                  "instead in debug mode\n";
-    input = &std::cin;
   }
 #endif
+}
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  std::ios_base::sync_with_stdio(true);
+  std::ios_base::sync_with_stdio(true);
+
+  Args parsedArgs{};
+  MainUtils::parseArgs(argc, argv, parsedArgs);
+
+  std::ifstream fin;
+  std::istream* input = initializeInputStream(parsedArgs, fin);
+
+  ThreadPool::initialize(parsedArgs.threads > 0 ? static_cast<size_t>(parsedArgs.threads)
+                                                : std::thread::hardware_concurrency());
+
+  validateProductionMode(parsedArgs);
 
   std::istream& input_stream = *input;
 
@@ -276,40 +340,11 @@ int main(int argc, char* argv[])
     processQueries(input_stream, database, parser, query_manager, g_query_counter);
   }
 
-  size_t total_queries = g_query_counter.load();
-  try
-  {
-    if (listen_scheduled.has_value())
-    {
-      total_queries = listen_scheduled.value();
-    }
-  }
-  catch (const std::bad_optional_access& e)
-  {
-    std::cerr << "Error accessing listen_scheduled: " << e.what() << "\n";
-    return -1;
-  }
+  const size_t total_queries = determineExpectedQueryCount(listen_scheduled, g_query_counter);
   query_manager.setExpectedQueryCount(total_queries);
 
   const OutputConfig output_config{};
-  while (true)
-  {
-    const size_t current_output_count = output_pool.getTotalOutputCount();
-    const auto interval = calculateOutputInterval(current_output_count, output_config);
-
-    const size_t flushed = output_pool.flushContinuousResults();
-    if (query_manager.isComplete())
-    {
-      if (flushed == 0U)
-      {
-        break;
-      }
-    }
-    else if (flushed == 0U)
-    {
-      std::this_thread::sleep_for(interval);
-    }
-  }
+  flushOutputLoop(output_pool, query_manager, output_config);
 
   query_manager.waitForCompletion();
   output_pool.outputAllResults();
