@@ -138,12 +138,12 @@ QueryResult::Ptr ListenQuery::execute()
     throw std::runtime_error("ListenQuery dependencies are not set");
   }
 
-  std::cerr << "[CONTROL] LISTEN query starting, taking control from terminal" << '\n';
-  std::cerr << "[LISTEN] Opening file: " << fileName << '\n';
+  // std::cerr << "[CONTROL] LISTEN query starting, taking control from terminal" << '\n';
+  // std::cerr << "[LISTEN] Opening file: " << fileName << '\n';
   std::ifstream infile(fileName);
   if (!infile.is_open())
   {
-    std::cerr << "[LISTEN] Failed to open file" << '\n';
+    // std::cerr << "[LISTEN] Failed to open file" << '\n';
     return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % fileName);
   }
 
@@ -172,7 +172,7 @@ QueryResult::Ptr ListenQuery::execute()
 
         if (startsWithCaseInsensitive(trimmed, "QUIT"))
         {
-          std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
+          // std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
           database->exit();
           quit_encountered = true;
           break;
@@ -205,10 +205,10 @@ QueryResult::Ptr ListenQuery::execute()
 
   if (!quit_encountered)
   {
-    std::cerr << "[LISTEN] Reached end of file for " << fileName << '\n';
+    // std::cerr << "[LISTEN] Reached end of file for " << fileName << '\n';
   }
 
-  std::cerr << "[CONTROL] LISTEN query completed, returning control to caller" << '\n';
+  // std::cerr << "[CONTROL] LISTEN query completed, returning control to caller" << '\n';
 
   return std::make_unique<ListenResult>(fileName);
 }

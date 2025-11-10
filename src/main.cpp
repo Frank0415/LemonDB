@@ -95,7 +95,7 @@ void processQueries(std::istream& input_stream,
     {
       const std::string queryStr = extractQueryString(input_stream);
 
-      std::cerr << "[CONTROL] Read query: " << queryStr << '\n';
+      // std::cerr << "[CONTROL] Read query: " << queryStr << '\n';
 
       Query::Ptr query = parser.parseQuery(queryStr);
 
@@ -124,8 +124,8 @@ void processQueries(std::istream& input_stream,
         if (listen_query != nullptr)
         {
           const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
-          std::cerr << "[CONTROL] Handing control to LISTEN file " << listen_query->getFileName()
-                    << '\n';
+          // std::cerr << "[CONTROL] Handing control to LISTEN file " << listen_query->getFileName()
+          //           << '\n';
           listen_query->setDependencies(&query_manager, &parser, &database, &g_query_counter);
           auto result = listen_query->execute();
           if (result != nullptr)
@@ -138,8 +138,8 @@ void processQueries(std::istream& input_stream,
               query_manager.addImmediateResult(listen_query_id, result_stream.str());
             }
           }
-          std::cerr << "[CONTROL] Returned from LISTEN file " << listen_query->getFileName()
-                    << '\n';
+          // std::cerr << "[CONTROL] Returned from LISTEN file " << listen_query->getFileName()
+          //           << '\n';
 
           if (listen_query->hasEncounteredQuit())
           {
@@ -165,12 +165,12 @@ void processQueries(std::istream& input_stream,
     }
     catch (const std::ios_base::failure& exc)
     {
-      std::cerr << "[CONTROL] Input error: " << exc.what() << '\n';
+      // std::cerr << "[CONTROL] Input error: " << exc.what() << '\n';
       break;
     }
     catch (const std::exception& exc)
     {
-      std::cerr << "[CONTROL] Query processing error: " << exc.what() << '\n';
+      // std::cerr << "[CONTROL] Query processing error: " << exc.what() << '\n';
       (void)exc;
     }
   }
@@ -204,8 +204,8 @@ std::optional<size_t> setupListenMode(const Args& args,
     }
   }
 
-  std::cerr << "Scheduled " << listen_query->getScheduledQueryCount()
-            << " queries from listen file.\n";
+  // std::cerr << "Scheduled " << listen_query->getScheduledQueryCount()
+  //           << " queries from listen file.\n";
   return listen_query->getScheduledQueryCount() + 1;
 }
 } // namespace
