@@ -85,3 +85,4 @@
 !test/gtests
 !test/gtests/
 !test/gtests/*.cpp
+!test/test_multithread_listen.sh
