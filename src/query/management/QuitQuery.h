@@ -15,17 +15,40 @@ class QuitQuery : public Query
   static constexpr const char* qname = "QUIT";
 
 public:
+  /**
+   * Default constructor for QUIT query
+   */
   QuitQuery() = default;
 
+  /**
+   * Execute the QUIT query to terminate the database session
+   * @return QueryResult indicating successful termination
+   */
   QueryResult::Ptr execute() override;
 
+  /**
+   * Convert query to string representation
+   * @return String representation of the QUIT query
+   */
   std::string toString() override;
 
-  // QUIT is not a writer (doesn't modify data)
-  [[nodiscard]] bool isWriter() const override { return false; }
+  /**
+   * Check if this query modifies data
+   * @return Always returns false for QUIT queries
+   */
+  [[nodiscard]] bool isWriter() const override
+  {
+    return false;
+  }
 
-  // QUIT must execute immediately and serially (not parallel)
-  [[nodiscard]] bool isInstant() const override { return true; }
+  /**
+   * Check if this query must execute immediately and serially
+   * @return Always returns true for QUIT queries
+   */
+  [[nodiscard]] bool isInstant() const override
+  {
+    return true;
+  }
 };
 
 #endif // PROJECT_QUITQUERY_H

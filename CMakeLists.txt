@@ -67,6 +67,8 @@ file(GLOB LIB_SOURCES_TEMP CONFIGURE_DEPENDS
     src/query/management/*.cpp
     # src/query/management/*.h
     src/threading/*.cpp
+    src/query/utils/*.cpp
+    src/utils/*.cpp
     # src/threading/*.h
     # src/utils/*.h
 )
@@ -89,10 +91,11 @@ target_compile_options(lemondb_lib PRIVATE
     ${LEMONDB_COMMON_COMPILE_OPTIONS}
 )
 
-# Options to build sanitizer variants (ASAN/MSAN/UBSAN)
+# Options to build sanitizer variants (ASAN/MSAN/UBSAN/TSAN)
 option(ENABLE_ASAN "Build AddressSanitizer instrumented binaries" OFF)
 option(ENABLE_MSAN "Build MemorySanitizer instrumented binaries" OFF)
 option(ENABLE_UBSAN "Build UndefinedBehaviorSanitizer instrumented binaries" OFF)
+option(ENABLE_TSAN "Build ThreadSanitizer instrumented binaries" OFF)
 
 # Profiling options
 option(ENABLE_GPROF "Enable GProf profiling" OFF)
@@ -149,6 +152,20 @@ if(ENABLE_UBSAN)
     target_link_options(lemondb_ubsan PRIVATE ${LEMONDB_UBSAN_FLAGS})
 endif()
 
+if(ENABLE_TSAN)
+    message(STATUS "Configuring TSAN build targets")
+    set(LEMONDB_TSAN_FLAGS -fsanitize=thread -g)
+    add_library(lemondb_lib_tsan STATIC ${LIB_SOURCES})
+    target_include_directories(lemondb_lib_tsan PUBLIC ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(lemondb_lib_tsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_TSAN_FLAGS})
+    target_link_options(lemondb_lib_tsan PRIVATE ${LEMONDB_TSAN_FLAGS})
+
+    add_executable(lemondb_tsan ${MAIN_SOURCES})
+    target_link_libraries(lemondb_tsan PRIVATE lemondb_lib_tsan)
+    target_compile_options(lemondb_tsan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_TSAN_FLAGS})
+    target_link_options(lemondb_tsan PRIVATE ${LEMONDB_TSAN_FLAGS})
+endif()
+
 # Profiling flags
 set(PROFILING_FLAGS "")
 if(ENABLE_GPROF)
@@ -182,4 +199,8 @@ endif()
 if(ENABLE_UBSAN)
     target_compile_options(lemondb_lib_ubsan PRIVATE ${PROFILING_FLAGS})
     target_compile_options(lemondb_ubsan PRIVATE ${PROFILING_FLAGS})
+endif()
+if(ENABLE_TSAN)
+    target_compile_options(lemondb_lib_tsan PRIVATE ${PROFILING_FLAGS})
+    target_compile_options(lemondb_tsan PRIVATE ${PROFILING_FLAGS})
 endif()

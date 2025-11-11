@@ -46,6 +46,7 @@ QueryResult::Ptr CopyTableQuery::execute()
     }
     if (targetExists) [[unlikely]]
     {
+      wait_sem->release();
       return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                               "Target table name exists");
     }
@@ -80,15 +81,22 @@ QueryResult::Ptr CopyTableQuery::execute()
       dup->insertByIndex(key, std::move(row));
     }
 
+    // Register the new table
     database.registerTable(std::move(dup));
-    return std::make_unique<NullQueryResult>();
+
+    // Release the wait semaphore to allow queries on the new table to proceed
+    wait_sem->release();
+
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
   }
   catch (const TableNameNotFound&)
   {
+    wait_sem->release();
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
   }
   catch (const std::exception& exc)
   {
+    wait_sem->release();
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Unknown error");
   }
 }

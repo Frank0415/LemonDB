@@ -54,8 +54,7 @@ public:
    * init a fast condition according to the table
    * note that the condition is only effective if the table fields are not
    * changed
-   * @param table
-   * @param conditions
+   * @param table The table to initialize conditions for
    * @return a pair of the key and a flag
    * if flag is false, the condition is always false
    * in this situation, the condition may not be fully initialized to save time
@@ -65,22 +64,27 @@ public:
   /**
    * skip the evaluation of KEY
    * (which should be done after initConditionFast is called)
-   * @param conditions
-   * @param object
-   * @return
+   * @param object The object to evaluate conditions against
+   * @return true if conditions are met
    */
   bool evalCondition(const Table::Object& object);
 
   /**
    * This function seems have small effect and causes somme bugs
    * so it is not used actually
-   * @param table
-   * @param function
-   * @return
+   * @param table The table to test key conditions on
+   * @param function The function to call with results
+   * @return true if key conditions are satisfied
    */
   bool testKeyCondition(Table& table,
                         const std::function<void(bool, Table::Object::Ptr&&)>& function);
 
+  /**
+   * Construct a ComplexQuery with target table, operands, and conditions
+   * @param targetTable The name of the target table
+   * @param operands The operands for the query
+   * @param condition The conditions for the query
+   */
   ComplexQuery(std::string targetTable,
                std::vector<std::string> operands,
                std::vector<QueryCondition> condition)

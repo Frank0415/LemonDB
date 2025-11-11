@@ -23,9 +23,9 @@
 #include "management/PrintTableQuery.h"
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
+#include "utils/ListenQuery.h"
 #include "utils/formatter.h"
 #include "utils/uexception.h"
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -45,8 +45,36 @@ void Throwhelper(std::vector<std::string>::const_iterator iterator,
 
 Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 {
-  if (query.token.size() == 2) [[likely]]
+  if (query.token.size() >= 2) [[likely]]
   {
+    if (query.token.front() == "LISTEN") [[unlikely]]
+    {
+      // Handle: LISTEN ( filename ) or LISTEN filename
+      std::string filename;
+
+      if (query.token.size() >= 3 && query.token[1] == "(")
+      {
+        // Format: LISTEN ( filename )
+        filename = query.token[2];
+        // Remove trailing ) if present
+        if (!filename.empty() && filename.back() == ')')
+        {
+          filename.pop_back();
+        }
+      }
+      else
+      {
+        // Format: LISTEN filename
+        filename = query.token[1];
+        // Remove trailing ) if present
+        if (!filename.empty() && filename.back() == ')')
+        {
+          filename.pop_back();
+        }
+      }
+
+      return std::make_unique<ListenQuery>(filename);
+    }
     if (query.token.front() == "LOAD") [[unlikely]]
     {
       auto& database = Database::getInstance();
@@ -191,7 +219,7 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   }
   catch (const IllFormedQuery& e)
   {
-    std::cerr << e.what() << '\n';
+    // std::cerr << e.what() << '\n';
     return getNextBuilder()->tryExtractQuery(query);
   }
   const std::string operation = query.token.front();
@@ -249,28 +277,28 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   {
     return std::make_unique<SwapQuery>(this->targetTable, this->operandToken, this->conditionToken);
   }
-  std::cerr << "Complicated query found!" << '\n';
-  std::cerr << "Operation = " << query.token.front() << '\n';
-  std::cerr << "    Operands : ";
-  for (const auto& oprand : this->operandToken) [[likely]]
-  {
-    std::cerr << oprand << " ";
-  }
-  std::cerr << '\n';
-  std::cerr << "Target Table = " << this->targetTable << '\n';
-  if (this->conditionToken.empty()) [[unlikely]]
-  {
-    std::cerr << "No WHERE clause specified." << '\n';
-  }
-  else [[likely]]
-  {
-    std::cerr << "Conditions = ";
-  }
-  for (const auto& cond : this->conditionToken) [[likely]]
-  {
-    std::cerr << cond.field << cond.op << cond.value << " ";
-  }
-  std::cerr << '\n';
+  //   std::cerr << "Complicated query found!" << '\n';
+  //   std::cerr << "Operation = " << query.token.front() << '\n';
+  //   std::cerr << "    Operands : ";
+  //   for (const auto& oprand : this->operandToken) [[likely]]
+  //   {
+  //     std::cerr << oprand << " ";
+  //   }
+  //   std::cerr << '\n';
+  //   std::cerr << "Target Table = " << this->targetTable << '\n';
+  //   if (this->conditionToken.empty()) [[unlikely]]
+  //   {
+  //     std::cerr << "No WHERE clause specified." << '\n';
+  //   }
+  //   else [[likely]]
+  //   {
+  //     std::cerr << "Conditions = ";
+  //   }
+  //   for (const auto& cond : this->conditionToken) [[likely]]
+  //   {
+  //     std::cerr << cond.field << cond.op << cond.value << " ";
+  //   }
+  //   std::cerr << '\n';
 
   return getNextBuilder()->tryExtractQuery(query);
 }

@@ -116,16 +116,28 @@ for test in "${TESTS[@]}"; do
     # Clean tmp directory before each test
     rm -f tmp/*.tbl
     
-    start=$(date +%s.%N)
-    ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
-    end=$(date +%s.%N)
-    elapsed=$(echo "$end - $start" | bc -l)
-    elapsed_rounded=$(printf "%.4f" "$elapsed")
+    if [ "$(whoami)" = "frank20050415" ]; then
+        # Simple timing for frank20050415
+        time ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
+        elapsed_rounded="timed"
+    else
+        start=$(date +%s.%N)
+        ./lemondb < "queries/${test}.query" > "1.out" 2>/dev/null
+        end=$(date +%s.%N)
+        elapsed=$(echo "$end - $start" | bc -l)
+        elapsed_rounded=$(printf "%.4f" "$elapsed")
+    fi
 
     if [ "$VERBOSE" = true ]; then
-        echo "Test: ${test} completed in ${elapsed_rounded} seconds"
+        if [ "$(whoami)" != "frank20050415" ]; then
+            echo "Test: ${test} completed in ${elapsed_rounded} seconds"
+        else
+            echo "Test: ${test} completed"
+        fi
     else
-        echo "${test}: ${elapsed_rounded} seconds"
+        if [ "$(whoami)" != "frank20050415" ]; then
+            echo "${test}: ${elapsed_rounded} seconds"
+        fi
     fi
     
     # Compare stdout output
@@ -211,7 +223,11 @@ for test in "${TESTS[@]}"; do
         ((PASSED++))
     else
         # Always output failures with time
-        echo "${test} ${elapsed_rounded} seconds"
+        if [ "$(whoami)" != "frank20050415" ]; then
+            echo "${test} ${elapsed_rounded} seconds"
+        else
+            echo "${test}"
+        fi
         ((FAILED++))
     fi
     

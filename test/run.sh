@@ -109,13 +109,15 @@ fi
 
 if [ $usr == "frank" ]; then
     ./run_tidy.sh
+else
+    ./clangtidy.sh
+    ./clangtidy_cleanup.sh
 fi
 
 cd test
 
 ./cpplint.sh > cpplint 2>&1
 ./cppcheck.sh > cppcheck 2>&1
-./clangtidy.sh
-./clangtidy_cleanup.sh
+
 
 

@@ -17,8 +17,16 @@ class PrintTableQuery : public Query
 public:
   using Query::Query;
 
+  /**
+   * Execute the SHOWTABLE query to display table contents
+   * @return QueryResult with table data for display
+   */
   QueryResult::Ptr execute() override;
 
+  /**
+   * Convert query to string representation
+   * @return String representation of the SHOWTABLE query
+   */
   std::string toString() override;
 };
 

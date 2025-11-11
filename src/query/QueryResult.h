@@ -75,11 +75,22 @@ class ErrorMsgResult : public FailedQueryResult
   std::string msg;
 
 public:
+  /**
+   * Construct an error result with query name and message
+   * @param qname The name of the query that failed
+   * @param msg The error message
+   */
   ErrorMsgResult(const char* qname, const std::string& msg)
   {
     this->msg = R"(Query "?" failed : ?)"_f % qname % msg;
   }
 
+  /**
+   * Construct an error result with query name, table, and message
+   * @param qname The name of the query that failed
+   * @param table The name of the table where the error occurred
+   * @param msg The error message
+   */
   ErrorMsgResult(const char* qname, const std::string& table, const std::string& msg)
   {
     this->msg = R"(Query "?" failed in Table "?" : ?)"_f % qname % table % msg;
@@ -103,11 +114,17 @@ public:
     return debug_;
   }
 
+  /**
+   * Construct a success result with a number
+   */
   explicit SuccessMsgResult(const int number, bool debug = true) : debug_(debug)
   {
     this->msg = R"(ANSWER = "?".)"_f % number;
   }
 
+  /**
+   * Construct a success result with a vector of results
+   */
   explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) : debug_(debug)
   {
     std::stringstream stream;
@@ -120,16 +137,25 @@ public:
     this->msg = stream.str();
   }
 
+  /**
+   * Construct a success result with query name
+   */
   explicit SuccessMsgResult(const char* qname, bool debug = false) : debug_(debug)
   {
     this->msg = R"(Query "?" success.)"_f % qname;
   }
 
+  /**
+   * Construct a success result with query name and message
+   */
   SuccessMsgResult(const char* qname, const std::string& msg, bool debug = false) : debug_(debug)
   {
     this->msg = R"(Query "?" success : ?)"_f % qname % msg;
   }
 
+  /**
+   * Construct a success result with query name, table, and message
+   */
   SuccessMsgResult(const char* qname,
                    const std::string& table,
                    const std::string& msg,
@@ -156,6 +182,9 @@ public:
     return true;
   }
 
+  /**
+   * Construct a result showing the number of affected rows
+   */
   explicit RecordCountResult(int count) : affectedRows(count)
   {
   }
@@ -177,6 +206,9 @@ public:
     return true;
   }
 
+  /**
+   * Construct a result with text payload
+   */
   explicit TextRowsResult(std::string payload_str) : payload(std::move(payload_str))
   {
   }
@@ -185,6 +217,31 @@ protected:
   std::ostream& output(std::ostream& out) const override
   {
     return out << payload;
+  }
+};
+
+class ListenResult : public SucceededQueryResult
+{
+  std::string listen_name;
+
+public:
+  bool display() override
+  {
+    return true;
+  }
+
+  /**
+   * Construct a result for LISTEN query with the file name
+   */
+  explicit ListenResult(std::string name) : listen_name(std::move(name))
+  {
+  }
+
+protected:
+  std::ostream& output(std::ostream& ostring) const override
+  {
+    ostring << "ANSWER = ( listening from " << listen_name << " )\n";
+    return ostring;
   }
 };
 

@@ -19,13 +19,33 @@ class UpdateQuery : public ComplexQuery
   Table::KeyType keyValue;
 
 private:
+  /**
+   * Validate operands for UPDATE query
+   * @return QueryResult indicating validation success or failure
+   */
   [[nodiscard]] QueryResult::Ptr validateOperands() const;
 
+  /**
+   * Execute UPDATE operation using single-threaded approach
+   * @param table The table to update records in
+   * @return QueryResult with update results
+   */
   [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
 
+  /**
+   * Execute UPDATE operation using multi-threaded approach
+   * @param table The table to update records in
+   * @return QueryResult with update results
+   */
   [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
 
 public:
+  /**
+   * Construct an UpdateQuery with table, operands, and conditions
+   * @param table The name of the target table
+   * @param operands The operands for the update
+   * @param conditions The conditions for the update
+   */
   UpdateQuery(std::string table,
               std::vector<std::string> operands,
               std::vector<QueryCondition> conditions)

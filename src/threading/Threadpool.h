@@ -67,6 +67,10 @@ public:
   ThreadPool(ThreadPool&&) = delete;
   ThreadPool& operator=(ThreadPool&&) = delete;
 
+  /**
+   * Initialize the global thread pool with specified number of threads
+   * @param num_threads Number of worker threads to create (default: hardware concurrency)
+   */
   static void initialize(size_t num_threads = std::thread::hardware_concurrency())
   {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
@@ -78,6 +82,9 @@ public:
     initialized = true;
   }
 
+  /**
+   * Get the global thread pool instance
+   */
   static ThreadPool& getInstance()
   {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
@@ -88,6 +95,9 @@ public:
     return *global_instance;
   }
 
+  /**
+   * Check if the thread pool has been initialized
+   */
   static bool isInitialized()
   {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
@@ -107,6 +117,9 @@ public:
     }
   }
 
+  /**
+   * Submit a task to the thread pool for execution
+   */
   template <typename F, typename... Args>
   auto submit(F&& func, Args&&... args) const -> std::future<decltype(func(args...))>
   {
@@ -125,10 +138,17 @@ public:
     return ret;
   }
 
+  /**
+   * Get the number of idle threads
+   */
   [[nodiscard]] int getIdleThreadNum() const
   {
     return idleThreadNum.load();
   }
+
+  /**
+   * Get the total number of threads in the pool
+   */
   [[nodiscard]] size_t getThreadCount() const
   {
     return total_threads;
