@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -36,23 +37,25 @@ size_t OutputPool::flushContinuousResults()
 
   const size_t flushed_count = ready_results.size();
 
+  std::ostringstream buf;
   for (const auto& [query_id, result_string] : ready_results)
   {
     const bool is_quit = result_string.find("QUIT") != std::string::npos;
 
     if (!is_quit) [[unlikely]]
     {
-      std::cout << query_id << "\n";
+      buf << query_id << "\n";
     }
 
     if (!result_string.empty())
     {
-      std::cout << result_string;
+      buf << result_string;
     }
   }
 
   if (flushed_count > 0)
   {
+    std::cout << buf.str();
     std::cout.flush();
   }
 
