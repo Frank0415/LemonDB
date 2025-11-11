@@ -28,8 +28,8 @@ size_t OutputPool::flushContinuousResults()
         break;
       }
 
-      ready_results.emplace_back(iter->first, iter->second);
-      results.erase(iter);
+      auto node = results.extract(iter);
+      ready_results.emplace_back(node.key(), std::move(node.mapped()));
       ++next_output_id;
     }
   }
