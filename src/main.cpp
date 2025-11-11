@@ -213,7 +213,6 @@ std::optional<size_t> setupListenMode(const Args& args,
 int main(int argc, char* argv[])
 {
   std::ios_base::sync_with_stdio(true);
-  std::ios_base::sync_with_stdio(true);
 
   Args parsedArgs{};
   MainUtils::parseArgs(argc, argv, parsedArgs);
