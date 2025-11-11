@@ -28,6 +28,8 @@ public:
 
 protected:
   virtual std::ostream& output(std::ostream& out) const = 0;
+  static std::string buildMessage(std::string&& msg);
+  static std::string buildMessage(const std::vector<int>& results);
 };
 
 class FailedQueryResult : public QueryResult
@@ -81,8 +83,8 @@ public:
    * @param msg The error message
    */
   ErrorMsgResult(const char* qname, const std::string& msg)
+  : msg(buildMessage(R"(Query "?" failed : ?)"_f % qname % msg))
   {
-    this->msg = R"(Query "?" failed : ?)"_f % qname % msg;
   }
 
   /**
@@ -92,8 +94,8 @@ public:
    * @param msg The error message
    */
   ErrorMsgResult(const char* qname, const std::string& table, const std::string& msg)
+  : msg(buildMessage(R"(Query "?" failed in Table "?" : ?)"_f % qname % table % msg))
   {
-    this->msg = R"(Query "?" failed in Table "?" : ?)"_f % qname % table % msg;
   }
 
 protected:
@@ -117,40 +119,37 @@ public:
   /**
    * Construct a success result with a number
    */
-  explicit SuccessMsgResult(const int number, bool debug = true) : debug_(debug)
+  explicit SuccessMsgResult(const int number, bool debug = true) 
+  : debug_(debug),
+    msg(buildMessage(R"(ANSWER = "?".)"_f % number))
   {
-    this->msg = R"(ANSWER = "?".)"_f % number;
   }
 
   /**
    * Construct a success result with a vector of results
    */
-  explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) : debug_(debug)
+  explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) 
+  : debug_(debug),
+    msg(buildMessage(results))
   {
-    std::stringstream stream;
-    stream << "ANSWER = ( ";
-    for (auto result : results)
-    {
-      stream << result << " ";
-    }
-    stream << ")";
-    this->msg = stream.str();
   }
 
   /**
    * Construct a success result with query name
    */
-  explicit SuccessMsgResult(const char* qname, bool debug = false) : debug_(debug)
+  explicit SuccessMsgResult(const char* qname, bool debug = false) 
+  : debug_(debug),
+    msg(buildMessage(R"(Query "?" success.)"_f % qname))
   {
-    this->msg = R"(Query "?" success.)"_f % qname;
   }
 
   /**
    * Construct a success result with query name and message
    */
-  SuccessMsgResult(const char* qname, const std::string& msg, bool debug = false) : debug_(debug)
+  SuccessMsgResult(const char* qname, const std::string& msg, bool debug = false)
+  : debug_(debug),
+    msg(buildMessage(R"(Query "?" success : ?)"_f % qname % msg))
   {
-    this->msg = R"(Query "?" success : ?)"_f % qname % msg;
   }
 
   /**
@@ -160,9 +159,9 @@ public:
                    const std::string& table,
                    const std::string& msg,
                    bool debug = false)
-      : debug_(debug)
+      : debug_(debug),
+        msg(buildMessage(R"(Query "?" success in Table "?" : ?)"_f % qname % table % msg))
   {
-    this->msg = R"(Query "?" success in Table "?" : ?)"_f % qname % table % msg;
   }
 
 protected:
