@@ -39,7 +39,7 @@ public:
    * @param query_id The unique identifier for the query result
    * @param result The result string to add to the pool
    */
-  void addResult(size_t query_id, const std::string& result);
+  void addResult(size_t query_id, std::string& result);
 
   /**
    * Flush ready results in order (streaming)

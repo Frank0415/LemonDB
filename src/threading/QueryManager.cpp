@@ -54,7 +54,7 @@ void QueryManager::addQuery(size_t query_id, const std::string& table_name, Quer
   table_query_sem[table_name]->release();
 }
 
-void QueryManager::addImmediateResult(size_t query_id, const std::string& result)
+void QueryManager::addImmediateResult(size_t query_id, std::string& result)
 {
   output_pool.addResult(query_id, result);
   completed_query_count.fetch_add(1);

@@ -108,7 +108,7 @@ public:
    * Immediately publish a query result without scheduling execution.
    * Used for instant queries executed on the caller thread (e.g., LISTEN).
    */
-  void addImmediateResult(size_t query_id, const std::string& result);
+  void addImmediateResult(size_t query_id, std::string& result);
 
   /**
    * Set the expected number of queries (to know when all are done)

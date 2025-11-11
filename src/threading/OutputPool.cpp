@@ -8,11 +8,11 @@
 #include <utility>
 #include <vector>
 
-void OutputPool::addResult(size_t query_id, const std::string& result)
+void OutputPool::addResult(size_t query_id, std::string& result)
 {
   // std::cerr << "Adding result for query_id " << query_id << "\n";
   const std::scoped_lock lock(results_mutex);
-  results[query_id] = result;
+  results[query_id] = std::move(result);
 }
 
 size_t OutputPool::flushContinuousResults()
