@@ -5,17 +5,15 @@
 
 #include "query/QueryParser.h"
 
-struct Args
-{
+struct Args {
   std::string listen;
   std::int64_t threads = 0;
 };
 
-namespace MainUtils
-{
-void parseArgs(int argc, char** argv, Args& args);
+namespace MainUtils {
+void parseArgs(int argc, char **argv, Args &args);
 
-void setupParser(QueryParser& parser);
-} // namespace MainUtils
+void setupParser(QueryParser &parser);
+}  // namespace MainUtils
 
-#endif // PROJECT_MAIN_UTILS_H
+#endif  // PROJECT_MAIN_UTILS_H
