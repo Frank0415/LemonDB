@@ -11,9 +11,8 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 
-class LoadTableQuery : public Query
-{
-  static constexpr const char* qname = "LOAD";
+class LoadTableQuery : public Query {
+  static constexpr const char *qname = "LOAD";
   std::string fileName;
 
 public:
@@ -23,9 +22,7 @@ public:
    * @param fileName File path to load data from
    */
   explicit LoadTableQuery(std::string table, std::string fileName)
-      : Query(std::move(table)), fileName(std::move(fileName))
-  {
-  }
+      : Query(std::move(table)), fileName(std::move(fileName)) {}
 
   /**
    * Execute the LOAD query to load table data from file
@@ -43,19 +40,13 @@ public:
    * Check if this query modifies data
    * @return Always returns true for LOAD queries
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 
   /**
    * Check if this query must execute immediately and serially
    * @return Always returns true for LOAD queries
    */
-  [[nodiscard]] bool isInstant() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
-#endif // PROJECT_LOADTABLEQUERY_H
+#endif  // PROJECT_LOADTABLEQUERY_H

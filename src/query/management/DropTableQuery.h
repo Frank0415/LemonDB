@@ -10,9 +10,8 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 
-class DropTableQuery : public Query
-{
-  static constexpr const char* qname = "DROP";
+class DropTableQuery : public Query {
+  static constexpr const char *qname = "DROP";
 
 public:
   using Query::Query;
@@ -33,19 +32,13 @@ public:
    * Check if this query modifies data
    * @return Always returns true for DROP queries
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 
   /**
    * Check if this query must execute immediately
    * @return Always returns true for DROP queries
    */
-  [[nodiscard]] bool isInstant() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
-#endif // PROJECT_DROPTABLEQUERY_H
+#endif  // PROJECT_DROPTABLEQUERY_H

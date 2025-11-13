@@ -9,9 +9,8 @@
 
 #include "query/Query.h"
 
-class ListTableQuery : public Query
-{
-  static constexpr const char* qname = "LIST";
+class ListTableQuery : public Query {
+  static constexpr const char *qname = "LIST";
 
 public:
   /**
@@ -27,4 +26,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_LISTTABLEQUERY_H
+#endif  // PROJECT_LISTTABLEQUERY_H

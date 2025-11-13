@@ -10,9 +10,8 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 
-class QuitQuery : public Query
-{
-  static constexpr const char* qname = "QUIT";
+class QuitQuery : public Query {
+  static constexpr const char *qname = "QUIT";
 
 public:
   /**
@@ -36,19 +35,13 @@ public:
    * Check if this query modifies data
    * @return Always returns false for QUIT queries
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return false;
-  }
+  [[nodiscard]] bool isWriter() const override { return false; }
 
   /**
    * Check if this query must execute immediately and serially
    * @return Always returns true for QUIT queries
    */
-  [[nodiscard]] bool isInstant() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
-#endif // PROJECT_QUITQUERY_H
+#endif  // PROJECT_QUITQUERY_H

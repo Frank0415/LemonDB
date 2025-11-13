@@ -5,17 +5,14 @@
 #include "query/QueryResult.h"
 
 // Custom exception for WaitQuery completion
-class WaitQueryCompleted : public std::exception
-{
+class WaitQueryCompleted : public std::exception {
 public:
-  [[nodiscard]] const char* what() const noexcept override
-  {
+  [[nodiscard]] const char *what() const noexcept override {
     return "WaitQuery completed - queries can now proceed on new table";
   }
 };
 
-QueryResult::Ptr WaitQuery::execute()
-{
+QueryResult::Ptr WaitQuery::execute() {
   // Block until the semaphore is released (COPY/LOAD completed)
   target_sem->acquire();
 
@@ -23,7 +20,6 @@ QueryResult::Ptr WaitQuery::execute()
   throw WaitQueryCompleted();
 }
 
-std::string WaitQuery::toString()
-{
+std::string WaitQuery::toString() {
   return "QUERY = WAIT, TABLE = \"" + this->targetTableRef() + "\"";
 }

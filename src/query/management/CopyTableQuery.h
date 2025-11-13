@@ -10,9 +10,8 @@
 #include "db/Table.h"
 #include "query/QueryResult.h"
 
-class CopyTableQuery : public Query
-{
-  static constexpr const char* qname = "COPYTABLE";
+class CopyTableQuery : public Query {
+  static constexpr const char *qname = "COPYTABLE";
   std::string newTableName;
   constexpr static bool is_multithreaded = false;
   std::shared_ptr<std::counting_semaphore<>> wait_sem;
@@ -26,7 +25,7 @@ private:
    * @param src The source table to validate
    * @return QueryResult indicating validation success or failure
    */
-  [[nodiscard]] QueryResult::Ptr validateSourceTable(const Table& src) const;
+  [[nodiscard]] QueryResult::Ptr validateSourceTable(const Table &src) const;
 
   /**
    * Collect row data from source table using single-threaded approach
@@ -35,7 +34,7 @@ private:
    * @return Vector of row data pairs
    */
   [[nodiscard]] std::vector<RowData> static collectSingleThreaded(
-      const Table& src, const std::vector<std::string>& fields);
+      const Table &src, const std::vector<std::string> &fields);
 
   /**
    * Collect row data from source table using multi-threaded approach
@@ -44,7 +43,7 @@ private:
    * @return Vector of row data pairs
    */
   [[nodiscard]] std::vector<RowData> static collectMultiThreaded(
-      const Table& src, const std::vector<std::string>& fields);
+      const Table &src, const std::vector<std::string> &fields);
 
 public:
   /**
@@ -54,9 +53,7 @@ public:
    */
   explicit CopyTableQuery(std::string sourceTable, std::string newTable)
       : Query(std::move(sourceTable)), newTableName(std::move(newTable)),
-        wait_sem(std::make_shared<std::counting_semaphore<>>(0))
-  {
-  }
+        wait_sem(std::make_shared<std::counting_semaphore<>>(0)) {}
 
   /**
    * Execute the COPYTABLE query to duplicate a table
@@ -74,10 +71,10 @@ public:
    * Get the wait semaphore for synchronization with dependent queries
    * @return Shared pointer to the counting semaphore
    */
-  [[nodiscard]] std::shared_ptr<std::counting_semaphore<>> getWaitSemaphore() const
-  {
+  [[nodiscard]] std::shared_ptr<std::counting_semaphore<>>
+  getWaitSemaphore() const {
     return wait_sem;
   }
 };
 
-#endif // COPY_TABLE_QUERY_H
+#endif  // COPY_TABLE_QUERY_H
