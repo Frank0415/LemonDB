@@ -9,8 +9,7 @@
 #include <thread>
 #include <vector>
 
-class ThreadPool
-{
+class ThreadPool {
 private:
   static std::unique_ptr<ThreadPool> global_instance;
   static std::mutex instance_mutex;
@@ -25,17 +24,15 @@ private:
   size_t total_threads;
 
   // a manager for threads to constantly work until the ThreadPool is destructed
-  void thread_manager()
-  {
-    while (!done.load()) [[likely]]
-    {
+  void thread_manager() {
+    while (!done.load()) [[likely]] {
       std::function<void()> task;
       {
         std::unique_lock<std::mutex> lock(lockx);
-        cv.wait(lock, [this]() { return !Task_assemble.empty() || done.load(); });
+        cv.wait(lock,
+                [this]() { return !Task_assemble.empty() || done.load(); });
 
-        if (done.load() && Task_assemble.empty()) [[unlikely]]
-        {
+        if (done.load() && Task_assemble.empty()) [[unlikely]] {
           return;
         }
 
@@ -51,10 +48,8 @@ private:
 
   // Private constructor for singleton
   explicit ThreadPool(size_t num_threads)
-      : done(false), idleThreadNum(0), total_threads(num_threads)
-  {
-    for (size_t i = 0; i < num_threads; ++i)
-    {
+      : done(false), idleThreadNum(0), total_threads(num_threads) {
+    for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
     }
@@ -62,20 +57,20 @@ private:
 
 public:
   // Deleted copy constructor and assignment operator
-  ThreadPool(const ThreadPool&) = delete;
-  ThreadPool& operator=(const ThreadPool&) = delete;
-  ThreadPool(ThreadPool&&) = delete;
-  ThreadPool& operator=(ThreadPool&&) = delete;
+  ThreadPool(const ThreadPool &) = delete;
+  ThreadPool &operator=(const ThreadPool &) = delete;
+  ThreadPool(ThreadPool &&) = delete;
+  ThreadPool &operator=(ThreadPool &&) = delete;
 
   /**
    * Initialize the global thread pool with specified number of threads
-   * @param num_threads Number of worker threads to create (default: hardware concurrency)
+   * @param num_threads Number of worker threads to create (default: hardware
+   * concurrency)
    */
-  static void initialize(size_t num_threads = std::thread::hardware_concurrency())
-  {
+  static void
+  initialize(size_t num_threads = std::thread::hardware_concurrency()) {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
-    if (initialized) [[unlikely]]
-    {
+    if (initialized) [[unlikely]] {
       return;
     }
     global_instance = std::unique_ptr<ThreadPool>(new ThreadPool(num_threads));
@@ -85,12 +80,11 @@ public:
   /**
    * Get the global thread pool instance
    */
-  static ThreadPool& getInstance()
-  {
+  static ThreadPool &getInstance() {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
-    if (!initialized) [[unlikely]]
-    {
-      throw std::runtime_error("ThreadPool not initialized. Call initialize() first.");
+    if (!initialized) [[unlikely]] {
+      throw std::runtime_error(
+          "ThreadPool not initialized. Call initialize() first.");
     }
     return *global_instance;
   }
@@ -98,20 +92,16 @@ public:
   /**
    * Check if the thread pool has been initialized
    */
-  static bool isInitialized()
-  {
+  static bool isInitialized() {
     const std::scoped_lock<std::mutex> lock(instance_mutex);
     return initialized;
   }
 
-  ~ThreadPool()
-  {
+  ~ThreadPool() {
     done.store(true);
     cv.notify_all();
-    for (auto& thread : pool_vector)
-    {
-      if (thread.joinable())
-      {
+    for (auto &thread : pool_vector) {
+      if (thread.joinable()) {
         thread.join();
       }
     }
@@ -121,13 +111,15 @@ public:
    * Submit a task to the thread pool for execution
    */
   template <typename F, typename... Args>
-  auto submit(F&& func, Args&&... args) const -> std::future<decltype(func(args...))>
-  {
+  auto submit(F &&func, Args &&...args) const
+      -> std::future<decltype(func(args...))> {
     using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
-        [func_cap = std::forward<F>(func), ... args_tuple = std::forward<Args>(args)]() mutable
-        { return func_cap(std::forward<Args>(args_tuple)...); });
+        [func_cap = std::forward<F>(func),
+         ... args_tuple = std::forward<Args>(args)]() mutable {
+          return func_cap(std::forward<Args>(args_tuple)...);
+        });
 
     std::future<return_type> ret = task->get_future();
     {
@@ -141,18 +133,12 @@ public:
   /**
    * Get the number of idle threads
    */
-  [[nodiscard]] int getIdleThreadNum() const
-  {
-    return idleThreadNum.load();
-  }
+  [[nodiscard]] int getIdleThreadNum() const { return idleThreadNum.load(); }
 
   /**
    * Get the total number of threads in the pool
    */
-  [[nodiscard]] size_t getThreadCount() const
-  {
-    return total_threads;
-  }
+  [[nodiscard]] size_t getThreadCount() const { return total_threads; }
 };
 
-#endif // PROJECT_THREADPOOL_H
+#endif  // PROJECT_THREADPOOL_H

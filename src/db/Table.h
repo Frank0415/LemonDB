@@ -24,15 +24,16 @@
 #include "utils/formatter.h"
 #include "utils/uexception.h"
 
-class Table
-{
+class Table {
 public:
   using KeyType = std::string;
   using FieldNameType = std::string;
   using FieldIndex = size_t;
   using ValueType = int;
-  static constexpr const ValueType ValueTypeMax = std::numeric_limits<ValueType>::max();
-  static constexpr const ValueType ValueTypeMin = std::numeric_limits<ValueType>::min();
+  static constexpr const ValueType ValueTypeMax =
+      std::numeric_limits<ValueType>::max();
+  static constexpr const ValueType ValueTypeMin =
+      std::numeric_limits<ValueType>::min();
   using SizeType = size_t;
 
 private:
@@ -55,13 +56,12 @@ private:
   std::string tableName;
 
   bool initialized = false;
-  std::list<Query*> queryQueue;
+  std::list<Query *> queryQueue;
   int queryQueueCounter = 0;
   std::mutex queryQueueMutex;
 
 public:
-  static constexpr size_t splitsize()
-  {
+  static constexpr size_t splitsize() {
     constexpr size_t part = 2000;
     return part;
   }
@@ -75,49 +75,40 @@ public:
    * @tparam Iterator
    * @tparam VType
    */
-  template <class Iterator, class VType> class ObjectImpl
-  {
+  template <class Iterator, class VType> class ObjectImpl {
     friend class Table;
 
     /** Not const because key can be updated */
     Iterator it;
     // Use const Table* for const VType, Table* for non-const VType
-    using TablePtrType = std::conditional_t<std::is_const_v<VType>, const Table*, Table*>;
+    using TablePtrType =
+        std::conditional_t<std::is_const_v<VType>, const Table *, Table *>;
     TablePtrType table;
 
   public:
     using Ptr = std::unique_ptr<ObjectImpl>;
 
-    ObjectImpl(Iterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
-    {
-    }
+    ObjectImpl(Iterator datumIt, TablePtrType table_ptr)
+        : it(datumIt), table(table_ptr) {}
 
-    ObjectImpl(const ObjectImpl&) = default;
-    ObjectImpl(ObjectImpl&&) noexcept = default;
-    ObjectImpl& operator=(const ObjectImpl&) = default;
-    ObjectImpl& operator=(ObjectImpl&&) noexcept = default;
+    ObjectImpl(const ObjectImpl &) = default;
+    ObjectImpl(ObjectImpl &&) noexcept = default;
+    ObjectImpl &operator=(const ObjectImpl &) = default;
+    ObjectImpl &operator=(ObjectImpl &&) noexcept = default;
     ~ObjectImpl() = default;
 
-    [[nodiscard]] const KeyType& key() const
-    {
-      return it->keyConstRef();
-    }
+    [[nodiscard]] const KeyType &key() const { return it->keyConstRef(); }
 
     // Helper to obtain the correct datum reference type depending on VType
-    template <typename T = VType> [[nodiscard]] auto& datumAccess() const
-    {
-      if constexpr (std::is_const_v<T>)
-      {
+    template <typename T = VType> [[nodiscard]] auto &datumAccess() const {
+      if constexpr (std::is_const_v<T>) {
         return it->datumConstRef();
-      }
-      else
-      {
+      } else {
         return it->datumRef();
       }
     }
 
-    void setKey(KeyType key)
-    {
+    void setKey(KeyType key) {
       auto keyMapIt = table->keyMap.find(it->keyConstRef());
       auto dataIt = std::move(keyMapIt->second);
       table->keyMap.erase(keyMapIt);
@@ -131,52 +122,38 @@ public:
      * accessed frequently (the implement is improved so that index is actually
      * faster now)
      */
-    VType& operator[](const FieldNameType& field) const
-    {
-      try
-      {
-        auto& index = table->fieldMap.at(field);
+    VType &operator[](const FieldNameType &field) const {
+      try {
+        auto &index = table->fieldMap.at(field);
         return datumAccess().at(index);
-      }
-      catch (const std::out_of_range& e)
-      {
-        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));
+      } catch (const std::out_of_range &e) {
+        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f %
+                                 (field));
       }
     }
 
-    VType& operator[](const FieldIndex& index) const
-    {
-      try
-      {
+    VType &operator[](const FieldIndex &index) const {
+      try {
         return datumAccess().at(index);
-      }
-      catch (const std::out_of_range& e)
-      {
+      } catch (const std::out_of_range &e) {
         throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));
       }
     }
 
-    [[nodiscard]] VType& get(const FieldNameType& field) const
-    {
-      try
-      {
-        auto& index = table->fieldMap.at(field);
+    [[nodiscard]] VType &get(const FieldNameType &field) const {
+      try {
+        auto &index = table->fieldMap.at(field);
         return datumAccess().at(index);
-      }
-      catch (const std::out_of_range& e)
-      {
-        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f % (field));
+      } catch (const std::out_of_range &e) {
+        throw TableFieldNotFound(R"(Field name "?" doesn't exists.)"_f %
+                                 (field));
       }
     }
 
-    [[nodiscard]] VType& get(const FieldIndex& index) const
-    {
-      try
-      {
+    [[nodiscard]] VType &get(const FieldIndex &index) const {
+      try {
         return datumAccess().at(index);
-      }
-      catch (const std::out_of_range& e)
-      {
+      } catch (const std::out_of_range &e) {
         throw TableFieldNotFound(R"(Field index ? out of range.)"_f % (index));
       }
     }
@@ -190,8 +167,7 @@ public:
    * @tparam ObjType
           return datumAccess().at(index);
    */
-  template <typename ObjType, typename DatumIterator> class IteratorImpl
-  {
+  template <typename ObjType, typename DatumIterator> class IteratorImpl {
     using difference_type = std::ptrdiff_t;
     using value_type = ObjType;
     using pointer = typename ObjType::Ptr;
@@ -207,151 +183,99 @@ public:
     TablePtrType table = nullptr;
 
   public:
-    IteratorImpl(DatumIterator datumIt, TablePtrType table_ptr) : it(datumIt), table(table_ptr)
-    {
-    }
+    IteratorImpl(DatumIterator datumIt, TablePtrType table_ptr)
+        : it(datumIt), table(table_ptr) {}
 
     IteratorImpl() = default;
 
-    IteratorImpl(const IteratorImpl&) = default;
+    IteratorImpl(const IteratorImpl &) = default;
 
-    IteratorImpl(IteratorImpl&&) noexcept = default;
+    IteratorImpl(IteratorImpl &&) noexcept = default;
 
-    IteratorImpl& operator=(const IteratorImpl&) = default;
+    IteratorImpl &operator=(const IteratorImpl &) = default;
 
-    IteratorImpl& operator=(IteratorImpl&&) noexcept = default;
+    IteratorImpl &operator=(IteratorImpl &&) noexcept = default;
 
     ~IteratorImpl() = default;
 
-    pointer operator->()
-    {
-      return createProxy(it, table);
-    }
+    pointer operator->() { return createProxy(it, table); }
 
-    reference operator*()
-    {
-      return *createProxy(it, table);
-    }
+    reference operator*() { return *createProxy(it, table); }
 
-    pointer operator->() const
-    {
-      if constexpr (std::is_same_v<ObjType, ConstObject>)
-      {
+    pointer operator->() const {
+      if constexpr (std::is_same_v<ObjType, ConstObject>) {
         return createProxy(it, table);
-      }
-      else
-      {
+      } else {
         return std::make_unique<Object>(it, table);
       }
     }
 
-    reference operator*() const
-    {
-      if constexpr (std::is_same_v<ObjType, ConstObject>)
-      {
+    reference operator*() const {
+      if constexpr (std::is_same_v<ObjType, ConstObject>) {
         return *createProxy(it, table);
-      }
-      else
-      {
+      } else {
         return *std::make_unique<Object>(it, table);
       }
     }
 
-    IteratorImpl operator+(int n)
-    {
-      return IteratorImpl(it + n, table);
-    }
+    IteratorImpl operator+(int n) { return IteratorImpl(it + n, table); }
 
-    IteratorImpl operator-(int n)
-    {
-      return IteratorImpl(it - n, table);
-    }
+    IteratorImpl operator-(int n) { return IteratorImpl(it - n, table); }
 
-    IteratorImpl& operator+=(int n)
-    {
-      return it += n, *this;
-    }
+    IteratorImpl &operator+=(int n) { return it += n, *this; }
 
-    IteratorImpl& operator-=(int n)
-    {
-      return it -= n, *this;
-    }
+    IteratorImpl &operator-=(int n) { return it -= n, *this; }
 
-    IteratorImpl& operator++()
-    {
-      return ++it, *this;
-    }
+    IteratorImpl &operator++() { return ++it, *this; }
 
-    IteratorImpl& operator--()
-    {
-      return --it, *this;
-    }
+    IteratorImpl &operator--() { return --it, *this; }
 
-    IteratorImpl operator++(int)
-    {
+    IteratorImpl operator++(int) {
       auto retVal = IteratorImpl(*this);
       ++it;
       return retVal;
     }
 
-    IteratorImpl operator--(int)
-    {
+    IteratorImpl operator--(int) {
       auto retVal = IteratorImpl(*this);
       --it;
       return retVal;
     }
 
-    bool operator==(const IteratorImpl& other) const
-    {
+    bool operator==(const IteratorImpl &other) const {
       return this->it == other.it;
     }
 
-    friend bool operator!=(const IteratorImpl& lhs, const IteratorImpl& rhs)
-    {
+    friend bool operator!=(const IteratorImpl &lhs, const IteratorImpl &rhs) {
       return lhs.it != rhs.it;
     }
 
-    bool operator<=(const IteratorImpl& other)
-    {
-      return this->it <= other.it;
-    }
+    bool operator<=(const IteratorImpl &other) { return this->it <= other.it; }
 
-    bool operator>=(const IteratorImpl& other)
-    {
-      return this->it >= other.it;
-    }
+    bool operator>=(const IteratorImpl &other) { return this->it >= other.it; }
 
-    bool operator<(const IteratorImpl& other)
-    {
-      return this->it < other.it;
-    }
+    bool operator<(const IteratorImpl &other) { return this->it < other.it; }
 
-    bool operator>(const IteratorImpl& other)
-    {
-      return this->it > other.it;
-    }
+    bool operator>(const IteratorImpl &other) { return this->it > other.it; }
   };
 
   using Iterator = IteratorImpl<Object, decltype(data.begin())>;
   using ConstIterator = IteratorImpl<ConstObject, decltype(data.cbegin())>;
 
 private:
-  static ConstObject::Ptr createProxy(ConstDataIterator iterator, const Table* table)
-  {
+  static ConstObject::Ptr createProxy(ConstDataIterator iterator,
+                                      const Table *table) {
     return std::make_unique<ConstObject>(iterator, table);
   }
 
-  static Object::Ptr createProxy(DataIterator iterator, Table* table)
-  {
+  static Object::Ptr createProxy(DataIterator iterator, Table *table) {
     return std::make_unique<Object>(iterator, table);
   }
 
 public:
   Table() = delete;
 
-  explicit Table(std::string name) : tableName(std::move(name))
-  {
-  }
+  explicit Table(std::string name) : tableName(std::move(name)) {}
 
   /**
    * Accept any container that contains string.
@@ -359,18 +283,17 @@ public:
    * @param name: the table name (must be unique in the database)
    * @param fields: an iterable container with fields
    */
-  template <class FieldIDContainer> Table(const std::string& name, const FieldIDContainer& fields);
+  template <class FieldIDContainer>
+  Table(const std::string &name, const FieldIDContainer &fields);
 
   /**
    * Copy constructor from another table
    * @param name: the table name (must be unique in the database)
    * @param origin: the original table copied from
    */
-  Table(std::string name, const Table& origin)
-      : fields(origin.fields), fieldMap(origin.fieldMap), data(origin.data), keyMap(origin.keyMap),
-        tableName(std::move(name))
-  {
-  }
+  Table(std::string name, const Table &origin)
+      : fields(origin.fields), fieldMap(origin.fieldMap), data(origin.data),
+        keyMap(origin.keyMap), tableName(std::move(name)) {}
 
   /**
    * Check whether a key already exists in the table
@@ -383,14 +306,14 @@ public:
    * Duplicate a row of data by its key
    * @param key
    */
-  void duplicateKeyData(const KeyType& key);
+  void duplicateKeyData(const KeyType &key);
 
   /**
    * Find the index of a field in the fieldMap
    * @param field
    * @return fieldIndex
    */
-  [[nodiscard]] FieldIndex getFieldIndex(const FieldNameType& field) const;
+  [[nodiscard]] FieldIndex getFieldIndex(const FieldNameType &field) const;
 
   /**
    * Insert a row of data by its key
@@ -398,39 +321,40 @@ public:
    * @param key
    * @param data
    */
-  void insertByIndex(const KeyType& key, std::vector<ValueType>&& data);
+  void insertByIndex(const KeyType &key, std::vector<ValueType> &&data);
 
   /**
    * Insert multiple rows of data by their keys (batch operation)
    * Checks for key conflicts before inserting any data
    * @param batch: vector of key-data pairs to insert
    */
-  void insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>>&& batch);
+  void
+  insertBatch(std::vector<std::pair<KeyType, std::vector<ValueType>>> &&batch);
 
   /**
    * Delete a row of data by its key
    * @param key
    */
-  void deleteByIndex(const KeyType& key);
+  void deleteByIndex(const KeyType &key);
 
   /**
    * Access the value according to the key
    * @param key
    * @return the Object that KEY = key, or nullptr if key doesn't exist
    */
-  Object::Ptr operator[](const KeyType& key);
+  Object::Ptr operator[](const KeyType &key);
 
   /**
    * Set the name of the table
    * @param name
    */
-  void setName(const std::string& name);
+  void setName(const std::string &name);
 
   /**
    * Get the name of the table
    * @return
    */
-  [[nodiscard]] const std::string& name() const;
+  [[nodiscard]] const std::string &name() const;
 
   /**
    * Return whether the table is empty
@@ -448,7 +372,7 @@ public:
    * Return the fields in the table
    * @return
    */
-  [[nodiscard]] const std::vector<FieldNameType>& field() const;
+  [[nodiscard]] const std::vector<FieldNameType> &field() const;
 
   /**
    * Clear all content in the table
@@ -461,8 +385,7 @@ public:
    * Reserves space for data vector and keyMap to reduce allocation overhead
    * @param capacity number of rows to pre-allocate
    */
-  void reserve(SizeType capacity)
-  {
+  void reserve(SizeType capacity) {
     data.reserve(capacity);
     keyMap.reserve(capacity);
   }
@@ -499,28 +422,26 @@ public:
    * @param table
    * @return the origin ostream
    */
-  friend std::ostream& operator<<(std::ostream& out, const Table& table);
+  friend std::ostream &operator<<(std::ostream &out, const Table &table);
 
-  void addQuery(Query* query);
+  void addQuery(Query *query);
   void completeQuery();
   [[nodiscard]] bool isInited() const;
 };
 
-std::ostream& operator<<(std::ostream& out, const Table& table);
+std::ostream &operator<<(std::ostream &out, const Table &table);
 
 template <class FieldIDContainer>
-Table::Table(const std::string& name, const FieldIDContainer& fields)
-    : fields(fields.cbegin(), fields.cend()), tableName(name)
-{
+Table::Table(const std::string &name, const FieldIDContainer &fields)
+    : fields(fields.cbegin(), fields.cend()), tableName(name) {
   SizeType index = 0;
-  for (const auto& fieldName : fields)
-  {
-    if (fieldName == "KEY")
-    {
-      throw MultipleKey("Error creating table \"" + name + "\": Multiple KEY field.");
+  for (const auto &fieldName : fields) {
+    if (fieldName == "KEY") {
+      throw MultipleKey("Error creating table \"" + name +
+                        "\": Multiple KEY field.");
     }
     fieldMap.emplace(fieldName, index++);
   }
 }
 
-#endif // PROJECT_DB_TABLE_H
+#endif  // PROJECT_DB_TABLE_H

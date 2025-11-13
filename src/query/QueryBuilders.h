@@ -13,15 +13,13 @@
 #include "Query.h"
 #include "QueryParser.h"
 
-class FailedQueryBuilder : public QueryBuilder
-{
+class FailedQueryBuilder : public QueryBuilder {
 public:
   /**
    * Get the default failed query builder instance
    * @return Unique pointer to FailedQueryBuilder
    */
-  static QueryBuilder::Ptr getDefault()
-  {
+  static QueryBuilder::Ptr getDefault() {
     return std::make_unique<FailedQueryBuilder>();
   }
 
@@ -30,8 +28,7 @@ public:
    * @param query The tokenized query string
    * @return Never returns, always throws
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) final
-  {
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) final {
     throw QueryBuilderMatchFailed(query.rawQeuryString);
   }
 
@@ -39,23 +36,17 @@ public:
    * Ignores the next builder (does nothing)
    * @param builder The next builder to set (ignored)
    */
-  void setNext(QueryBuilder::Ptr&& builder) final
-  {
-    (void)std::move(builder);
-  }
+  void setNext(QueryBuilder::Ptr &&builder) final { (void)std::move(builder); }
 
   /**
    * Clear any state (no-op for this builder)
    */
-  void clear() override
-  {
-  }
+  void clear() override {}
 
   ~FailedQueryBuilder() override = default;
 };
 
-class BasicQueryBuilder : public QueryBuilder
-{
+class BasicQueryBuilder : public QueryBuilder {
 private:
   QueryBuilder::Ptr nextBuilder;
 
@@ -64,50 +55,37 @@ public:
    * Get reference to the next builder in the chain
    * @return Reference to the next builder pointer
    */
-  [[nodiscard]] QueryBuilder::Ptr& getNextBuilder()
-  {
-    return nextBuilder;
-  }
+  [[nodiscard]] QueryBuilder::Ptr &getNextBuilder() { return nextBuilder; }
 
   /**
    * Set the next builder in the chain
    * @param builder The next builder to set
    */
-  void setNext(Ptr&& builder) override
-  {
-    nextBuilder = std::move(builder);
-  }
+  void setNext(Ptr &&builder) override { nextBuilder = std::move(builder); }
 
   /**
    * Try to extract query using the next builder in chain
    * @param query The tokenized query string
    * @return Query pointer from next builder
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override
-  {
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override {
     return nextBuilder->tryExtractQuery(query);
   }
 
   /**
    * Constructor - initializes with default failed builder
    */
-  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault())
-  {
-  }
+  BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault()) {}
 
   /**
    * Clear the next builder's state
    */
-  void clear() override
-  {
-    nextBuilder->clear();
-  }
+  void clear() override { nextBuilder->clear(); }
 
   ~BasicQueryBuilder() override = default;
 };
 
-class ComplexQueryBuilder : public BasicQueryBuilder
-{
+class ComplexQueryBuilder : public BasicQueryBuilder {
 private:
   std::string targetTable;
   std::vector<std::string> operandToken;
@@ -117,7 +95,7 @@ private:
    * Parse tokens from the query string (virtual method for subclasses)
    * @param query The tokenized query string to parse
    */
-  virtual void parseToken(TokenizedQueryString& query);
+  virtual void parseToken(TokenizedQueryString &query);
 
 public:
   /**
@@ -130,25 +108,24 @@ public:
    * @param query The tokenized query string
    * @return Query pointer if successful, nullptr otherwise
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;
 };
 
 // Transparant builder
 // It does not modify or extract anything
 // It prints current tokenized string
 // Use to examine the queries and tokenizer
-class FakeQueryBuilder : public BasicQueryBuilder
-{
+class FakeQueryBuilder : public BasicQueryBuilder {
   /**
    * Pass query to next builder without modification (debugging aid)
    * @param query The tokenized query string
    * @return Query pointer from next builder
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;
 };
 
-inline Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
-{
+inline Query::Ptr
+FakeQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
   //   std::cerr << "Query string: \n" << query.rawQeuryString << "\n";
   //   std::cerr << "Tokens:\n";
   //   constexpr int column_width = 10;
@@ -171,25 +148,23 @@ inline Query::Ptr FakeQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
 }
 
 // Debug commands / Utils
-class DebugQueryBuilder : public BasicQueryBuilder
-{
+class DebugQueryBuilder : public BasicQueryBuilder {
   /**
    * Handle debug/utility queries
    * @param query The tokenized query string
    * @return Query pointer for debug commands
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;
 };
 
 // Load, dump, truncate and delete table
-class ManageTableQueryBuilder : public BasicQueryBuilder
-{
+class ManageTableQueryBuilder : public BasicQueryBuilder {
   /**
    * Handle table management queries (LOAD, DUMP, TRUNCATE, DROP)
    * @param query The tokenized query string
    * @return Query pointer for table management operations
    */
-  Query::Ptr tryExtractQuery(TokenizedQueryString& query) override;
+  Query::Ptr tryExtractQuery(TokenizedQueryString &query) override;
 };
 
 // ComplexQueryBuilderClass(UpdateTable);
@@ -197,4 +172,4 @@ class ManageTableQueryBuilder : public BasicQueryBuilder
 // ComplexQueryBuilderClass(Delete);
 // ComplexQueryBuilderClass(Count);
 
-#endif // PROJECT_QUERYBUILDERS_H
+#endif  // PROJECT_QUERYBUILDERS_H

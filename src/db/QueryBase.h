@@ -6,8 +6,7 @@
 
 #include "query/QueryResult.h"
 
-class Query
-{
+class Query {
   // private:
   //   int id = -1;
 
@@ -17,14 +16,10 @@ private:
 public:
   Query() = default;
 
-  [[nodiscard]] std::string& targetTableRef()
-  {
-    return targetTable;
-  }
+  [[nodiscard]] std::string &targetTableRef() { return targetTable; }
 
   // Const overload so const member functions can access target table name
-  [[nodiscard]] const std::string& targetTableRef() const
-  {
+  [[nodiscard]] const std::string &targetTableRef() const {
     return targetTable;
   }
 
@@ -32,9 +27,8 @@ public:
    * Constructor for Query with target table
    * @param targetTable The name of the target table for this query
    */
-  explicit Query(std::string targetTable) : targetTable(std::move(targetTable))
-  {
-  }
+  explicit Query(std::string targetTable)
+      : targetTable(std::move(targetTable)) {}
 
   using Ptr = std::unique_ptr<Query>;
 
@@ -45,17 +39,11 @@ public:
   virtual ~Query() = default;
 
   // For thread safety: indicate if this query modifies data
-  [[nodiscard]] virtual bool isWriter() const
-  {
-    return false;
-  }
+  [[nodiscard]] virtual bool isWriter() const { return false; }
 
   // For execution order: indicate if this query must execute immediately (not
   // parallel) e.g., LOAD and QUIT must execute serially
-  [[nodiscard]] virtual bool isInstant() const
-  {
-    return false;
-  }
+  [[nodiscard]] virtual bool isInstant() const { return false; }
 };
 
 #endif

@@ -21,7 +21,8 @@ class OutputPool;
  *
  * Architecture:
  * - Main thread reads queries and submits them to per-table queues
- * - Each table has its own execution thread (runs queries serially for that table)
+ * - Each table has its own execution thread (runs queries serially for that
+ * table)
  * - Multiple tables execute in parallel
  * - Results are collected in OutputPool (thread-safe map)
  *
@@ -32,21 +33,20 @@ class OutputPool;
  * Async submission: Main thread doesn't block on query execution
  * No print thread: OutputPool outputs all results at the end
  */
-class QueryManager
-{
+class QueryManager {
 private:
   // Single entry in query queue
-  struct QueryEntry
-  {
+  struct QueryEntry {
     size_t query_id;
-    Query* query_ptr; // Raw pointer, owned by deque
+    Query *query_ptr;  // Raw pointer, owned by deque
   };
 
   // Map: table_name -> queue of (query_id, query_ptr)
   std::unordered_map<std::string, std::deque<QueryEntry>> table_query_map;
 
   // Map: table_name -> counting_semaphore (tracks available queries in queue)
-  std::unordered_map<std::string, std::unique_ptr<std::counting_semaphore<>>> table_query_sem;
+  std::unordered_map<std::string, std::unique_ptr<std::counting_semaphore<>>>
+      table_query_sem;
 
   // Protects table_query_map and table_query_sem
   mutable std::mutex table_map_mutex;
@@ -60,27 +60,29 @@ private:
   std::atomic<size_t> completed_query_count{0};
 
   // Reference to OutputPool (passed in constructor, not owned)
-  OutputPool& output_pool;
+  OutputPool &output_pool;
   size_t printed_count{0};
 
-  void createTableStructures(const std::string& table_name);
+  void createTableStructures(const std::string &table_name);
   void releaseSemaphores();
   void joinThreads();
-  std::counting_semaphore<>* getSemaphoreForTable(const std::string& table_name);
-  std::optional<QueryEntry> dequeueQuery(const std::string& table_name);
-  void executeAndStoreResult(const QueryEntry& query_entry);
+  std::counting_semaphore<> *
+  getSemaphoreForTable(const std::string &table_name);
+  std::optional<QueryEntry> dequeueQuery(const std::string &table_name);
+  void executeAndStoreResult(const QueryEntry &query_entry);
 
   /**
    * Execute queries for a specific table
    * Runs in a per-table thread
    */
-  static void executeQueryForTable(QueryManager* manager, const std::string& table_name);
+  static void executeQueryForTable(QueryManager *manager,
+                                   const std::string &table_name);
 
   /**
    * Print results in order
    * Runs in a dedicated print thread
    */
-  static void printResults(QueryManager* manager);
+  static void printResults(QueryManager *manager);
 
 public:
   QueryManager() = delete;
@@ -90,15 +92,13 @@ public:
    * Construct QueryManager with reference to OutputPool
    * @param pool Reference to the OutputPool for result collection
    */
-  explicit QueryManager(OutputPool& pool) : output_pool(pool)
-  {
-  }
+  explicit QueryManager(OutputPool &pool) : output_pool(pool) {}
 
   // Deleted copy/move operations
-  QueryManager(const QueryManager&) = delete;
-  QueryManager& operator=(const QueryManager&) = delete;
-  QueryManager(QueryManager&&) = delete;
-  QueryManager& operator=(QueryManager&&) = delete;
+  QueryManager(const QueryManager &) = delete;
+  QueryManager &operator=(const QueryManager &) = delete;
+  QueryManager(QueryManager &&) = delete;
+  QueryManager &operator=(QueryManager &&) = delete;
 
   ~QueryManager();
 
@@ -110,13 +110,14 @@ public:
    * @param table_name Name of the table this query operates on
    * @param query_ptr Pointer to the query object to execute
    */
-  void addQuery(size_t query_id, const std::string& table_name, Query* query_ptr);
+  void addQuery(size_t query_id, const std::string &table_name,
+                Query *query_ptr);
 
   /**
    * Immediately publish a query result without scheduling execution.
    * Used for instant queries executed on the caller thread (e.g., LISTEN).
    */
-  void addImmediateResult(size_t query_id, const std::string& result);
+  void addImmediateResult(size_t query_id, const std::string &result);
 
   /**
    * Set the expected number of queries (to know when all are done)
@@ -151,4 +152,4 @@ public:
   [[nodiscard]] size_t getExpectedQueryCount() const;
 };
 
-#endif // PROJECT_QUERY_MANAGER_H
+#endif  // PROJECT_QUERY_MANAGER_H

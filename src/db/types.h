@@ -9,4 +9,4 @@ using TablePtr = std::unique_ptr<Table>;
 
 using ValueType = int;
 
-#endif // DB_TYPES_H
+#endif  // DB_TYPES_H
