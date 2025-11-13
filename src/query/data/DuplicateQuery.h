@@ -7,9 +7,8 @@
 #include "../Query.h"
 #include "db/Table.h"
 
-class DuplicateQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "DUPLICATE";
+class DuplicateQuery : public ComplexQuery {
+  static constexpr const char *qname = "DUPLICATE";
 
   // Type alias for records to duplicate
   using RecordPair = std::pair<Table::KeyType, std::vector<Table::ValueType>>;
@@ -26,23 +25,20 @@ private:
    * @param table The table to duplicate records from
    * @return Vector of record pairs to duplicate
    */
-  [[nodiscard]] std::vector<RecordPair> executeSingleThreaded(Table& table);
+  [[nodiscard]] std::vector<RecordPair> executeSingleThreaded(Table &table);
 
   /**
    * Execute DUPLICATE operation using multi-threaded approach
    * @param table The table to duplicate records from
    * @return Vector of record pairs to duplicate
    */
-  [[nodiscard]] std::vector<RecordPair> executeMultiThreaded(Table& table);
+  [[nodiscard]] std::vector<RecordPair> executeMultiThreaded(Table &table);
 
 public:
   using ComplexQuery::ComplexQuery;
   QueryResult::Ptr execute() override;
   std::string toString() override;
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
-#endif // PROJECT_DUPLICATEQUERY_H
+#endif  // PROJECT_DUPLICATEQUERY_H

@@ -5,9 +5,8 @@
 
 #include "../Query.h"
 
-class MaxQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "MAX";
+class MaxQuery : public ComplexQuery {
+  static constexpr const char *qname = "MAX";
 
 public:
   using ComplexQuery::ComplexQuery;
@@ -23,7 +22,8 @@ public:
    * @param table The table to get field indices from
    * @return Vector of field indices
    */
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex>
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute MAX operation using single-threaded approach
@@ -31,8 +31,9 @@ public:
    * @param fids Field indices for the operation
    * @return QueryResult with max results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
-                                                       const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeSingleThreaded(Table &table,
+                        const std::vector<Table::FieldIndex> &fids);
 
   /**
    * Execute MAX operation using multi-threaded approach
@@ -40,12 +41,13 @@ public:
    * @param fids Field indices for the operation
    * @return QueryResult with max results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
-                                                      const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeMultiThreaded(Table &table,
+                       const std::vector<Table::FieldIndex> &fids);
 
   QueryResult::Ptr execute() override;
 
   std::string toString() override;
 };
 
-#endif // PROJECT_MAXQUERY_H
+#endif  // PROJECT_MAXQUERY_H

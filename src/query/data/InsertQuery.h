@@ -9,9 +9,8 @@
 
 #include "../Query.h"
 
-class InsertQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "INSERT";
+class InsertQuery : public ComplexQuery {
+  static constexpr const char *qname = "INSERT";
 
 public:
   using ComplexQuery::ComplexQuery;
@@ -32,10 +31,7 @@ public:
    * Check if this query modifies data
    * @return Always returns true for INSERT queries
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
-#endif // PROJECT_INSERTQUERY_H
+#endif  // PROJECT_INSERTQUERY_H

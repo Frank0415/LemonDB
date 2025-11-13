@@ -5,9 +5,8 @@
 
 #include "../Query.h"
 
-class MinQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "MIN";
+class MinQuery : public ComplexQuery {
+  static constexpr const char *qname = "MIN";
 
 private:
   /**
@@ -21,7 +20,8 @@ private:
    * @param table The table to get field indices from
    * @return Vector of field indices
    */
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex>
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute MIN operation using single-threaded approach
@@ -29,8 +29,9 @@ private:
    * @param fids Field indices for the operation
    * @return QueryResult with min results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
-                                                       const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeSingleThreaded(Table &table,
+                        const std::vector<Table::FieldIndex> &fids);
 
   /**
    * Execute MIN operation using multi-threaded approach
@@ -38,8 +39,9 @@ private:
    * @param fids Field indices for the operation
    * @return QueryResult with min results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
-                                                      const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeMultiThreaded(Table &table,
+                       const std::vector<Table::FieldIndex> &fids);
 
 public:
   using ComplexQuery::ComplexQuery;
@@ -49,4 +51,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_MINQUERY_H
+#endif  // PROJECT_MINQUERY_H

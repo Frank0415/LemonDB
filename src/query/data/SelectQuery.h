@@ -7,9 +7,8 @@
 #include "../Query.h"
 #include "../QueryResult.h"
 
-class SelectQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "SELECT";
+class SelectQuery : public ComplexQuery {
+  static constexpr const char *qname = "SELECT";
 
 private:
   /**
@@ -23,7 +22,8 @@ private:
    * @param table The table to get field indices from
    * @return Vector of field indices
    */
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex>
+  getFieldIndices(Table &table) const;
 
   /**
    * Execute SELECT operation using single-threaded approach
@@ -32,7 +32,8 @@ private:
    * @return QueryResult with selected records
    */
   [[nodiscard]] QueryResult::Ptr
-  executeSingleThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds);
+  executeSingleThreaded(Table &table,
+                        const std::vector<Table::FieldIndex> &fieldIds);
 
   /**
    * Execute SELECT operation using multi-threaded approach
@@ -41,7 +42,8 @@ private:
    * @return QueryResult with selected records
    */
   [[nodiscard]] QueryResult::Ptr
-  executeMultiThreaded(Table& table, const std::vector<Table::FieldIndex>& fieldIds);
+  executeMultiThreaded(Table &table,
+                       const std::vector<Table::FieldIndex> &fieldIds);
 
 public:
   using ComplexQuery::ComplexQuery;
@@ -49,4 +51,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_SELECT_QUERY_H
+#endif  // PROJECT_SELECT_QUERY_H
