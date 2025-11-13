@@ -20,51 +20,40 @@
 #include "threading/QueryManager.h"
 #include "utils/formatter.h"
 
-namespace
-{
-std::string trimCopy(std::string_view input)
-{
+namespace {
+std::string trimCopy(std::string_view input) {
   const auto first = input.find_first_not_of(" \t\n\r");
-  if (first == std::string_view::npos)
-  {
+  if (first == std::string_view::npos) {
     return "";
   }
   const auto last = input.find_last_not_of(" \t\n\r");
   return std::string(input.substr(first, last - first + 1));
 }
 
-bool startsWithCaseInsensitive(std::string_view value, std::string_view prefix)
-{
-  if (value.size() < prefix.size())
-  {
+bool startsWithCaseInsensitive(std::string_view value,
+                               std::string_view prefix) {
+  if (value.size() < prefix.size()) {
     return false;
   }
-  for (size_t index = 0; index < prefix.size(); ++index)
-  {
+  for (size_t index = 0; index < prefix.size(); ++index) {
     const auto lhs = static_cast<unsigned char>(value[index]);
     const auto rhs = static_cast<unsigned char>(prefix[index]);
-    if (std::toupper(lhs) != std::toupper(rhs))
-    {
+    if (std::toupper(lhs) != std::toupper(rhs)) {
       return false;
     }
   }
   return true;
 }
 
-bool readNextStatement(std::istream& stream, std::string& out_statement)
-{
+bool readNextStatement(std::istream &stream, std::string &out_statement) {
   out_statement.clear();
-  while (true)
-  {
+  while (true) {
     const int character = stream.get();
-    if (character == ';')
-    {
+    if (character == ';') {
       return true;
     }
-    if (character == EOF)
-    {
-      if (out_statement.empty())
-      {
+    if (character == EOF) {
+      if (out_statement.empty()) {
         return false;
       }
       throw std::ios_base::failure("Unexpected end of input before ';'");
@@ -73,96 +62,82 @@ bool readNextStatement(std::istream& stream, std::string& out_statement)
   }
 }
 
-std::string extractNewTableName(const std::string& trimmed)
-{
-  constexpr size_t copytable_prefix_len = 9; // length of "COPYTABLE"
+std::string extractNewTableName(const std::string &trimmed) {
+  constexpr size_t copytable_prefix_len = 9;  // length of "COPYTABLE"
   std::string new_table_name = trimmed.substr(copytable_prefix_len);
 
   size_t position = new_table_name.find_first_not_of(" \t");
-  if (position == std::string::npos)
-  {
+  if (position == std::string::npos) {
     return "";
   }
   new_table_name = new_table_name.substr(position);
 
   position = new_table_name.find_first_of(" \t");
-  if (position == std::string::npos)
-  {
+  if (position == std::string::npos) {
     return "";
   }
   new_table_name = new_table_name.substr(position);
 
   position = new_table_name.find_first_not_of(" \t;");
-  if (position == std::string::npos)
-  {
+  if (position == std::string::npos) {
     return "";
   }
   new_table_name = new_table_name.substr(position);
 
   position = new_table_name.find_first_of(" \t;");
-  if (position != std::string::npos)
-  {
+  if (position != std::string::npos) {
     new_table_name = new_table_name.substr(0, position);
   }
 
   return new_table_name;
 }
 
-void handleCopyTable(QueryManager& query_manager,
-                     const std::string& trimmed,
-                     const std::string& source_table,
-                     CopyTableQuery* copy_query)
-{
-  if (copy_query == nullptr)
-  {
+void handleCopyTable(QueryManager &query_manager, const std::string &trimmed,
+                     const std::string &source_table,
+                     CopyTableQuery *copy_query) {
+  if (copy_query == nullptr) {
     return;
   }
 
   const std::string new_table_name = extractNewTableName(trimmed);
-  if (new_table_name.empty())
-  {
+  if (new_table_name.empty()) {
     return;
   }
 
-  auto wait_query = std::make_unique<WaitQuery>(source_table, copy_query->getWaitSemaphore());
+  auto wait_query =
+      std::make_unique<WaitQuery>(source_table, copy_query->getWaitSemaphore());
   constexpr size_t wait_query_id = 0;
   query_manager.addQuery(wait_query_id, new_table_name, wait_query.release());
 }
-} // namespace
+}  // namespace
 
-void ListenQuery::setDependencies(QueryManager* manager,
-                                  QueryParser* parser,
-                                  Database* database_ptr,
-                                  std::atomic<size_t>* counter)
-{
+void ListenQuery::setDependencies(QueryManager *manager, QueryParser *parser,
+                                  Database *database_ptr,
+                                  std::atomic<size_t> *counter) {
   query_manager = manager;
   query_parser = parser;
   database = database_ptr;
   query_counter = counter;
 }
 
-bool ListenQuery::shouldSkipStatement(const std::string& trimmed) const
-{
+bool ListenQuery::shouldSkipStatement(const std::string &trimmed) const {
   return trimmed.empty() || trimmed.front() == '#';
 }
 
-bool ListenQuery::processStatement(const std::string& trimmed)
-{
+bool ListenQuery::processStatement(const std::string &trimmed) {
   Query::Ptr query = query_parser->parseQuery(trimmed);
   // std::cerr << "[LISTEN] Parsed query: " << query->toString() << '\n';
 
-  if (startsWithCaseInsensitive(trimmed, "QUIT"))
-  {
+  if (startsWithCaseInsensitive(trimmed, "QUIT")) {
     // std::cerr << "[LISTEN] Found QUIT in listen file, stopping" << '\n';
     database->exit();
     quit_encountered = true;
-    return false; // Stop processing
+    return false;  // Stop processing
   }
 
-  if (startsWithCaseInsensitive(trimmed, "COPYTABLE"))
-  {
+  if (startsWithCaseInsensitive(trimmed, "COPYTABLE")) {
     handleCopyTable(*query_manager, trimmed, query->targetTableRef(),
-                    dynamic_cast<CopyTableQuery*>(query.get()));
+                    dynamic_cast<CopyTableQuery *>(query.get()));
   }
 
   const size_t query_id = query_counter->fetch_add(1) + 1;
@@ -170,72 +145,62 @@ bool ListenQuery::processStatement(const std::string& trimmed)
   // query->targetTableRef() << '\n';
   query_manager->addQuery(query_id, query->targetTableRef(), query.release());
   scheduled_query_count++;
-  // std::cerr << "[LISTEN] Scheduled query count: " << scheduled_query_count << '\n';
+  // std::cerr << "[LISTEN] Scheduled query count: " << scheduled_query_count <<
+  // '\n';
 
-  return true; // Continue processing
+  return true;  // Continue processing
 }
 
-QueryResult::Ptr ListenQuery::execute()
-{
-  if (query_manager == nullptr || query_parser == nullptr || database == nullptr ||
-      query_counter == nullptr)
-  {
+QueryResult::Ptr ListenQuery::execute() {
+  if (query_manager == nullptr || query_parser == nullptr ||
+      database == nullptr || query_counter == nullptr) {
     throw std::runtime_error("ListenQuery dependencies are not set");
   }
 
-  // std::cerr << "[CONTROL] LISTEN query starting, taking control from terminal" << '\n';
-  // std::cerr << "[LISTEN] Opening file: " << fileName << '\n';
+  // std::cerr << "[CONTROL] LISTEN query starting, taking control from
+  // terminal" << '\n'; std::cerr << "[LISTEN] Opening file: " << fileName <<
+  // '\n';
   std::ifstream infile(fileName);
-  if (!infile.is_open())
-  {
+  if (!infile.is_open()) {
     // std::cerr << "[LISTEN] Failed to open file" << '\n';
-    return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % fileName);
+    return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f %
+                                                       fileName);
   }
 
   scheduled_query_count = 0;
   quit_encountered = false;
   std::string raw_statement;
 
-  try
-  {
-    while (readNextStatement(infile, raw_statement))
-    {
+  try {
+    while (readNextStatement(infile, raw_statement)) {
       std::string trimmed = trimCopy(raw_statement);
-      if (shouldSkipStatement(trimmed))
-      {
+      if (shouldSkipStatement(trimmed)) {
         continue;
       }
 
-      try
-      {
-        if (!processStatement(trimmed))
-        {
-          break; // QUIT encountered
+      try {
+        if (!processStatement(trimmed)) {
+          break;  // QUIT encountered
         }
-      }
-      catch (const std::exception& /*ignored*/)
-      {
+      } catch (const std::exception & /*ignored*/) {
         continue;
       }
     }
-  }
-  catch (const std::ios_base::failure&)
-  {
-    return std::make_unique<ErrorMsgResult>(qname,
-                                            "Unexpected EOF in listen file '?'"_f % fileName);
+  } catch (const std::ios_base::failure &) {
+    return std::make_unique<ErrorMsgResult>(
+        qname, "Unexpected EOF in listen file '?'"_f % fileName);
   }
 
-  if (!quit_encountered)
-  {
+  if (!quit_encountered) {
     // std::cerr << "[LISTEN] Reached end of file for " << fileName << '\n';
   }
 
-  // std::cerr << "[CONTROL] LISTEN query completed, returning control to caller" << '\n';
+  // std::cerr << "[CONTROL] LISTEN query completed, returning control to
+  // caller" << '\n';
 
   return std::make_unique<ListenResult>(fileName);
 }
 
-std::string ListenQuery::toString()
-{
+std::string ListenQuery::toString() {
   return "QUERY = Listen, FILE = \"" + fileName + "\"";
 }
