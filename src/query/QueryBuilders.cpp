@@ -30,107 +30,84 @@
 #include <string>
 #include <vector>
 
-namespace
-{
+namespace {
 void Throwhelper(std::vector<std::string>::const_iterator iterator,
                  std::vector<std::string>::const_iterator limit,
-                 const std::string&& message)
-{
-  if (iterator == limit) [[unlikely]]
-  {
+                 const std::string &&message) {
+  if (iterator == limit) [[unlikely]] {
     throw IllFormedQuery(message);
   }
 }
-} // namespace
+}  // namespace
 
-Query::Ptr ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
-{
-  if (query.token.size() >= 2) [[likely]]
-  {
-    if (query.token.front() == "LISTEN") [[unlikely]]
-    {
+Query::Ptr
+ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
+  if (query.token.size() >= 2) [[likely]] {
+    if (query.token.front() == "LISTEN") [[unlikely]] {
       // Handle: LISTEN ( filename ) or LISTEN filename
       std::string filename;
 
-      if (query.token.size() >= 3 && query.token[1] == "(")
-      {
+      if (query.token.size() >= 3 && query.token[1] == "(") {
         // Format: LISTEN ( filename )
         filename = query.token[2];
         // Remove trailing ) if present
-        if (!filename.empty() && filename.back() == ')')
-        {
+        if (!filename.empty() && filename.back() == ')') {
           filename.pop_back();
         }
-      }
-      else
-      {
+      } else {
         // Format: LISTEN filename
         filename = query.token[1];
         // Remove trailing ) if present
-        if (!filename.empty() && filename.back() == ')')
-        {
+        if (!filename.empty() && filename.back() == ')') {
           filename.pop_back();
         }
       }
 
       return std::make_unique<ListenQuery>(filename);
     }
-    if (query.token.front() == "LOAD") [[unlikely]]
-    {
-      auto& database = Database::getInstance();
+    if (query.token.front() == "LOAD") [[unlikely]] {
+      auto &database = Database::getInstance();
       auto tableName = database.getFileTableName(query.token[1]);
       return std::make_unique<LoadTableQuery>(tableName, query.token[1]);
     }
-    if (query.token.front() == "DROP") [[unlikely]]
-    {
+    if (query.token.front() == "DROP") [[unlikely]] {
       return std::make_unique<DropTableQuery>(query.token[1]);
     }
-    if (query.token.front() == "TRUNCATE") [[unlikely]]
-    {
+    if (query.token.front() == "TRUNCATE") [[unlikely]] {
       return std::make_unique<TruncateTableQuery>(query.token[1]);
     }
   }
-  if (query.token.size() == 3) [[unlikely]]
-  {
-    if (query.token.front() == "DUMP") [[unlikely]]
-    {
-      auto& database = Database::getInstance();
+  if (query.token.size() == 3) [[unlikely]] {
+    if (query.token.front() == "DUMP") [[unlikely]] {
+      auto &database = Database::getInstance();
       database.updateFileTableName(query.token[2], query.token[1]);
       return std::make_unique<DumpTableQuery>(query.token[1], query.token[2]);
     }
-    if (query.token.front() == "COPYTABLE") [[unlikely]]
-    {
+    if (query.token.front() == "COPYTABLE") [[unlikely]] {
       return std::make_unique<CopyTableQuery>(query.token[1], query.token[2]);
     }
   }
   return getNextBuilder()->tryExtractQuery(query);
 }
 
-Query::Ptr DebugQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
-{
-  if (query.token.size() == 1) [[unlikely]]
-  {
-    if (query.token.front() == "LIST") [[unlikely]]
-    {
+Query::Ptr DebugQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
+  if (query.token.size() == 1) [[unlikely]] {
+    if (query.token.front() == "LIST") [[unlikely]] {
       return std::make_unique<ListTableQuery>();
     }
-    if (query.token.front() == "QUIT") [[unlikely]]
-    {
+    if (query.token.front() == "QUIT") [[unlikely]] {
       return std::make_unique<QuitQuery>();
     }
   }
-  if (query.token.size() == 2) [[unlikely]]
-  {
-    if (query.token.front() == "SHOWTABLE") [[unlikely]]
-    {
+  if (query.token.size() == 2) [[unlikely]] {
+    if (query.token.front() == "SHOWTABLE") [[unlikely]] {
       return std::make_unique<PrintTableQuery>(query.token[1]);
     }
   }
   return BasicQueryBuilder::tryExtractQuery(query);
 }
 
-void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
-{
+void ComplexQueryBuilder::parseToken(TokenizedQueryString &query) {
   // Treats forms like:
   //
   // $OPER$ ( arg1 arg2 ... )
@@ -142,140 +119,118 @@ void ComplexQueryBuilder::parseToken(TokenizedQueryString& query)
 
   auto iterator = query.token.cbegin();
   auto end = query.token.cend();
-  iterator += 1; // Take to args;
+  iterator += 1;  // Take to args;
   Throwhelper(iterator, end, "Missing operands or FROM clause.");
-  if (*iterator != "FROM") [[likely]]
-  {
-    if (*iterator != "(") [[unlikely]]
-    {
+  if (*iterator != "FROM") [[likely]] {
+    if (*iterator != "(") [[unlikely]] {
       throw IllFormedQuery("Ill-formed operand.");
     }
     ++iterator;
-    while (*iterator != ")") [[likely]]
-    {
+    while (*iterator != ")") [[likely]] {
       this->operandToken.push_back(*iterator);
       ++iterator;
       Throwhelper(iterator, end, "Ill-formed operand.");
     }
     ++iterator;
-    if (iterator == end || *iterator != "FROM") [[unlikely]]
-    {
+    if (iterator == end || *iterator != "FROM") [[unlikely]] {
       throw IllFormedQuery("Missing FROM clause");
     }
   }
-  if (++iterator == end) [[unlikely]]
-  {
+  if (++iterator == end) [[unlikely]] {
     throw IllFormedQuery("Missing target table");
   }
   this->targetTable = *iterator;
-  if (++iterator == end) [[unlikely]] // the "WHERE" clause is ommitted
+  if (++iterator == end) [[unlikely]]  // the "WHERE" clause is ommitted
   {
     return;
   }
-  if (*iterator != "WHERE") [[unlikely]]
-  {
+  if (*iterator != "WHERE") [[unlikely]] {
     // Hmmm, C++11 style Raw-string literal
     // http://en.cppreference.com/w/cpp/language/string_literal
     throw IllFormedQuery(R"(Expecting "WHERE", found "?".)"_f % *iterator);
   }
-  while (++iterator != end) [[likely]]
-  {
-    if (*iterator != "(") [[unlikely]]
-    {
+  while (++iterator != end) [[likely]] {
+    if (*iterator != "(") [[unlikely]] {
       throw IllFormedQuery("Ill-formed query condition");
     }
     QueryCondition cond;
     cond.fieldId = 0;
     cond.valueParsed = 0;
-    if (++iterator == end) [[unlikely]]
-    {
+    if (++iterator == end) [[unlikely]] {
       throw IllFormedQuery("Missing field in condition");
     }
     cond.field = *iterator;
-    if (++iterator == end) [[unlikely]]
-    {
+    if (++iterator == end) [[unlikely]] {
       throw IllFormedQuery("Missing operator in condition");
     }
     cond.op = *iterator;
-    if (++iterator == end) [[unlikely]]
-    {
+    if (++iterator == end) [[unlikely]] {
       throw IllFormedQuery("Missing  in condition");
     }
     cond.value = *iterator;
     ++iterator;
-    if (iterator == end || *iterator != ")") [[unlikely]]
-    {
+    if (iterator == end || *iterator != ")") [[unlikely]] {
       throw IllFormedQuery("Ill-formed query condition");
     }
     this->conditionToken.push_back(cond);
   }
 }
 
-Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
-{
-  try
-  {
+Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
+  try {
     this->parseToken(query);
-  }
-  catch (const IllFormedQuery& e)
-  {
+  } catch (const IllFormedQuery &e) {
     // std::cerr << e.what() << '\n';
     return getNextBuilder()->tryExtractQuery(query);
   }
   const std::string operation = query.token.front();
-  if (operation == "INSERT") [[likely]]
-  {
+  if (operation == "INSERT") [[likely]] {
     return std::make_unique<InsertQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "UPDATE") [[likely]]
-  {
+  if (operation == "UPDATE") [[likely]] {
     return std::make_unique<UpdateQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "SELECT") [[likely]]
-  {
+  if (operation == "SELECT") [[likely]] {
     return std::make_unique<SelectQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "DELETE") [[likely]]
-  {
+  if (operation == "DELETE") [[likely]] {
     return std::make_unique<DeleteQuery>(this->targetTable, this->operandToken,
                                          this->conditionToken);
   }
-  if (operation == "DUPLICATE") [[likely]]
-  {
-    return std::make_unique<DuplicateQuery>(this->targetTable, this->operandToken,
-                                            this->conditionToken);
+  if (operation == "DUPLICATE") [[likely]] {
+    return std::make_unique<DuplicateQuery>(
+        this->targetTable, this->operandToken, this->conditionToken);
   }
-  if (operation == "COUNT") [[likely]]
-  {
+  if (operation == "COUNT") [[likely]] {
     return std::make_unique<CountQuery>(this->targetTable, this->operandToken,
                                         this->conditionToken);
   }
-  if (operation == "SUM") [[likely]]
-  {
-    return std::make_unique<SumQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "SUM") [[likely]] {
+    return std::make_unique<SumQuery>(this->targetTable, this->operandToken,
+                                      this->conditionToken);
   }
-  if (operation == "MIN") [[likely]]
-  {
-    return std::make_unique<MinQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "MIN") [[likely]] {
+    return std::make_unique<MinQuery>(this->targetTable, this->operandToken,
+                                      this->conditionToken);
   }
-  if (operation == "MAX") [[likely]]
-  {
-    return std::make_unique<MaxQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "MAX") [[likely]] {
+    return std::make_unique<MaxQuery>(this->targetTable, this->operandToken,
+                                      this->conditionToken);
   }
-  if (operation == "ADD") [[likely]]
-  {
-    return std::make_unique<AddQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "ADD") [[likely]] {
+    return std::make_unique<AddQuery>(this->targetTable, this->operandToken,
+                                      this->conditionToken);
   }
-  if (operation == "SUB") [[likely]]
-  {
-    return std::make_unique<SubQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "SUB") [[likely]] {
+    return std::make_unique<SubQuery>(this->targetTable, this->operandToken,
+                                      this->conditionToken);
   }
-  if (operation == "SWAP") [[likely]]
-  {
-    return std::make_unique<SwapQuery>(this->targetTable, this->operandToken, this->conditionToken);
+  if (operation == "SWAP") [[likely]] {
+    return std::make_unique<SwapQuery>(this->targetTable, this->operandToken,
+                                       this->conditionToken);
   }
   //   std::cerr << "Complicated query found!" << '\n';
   //   std::cerr << "Operation = " << query.token.front() << '\n';
@@ -303,8 +258,7 @@ Query::Ptr ComplexQueryBuilder::tryExtractQuery(TokenizedQueryString& query)
   return getNextBuilder()->tryExtractQuery(query);
 }
 
-void ComplexQueryBuilder::clear()
-{
+void ComplexQueryBuilder::clear() {
   this->conditionToken.clear();
   this->targetTable = "";
   this->operandToken.clear();
