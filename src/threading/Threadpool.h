@@ -111,7 +111,8 @@ public:
   /**
    * Initialize the global thread pool with specified number of threads.
    * Safe to call multiple times; subsequent calls are ignored.
-   * @param num_threads Number of worker threads to create (default: hardware concurrency).
+   * @param num_threads Number of worker threads to create (default: hardware
+   * concurrency).
    */
   static void
   initialize(size_t num_threads = std::thread::hardware_concurrency()) {
