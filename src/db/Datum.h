@@ -36,27 +36,28 @@ public:
   ~Datum() = default;
 
   /**
-   * Construct a datum with a given number of integer fields (value-initialized).
+   * Construct a datum with a given number of integer fields
+   * (value-initialized).
    * @param size Number of fields to allocate.
    */
   explicit Datum(const size_t &size) : datum(size, int()) {}
 
-    /**
-     * Construct a datum from a generic integer container (copied).
-     * @tparam intContainer Iterable container with integral elements.
-     * @param key Unique key string.
-     * @param datum Container whose contents are copied into internal vector.
-     */
-    template <class intContainer>
-    explicit Datum(std::string key, const intContainer &datum)
+  /**
+   * Construct a datum from a generic integer container (copied).
+   * @tparam intContainer Iterable container with integral elements.
+   * @param key Unique key string.
+   * @param datum Container whose contents are copied into internal vector.
+   */
+  template <class intContainer>
+  explicit Datum(std::string key, const intContainer &datum)
       : key(std::move(key)), datum(datum) {}
 
-    /**
-     * Construct a datum by moving an existing vector of field values.
-     * @param key Unique key string.
-     * @param datum Rvalue vector of field values (moved).
-     */
-    explicit Datum(std::string key, std::vector<int> &&datum) noexcept
+  /**
+   * Construct a datum by moving an existing vector of field values.
+   * @param key Unique key string.
+   * @param datum Rvalue vector of field values (moved).
+   */
+  explicit Datum(std::string key, std::vector<int> &&datum) noexcept
       : key(std::move(key)), datum(std::move(datum)) {}
 
   /**
