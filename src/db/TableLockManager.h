@@ -8,8 +8,8 @@
 #include <unordered_map>
 
 /**
- * Thread-safe per-table lock manager providing shared (read) and exclusive (write)
- * locking primitives using `std::shared_mutex`.
+ * Thread-safe per-table lock manager providing shared (read) and exclusive
+ * (write) locking primitives using `std::shared_mutex`.
  *
  * Each table name is associated lazily with a `std::shared_mutex` created on
  * first access. Lookups use a two-phase strategy: an initial shared lock to
