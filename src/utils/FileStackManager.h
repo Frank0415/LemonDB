@@ -21,7 +21,8 @@ private:
    */
   std::stack<std::unique_ptr<std::ifstream>> file_stack;
   /**
-   * Stack of file paths corresponding to each stream (kept in sync with file_stack).
+   * Stack of file paths corresponding to each stream (kept in sync with
+   * file_stack).
    */
   std::stack<std::string> file_path_stack;
 
