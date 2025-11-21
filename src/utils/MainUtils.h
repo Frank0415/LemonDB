@@ -15,7 +15,8 @@
 struct Args {
   /** Path or identifier provided to LISTEN related option (may be empty). */
   std::string listen;
-  /** Explicit thread count requested by user; 0 selects automatic hardware concurrency. */
+  /** Explicit thread count requested by user; 0 selects automatic hardware
+   * concurrency. */
   std::int64_t threads = 0;
 };
 
@@ -25,7 +26,8 @@ namespace MainUtils {
  * Recognized options typically include LISTEN source and thread overrides.
  * @param argc Argument count from main.
  * @param argv Argument vector from main.
- * @param args Output struct populated with parsed values (existing values overwritten).
+ * @param args Output struct populated with parsed values (existing values
+ * overwritten).
  */
 void parseArgs(int argc, char **argv, Args &args);
 
