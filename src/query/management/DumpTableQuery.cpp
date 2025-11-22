@@ -17,7 +17,7 @@
 QueryResult::Ptr DumpTableQuery::execute() {
   const auto &database = Database::getInstance();
   try {
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     std::ofstream outfile(this->fileName);
     if (!outfile.is_open()) [[unlikely]] {
