@@ -4,9 +4,9 @@
 
 #include "QueryResult.h"
 
+#include <ostream>
 #include <sstream>
 #include <string>
-#include <ostream>
 #include <utility>
 #include <vector>
 
