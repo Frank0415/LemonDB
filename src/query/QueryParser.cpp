@@ -11,6 +11,10 @@
 #include "db/QueryBase.h"
 #include "utils/uexception.h"
 
+namespace {
+constexpr size_t kDefaultTokenReserve = 16;
+}
+
 QueryParser::QueryParser() = default;
 
 Query::Ptr QueryParser::parseQuery(const std::string &queryString) {
@@ -42,7 +46,7 @@ TokenizedQueryString
 QueryParser::tokenizeQueryString(const std::string &queryString) {
   TokenizedQueryString result;
   result.rawQeuryString = queryString;
-  result.token.reserve(16);
+  result.token.reserve(kDefaultTokenReserve);
 
   std::string_view sv{queryString};
   auto is_space = [](char c) {
