@@ -37,8 +37,8 @@ class QueryManager {
 private:
   // Single entry in query queue
   struct QueryEntry {
-    size_t query_id;
-    Query *query_ptr;  // Raw pointer, owned by deque
+    size_t query_id;   // NOLINT
+    Query *query_ptr;  // NOLINT
   };
 
   // Map: table_name -> queue of (query_id, query_ptr)
