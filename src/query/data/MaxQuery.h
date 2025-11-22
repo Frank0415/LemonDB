@@ -32,7 +32,7 @@ public:
    * @return QueryResult with max results
    */
   [[nodiscard]] QueryResult::Ptr
-  executeSingleThreaded(Table &table,
+  executeSingleThreaded(const Table &table,
                         const std::vector<Table::FieldIndex> &fids);
 
   /**
@@ -42,7 +42,7 @@ public:
    * @return QueryResult with max results
    */
   [[nodiscard]] QueryResult::Ptr
-  executeMultiThreaded(Table &table,
+  executeMultiThreaded(const Table &table,
                        const std::vector<Table::FieldIndex> &fids);
 
   QueryResult::Ptr execute() override;
