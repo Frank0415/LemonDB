@@ -266,7 +266,7 @@ determineExpectedQueryCount(const std::optional<size_t> &listen_scheduled,
   return g_query_counter.load();
 }
 
-void flushOutputLoop(OutputPool &output_pool, QueryManager &query_manager,
+void flushOutputLoop(OutputPool &output_pool, const QueryManager &query_manager,
                      const OutputConfig &output_config) {
   while (true) {
     const size_t current_output_count = output_pool.getTotalOutputCount();
@@ -333,8 +333,6 @@ int main(int argc, char *argv[]) {
 
   validateProductionMode(parsedArgs);
 
-  std::istream &input_stream = *input;
-
   QueryParser parser;
   MainUtils::setupParser(parser);
 
@@ -358,7 +356,7 @@ int main(int argc, char *argv[]) {
     query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
     std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
                              std::ref(query_manager), output_config);
-    processQueries(input_stream, database, parser, query_manager,
+    processQueries(*input, database, parser, query_manager,
                    g_query_counter);
     query_manager.setExpectedQueryCount(g_query_counter.load());
     flush_thread.join();
