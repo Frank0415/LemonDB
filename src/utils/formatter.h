@@ -36,8 +36,8 @@ template <typename T> static inline std::string to_string(const T &value) {
 template <typename T>
 static inline std::string to_string(const std::vector<T> &vec) {
   return std::accumulate(vec.begin(), vec.end(), std::string(),
-                         [](std::string a, const T &b) {
-                           return std::move(a) + to_string(b) + " ";
+                         [](std::string result, const T &element) {
+                           return std::move(result) + to_string(element) + " ";
                          });
 }
 
