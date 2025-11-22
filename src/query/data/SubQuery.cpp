@@ -80,6 +80,7 @@ std::string SubQuery::toString() {
 SubQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
+  // cppcheck-suppress useStlAlgorithm
   for (const auto &operand : this->getOperands()) [[likely]]
   {
     indices.push_back(table.getFieldIndex(operand));
@@ -88,7 +89,7 @@ SubQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-SubQuery::executeSingleThreaded(Table &table,
+SubQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
                                 const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
@@ -110,7 +111,7 @@ SubQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-SubQuery::executeMultiThreaded(Table &table,
+SubQuery::executeMultiThreaded(Table &table, // cppcheck-suppress constParameter
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
