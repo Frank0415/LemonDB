@@ -91,6 +91,7 @@
 SumQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
+  // cppcheck-suppress useStlAlgorithm
   for (const auto &field : this->getOperands()) [[likely]]
   {
     fids.emplace_back(table.getFieldIndex(field));
@@ -99,7 +100,7 @@ SumQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-SumQuery::executeSingleThreaded(Table &table,
+SumQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
                                 const std::vector<Table::FieldIndex> &fids) {
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
@@ -117,7 +118,7 @@ SumQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-SumQuery::executeMultiThreaded(Table &table,
+SumQuery::executeMultiThreaded(Table &table, // cppcheck-suppress constParameter
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
