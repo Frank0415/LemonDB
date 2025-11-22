@@ -5,13 +5,13 @@
 #include <cstddef>
 #include <deque>
 #include <exception>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <semaphore>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <optional>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"
@@ -182,7 +182,7 @@ void QueryManager::executeAndStoreResult(const QueryEntry &query_entry) {
   bool is_wait_query = false;
 
   try {
-    QueryResult::Ptr result = query_ptr->execute();
+    const QueryResult::Ptr result = query_ptr->execute();
     result_str = formatQueryResult(result);
   } catch (const std::exception &exc) {
     if (isWaitQueryException(exc)) {
