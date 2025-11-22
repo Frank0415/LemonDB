@@ -83,8 +83,8 @@ protected:
 };
 
 class SuccessMsgResult : public SucceededQueryResult {
-  std::string msg;
   bool debug_ = true;
+  std::string msg;
 
 public:
   bool display() override { return debug_; }
