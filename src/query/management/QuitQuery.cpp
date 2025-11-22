@@ -13,8 +13,7 @@
 std::string QuitQuery::toString() { return "QUERY = Quit"; }
 
 QueryResult::Ptr QuitQuery::execute() {
-  auto &database = Database::getInstance();
-  database.exit();  // Set endInput flag
+  Database::getInstance().exit();  // Set endInput flag
   // Return success message, main() will handle waiting and output
   return std::make_unique<SuccessMsgResult>(qname);
 }
