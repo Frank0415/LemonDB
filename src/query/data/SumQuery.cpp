@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -91,11 +92,11 @@
 SumQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
-  // cppcheck-suppress useStlAlgorithm
-  for (const auto &field : this->getOperands()) [[likely]]
-  {
-    fids.emplace_back(table.getFieldIndex(field));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(operands.begin(), operands.end(), std::back_inserter(fids),
+                 [&table](const auto &field) {
+                   return table.getFieldIndex(field);
+                 });
   return fids;
 }
 
