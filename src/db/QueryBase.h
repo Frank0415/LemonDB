@@ -38,6 +38,11 @@ public:
 
   virtual ~Query() = default;
 
+  Query(const Query &) = delete;
+  Query &operator=(const Query &) = delete;
+  Query(Query &&) = default;
+  Query &operator=(Query &&) = default;
+
   // For thread safety: indicate if this query modifies data
   [[nodiscard]] virtual bool isWriter() const { return false; }
 
