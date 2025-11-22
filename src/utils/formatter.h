@@ -1,6 +1,7 @@
 #ifndef SRC_FORMATTER_H
 #define SRC_FORMATTER_H
 
+#include <numeric>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -23,22 +24,21 @@ inline std::string to_string(std::string_view value) {
 inline std::string to_string(const char *value) { return {value}; }
 
 /**
- * Convert a vector to space-separated string
- */
-template <typename T>
-static inline std::string to_string(const std::vector<T> &vec) {
-  std::string str;
-  for (const auto &val : vec) {
-    str += to_string(val) + " ";
-  }
-  return str;
-}
-
-/**
  * Convert any type to string using std::to_string
  */
 template <typename T> static inline std::string to_string(const T &value) {
   return std::to_string(value);
+}
+
+/**
+ * Convert a vector to space-separated string
+ */
+template <typename T>
+static inline std::string to_string(const std::vector<T> &vec) {
+  return std::accumulate(vec.begin(), vec.end(), std::string(),
+                         [](std::string a, const T &b) {
+                           return std::move(a) + to_string(b) + " ";
+                         });
 }
 
 /**
