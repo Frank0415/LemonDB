@@ -32,6 +32,7 @@ size_t OutputPool::flushContinuousResults() {
 
   const size_t flushed_count = ready_results.size();
 
+  // cppcheck-suppress unassignedVariable
   for (const auto &[query_id, result_string] : ready_results) {
     const bool is_quit = result_string.find("QUIT") != std::string::npos;
 
