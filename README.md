@@ -1,123 +1,134 @@
 # LemonDB
 
 ![Build Status](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg)
+![Language](https://img.shields.io/badge/language-C%2B%2B20-blue.svg)
+![Build](https://img.shields.io/badge/build-CMake-green.svg)
 
-## Build
+**LemonDB** is a high-performance, in-memory database management system designed for speed and efficiency. It supports a custom SQL-like query language, parallel query execution, and robust error handling.
 
-Currently the project uses `CMake` for building and `GoogleTest` for testing. Run the following commands to build:
+## Features
 
-```bash
-# configure then build in separate 
-cmake -S . -B build
-#-j4 means you assign 4 cpu cores to the compiler. 
-#Change the number as you want 
-#Or use -j$(nproc) to use as many as cores.
-#(-j0 if you use ninja instead of make) 
-cmake --build build -j8
-```
-or
-```bash
-# configure and build together 
-cmake -S . -B build && cmake --build build -j8
-```
-> 'Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.'
+- **High Performance**: Optimized for in-memory operations with multi-threaded query execution.
+- **Parallel Processing**: Utilizes a custom thread pool and query manager for concurrent table operations.
+- **Robust Query Language**: Supports a wide range of operations including `LOAD`, `DUMP`, `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and aggregations (`SUM`, `MIN`, `MAX`).
+- **Interactive & Batch Modes**: Run queries interactively via standard input or execute batch scripts using `LISTEN`.
+- **Advanced Debugging**: Built-in support for AddressSanitizer (ASan), MemorySanitizer (MSan), ThreadSanitizer (TSan), and UndefinedBehaviorSanitizer (UBSan).
 
-The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
+## Getting Started
+
+### Prerequisites
+
+- **C++ Compiler**: Clang 18+ (C++20 support required).
+- **CMake**: Version 3.16 or higher.
+- **Make** or **Ninja**.
+
+### Build Instructions
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url> ./lemondb
+    cd lemondb
+    ```
+
+2.  **Configure and Build:**
+    ```bash
+    cmake -S . -B build
+    cmake --build build -j$(nproc)
+    ```
+
+    The binary will be created at `build/bin/lemondb`.
 
 ### Building with Sanitizers
 
-The project supports building with various sanitizers for debugging and finding bugs:
+For development and debugging, you can build with sanitizers enabled:
 
-#### AddressSanitizer (ASan)
+-   **AddressSanitizer (ASan):**
+    ```bash
+    cmake -S . -B build -DENABLE_ASAN=ON
+    cmake --build build -j$(nproc)
+    ```
 
-Detects memory errors such as use-after-free, buffer overflows, and memory leaks.
+-   **MemorySanitizer (MSan):**
+    Requires Clang and an MSan-instrumented `libc++`.
+    
+    **Note:** The project is configured to look for the instrumented `libc++` at `/usr/local/lib/libc++_msan-18`. If your installation is different, you must modify `CMakeLists.txt` or ensure the library is available at that path.
 
+    ```bash
+    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_MSAN=ON
+    cmake --build build -j$(nproc)
+    ```
+
+-   **ThreadSanitizer (TSan):**
+    Detects data races in multi-threaded code.
+    ```bash
+    cmake -S . -B build -DENABLE_TSAN=ON
+    cmake --build build -j$(nproc)
+    ```
+
+-   **UndefinedBehaviorSanitizer (UBSan):**
+    ```bash
+    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_UBSAN=ON
+    cmake --build build -j$(nproc)
+    ```
+
+## Usage
+
+### Running the Database
+
+Start the database in interactive mode:
 ```bash
-cmake -S . -B build -DENABLE_ASAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_asan
+./build/bin/lemondb
 ```
 
-**Compatible with:** GCC and Clang
-
-#### MemorySanitizer (MSan)
-
-Detects uninitialized memory reads.
-
+Run with a listen file (batch mode):
 ```bash
-# MSan requires Clang
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_MSAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_msan
+./build/bin/lemondb --listen path/to/query_file.query
 ```
 
-**Requirements:**
-- Clang compiler required
-- All dependencies must be built with MSan instrumentation
-- May require custom-built standard library
+### Command Line Arguments
 
-**Compatible with:** Clang only
+-   `--listen <file>` or `-l <file>`: Execute commands from the specified file.
+-   `--threads <num>` or `-t <num>`: Set the number of worker threads (default: hardware concurrency).
 
-#### UndefinedBehaviorSanitizer (UBSan)
+### Query Examples
 
-Detects undefined behavior such as integer overflow, invalid shifts, and null pointer dereferences.
+```sql
+-- Load a table from a file
+LOAD db/users.tbl;
 
-```bash
-# UBSan requires Clang for full feature support
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_UBSAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_ubsan
+-- Select specific columns
+SELECT ( id name age ) FROM users WHERE ( age > 18 );
+
+-- Insert data
+INSERT ( 1 "Alice" 25 ) FROM users;
+
+-- Aggregation
+SUM ( salary ) FROM employees;
+
+-- Nested execution
+LISTEN other_queries.query;
+
+-- Exit
+QUIT;
 ```
 
-**Compatible with:** Clang only (this project uses subsanitizers that require Clang)
+## Testing & Quality
 
-#### Important Notes
+### Running Tests
 
-- Sanitizers can be combined (e.g., ASan + UBSan) but some combinations are incompatible (e.g., ASan + MSan)
-- Sanitized builds are significantly slower and use more memory
-- Use sanitizers primarily for debugging and testing, not for production builds
-- The standard (non-sanitized) binary `lemondb` is always built alongside sanitized variants
-
-## Static Analysis
-
-Every push runs clang-format, clang-tidy, cppcheck, and cpplint in CI.
-A comprehensive static analysis tool is automatically run on every commit and pull request via Gitea Actions, using the `./test/run.sh` script.
-
-Make sure the script's dependencies (`cmake`, `clang-format`, `clang-tidy`, `cppcheck`, and the Python `cpplint` package) are installed and on your `PATH`.
-
-## Performance Benchmarking
-
-### Single-threaded Benchmarking 
+We use a custom test suite to ensure correctness.
 
 ```bash
-Test: single_read completed in 29.259891043 seconds
-PASS: single_read
-Test: single_read_dup completed in 32.502383623 seconds
-PASS: single_read_dup
-Test: single_read_update completed in 26.000829756 seconds
-PASS: single_read_update
-Test: single_insert_delete completed in 21.017652290 seconds
-PASS: single_insert_delete
-Test: few_read completed in 17.914737771 seconds
-PASS: few_read
-Test: few_read_dup completed in 82.905387144 seconds
-PASS: few_read_dup
-Test: few_read_update completed in 17.895444505 seconds
-PASS: few_read_update
-Test: few_insert_delete completed in 13.260974489 seconds
-PASS: few_insert_delete
-Test: many_read completed in 17.690794110 seconds
-PASS: many_read
-Test: many_read_dup completed in 22.463446368 seconds
-PASS: many_read_dup
-Test: many_read_update completed in 19.056095016 seconds
-PASS: many_read_update
-Test: many_insert_delete completed in 17.194186674 seconds
-PASS: many_insert_delete
-Test: test completed in 1.816182835 seconds
-PASS: test
+./test/run.sh
 ```
 
+### Static Analysis
+
+The project enforces code quality using `clang-format`, `clang-tidy`, and `cppcheck`.
+
+```bash
+./scripts/run-static-analysis.sh
+```
 
 ## Contributing
 
@@ -128,3 +139,7 @@ This project uses [conventional commits](https://www.conventionalcommits.org) an
 > **For contibutors:**
 >
 > Please install the git hooks in `hooks` directory by running `./hooks/install-hooks.sh` to ensure conventional commits and non-ASCII characters are avoided.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
