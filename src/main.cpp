@@ -5,6 +5,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <queue>
@@ -213,6 +214,7 @@ std::optional<size_t> setupListenMode(const Args &args, QueryParser &parser,
   pending_listens.push_back(std::make_unique<ListenQuery>(args.listen));
 
   size_t total_scheduled = 0;
+  bool is_root_listen = true;
 
   while (!pending_listens.empty()) {
     auto listen_query = std::move(pending_listens.front());
@@ -221,22 +223,29 @@ std::optional<size_t> setupListenMode(const Args &args, QueryParser &parser,
     listen_query->setDependencies(&query_manager, &parser, &database,
                                   &g_query_counter, &pending_listens);
 
-    size_t listen_query_id = listen_query->getId();
-    if (listen_query_id == 0) {
-      listen_query_id = g_query_counter.fetch_add(1) + 1;
-    }
-
-    auto listen_result = listen_query->execute();
-    if (listen_result != nullptr) {
-      const bool should_display = listen_result->display();
-      if (should_display) {
-        std::ostringstream result_stream;
-        result_stream << *listen_result;
-        query_manager.addImmediateResult(listen_query_id, result_stream.str());
+    if (is_root_listen) {
+      listen_query->execute();
+      total_scheduled += listen_query->getScheduledQueryCount();
+      is_root_listen = false;
+    } else {
+      size_t listen_query_id = listen_query->getId();
+      if (listen_query_id == 0) {
+        listen_query_id = g_query_counter.fetch_add(1) + 1;
       }
-    }
 
-    total_scheduled += listen_query->getScheduledQueryCount() + 1;
+      auto listen_result = listen_query->execute();
+      if (listen_result != nullptr) {
+        const bool should_display = listen_result->display();
+        if (should_display) {
+          std::ostringstream result_stream;
+          result_stream << *listen_result;
+          query_manager.addImmediateResult(listen_query_id,
+                                           result_stream.str());
+        }
+      }
+
+      total_scheduled += listen_query->getScheduledQueryCount() + 1;
+    }
 
     if (listen_query->hasEncounteredQuit()) {
       break;
@@ -342,17 +351,23 @@ int main(int argc, char *argv[]) {
 
   const auto listen_scheduled = setupListenMode(parsedArgs, parser, database,
                                                 query_manager, g_query_counter);
-  if (!listen_scheduled.has_value()) {
-    processQueries(input_stream, database, parser, query_manager,
-                   g_query_counter);
-  }
-
-  const size_t total_queries =
-      determineExpectedQueryCount(listen_scheduled, g_query_counter);
-  query_manager.setExpectedQueryCount(total_queries);
 
   const OutputConfig output_config{};
-  flushOutputLoop(output_pool, query_manager, output_config);
+
+  if (!listen_scheduled.has_value()) {
+    query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
+    std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
+                             std::ref(query_manager), output_config);
+    processQueries(input_stream, database, parser, query_manager,
+                   g_query_counter);
+    query_manager.setExpectedQueryCount(g_query_counter.load());
+    flush_thread.join();
+  } else {
+    const size_t total_queries =
+        determineExpectedQueryCount(listen_scheduled, g_query_counter);
+    query_manager.setExpectedQueryCount(total_queries);
+    flushOutputLoop(output_pool, query_manager, output_config);
+  }
 
   query_manager.waitForCompletion();
   output_pool.outputAllResults();
