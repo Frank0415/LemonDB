@@ -87,8 +87,24 @@ bool ComplexQuery::evalCondition(const Table::Object &object) {
   return true;
 }
 
+bool ComplexQuery::evalCondition(const Table::ConstObject &object) {
+  for (const auto &cond : condition) [[likely]]
+  {
+    if (cond.fieldId == static_cast<size_t>(-1)) [[unlikely]] {
+      if (object.key() != cond.value) {
+        return false;
+      }
+    } else [[likely]] {
+      if (!cond.comp(object[cond.fieldId], cond.valueParsed)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 bool ComplexQuery::testKeyCondition(
-    Table &table,
+    Table &table, // cppcheck-suppress constParameter
     const std::function<void(bool, Table::Object::Ptr &&)> &function) {
   auto condResult = initCondition(table);
   if (!condResult.second) [[unlikely]] {
