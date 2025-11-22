@@ -35,20 +35,28 @@ void parseArgs(int argc, char **argv, Args &args) {
     };
 
     // Handle --listen=<value> or --listen <value>
-    if (arg.starts_with("--listen=")) {
-      args.listen = arg.substr(listen_prefix_len);
-    } else if (arg == "--listen" || arg == "-l") {
-      args.listen = getNextArg();
+    if (arg.starts_with("--listen=") || arg == "--listen" || arg == "-l") {
+      if (arg.starts_with("--listen=")) {
+        args.listen = arg.substr(listen_prefix_len);
+      } else {
+        args.listen = getNextArg();
+      }
+      continue;
     }
+
     // Handle --threads=<value> or --threads <value>
-    else if (arg.starts_with("--threads=")) {
-      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(),
-                                 nullptr, decimal_base);
-    } else if (arg == "--threads" || arg == "-t") {
-      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
-    } else {
-      (void)arg;
+    if (arg.starts_with("--threads=") || arg == "--threads" || arg == "-t") {
+      std::string value;
+      if (arg.starts_with("--threads=")) {
+        value = arg.substr(threads_prefix_len);
+      } else {
+        value = getNextArg();
+      }
+      args.threads = std::strtol(value.c_str(), nullptr, decimal_base);
+      continue;
     }
+
+    (void)arg;
   }
 }
 
