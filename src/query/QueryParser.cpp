@@ -43,34 +43,32 @@ QueryParser::tokenizeQueryString(const std::string &queryString) {
   TokenizedQueryString result;
   result.rawQeuryString = queryString;
   result.token.reserve(16);
-  
+
   std::string_view sv{queryString};
-  auto is_space = [](char c) { return std::isspace(static_cast<unsigned char>(c)) != 0; };
-  
+  auto is_space = [](char c) {
+    return std::isspace(static_cast<unsigned char>(c)) != 0;
+  };
+
   size_t start = 0;
   const size_t len = sv.size();
-  
-  while (start < len)
-  {
-    while (start < len && is_space(sv[start]))
-    {
+
+  while (start < len) {
+    while (start < len && is_space(sv[start])) {
       ++start;
     }
-    
-    if (start >= len)
-    {
+
+    if (start >= len) {
       break;
     }
-    
+
     size_t end = start;
-    while (end < len && !is_space(sv[end]))
-    {
+    while (end < len && !is_space(sv[end])) {
       ++end;
     }
-    
+
     result.token.emplace_back(sv.substr(start, end - start));
     start = end;
   }
-  
+
   return result;
 }
