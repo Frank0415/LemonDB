@@ -7,11 +7,11 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <optional>
 
 #include "OutputPool.h"
 #include "db/QueryBase.h"
