@@ -89,16 +89,15 @@ AddQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
   const auto &operands = this->getOperands();
-  std::transform(operands.begin(), operands.end(), std::back_inserter(indices),
-                 [&table](const auto &operand) {
-                   return table.getFieldIndex(operand);
-                 });
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(indices),
+      [&table](const auto &operand) { return table.getFieldIndex(operand); });
   return indices;
 }
 
-[[nodiscard]] QueryResult::Ptr
-AddQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr AddQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
   for (auto row : table) [[likely]]
