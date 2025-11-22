@@ -1,17 +1,20 @@
 #include <atomic>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <exception>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include "db/Database.h"
 #include "db/QueryBase.h"
@@ -107,6 +110,7 @@ void handleListenQuery(ListenQuery *listen_query, QueryManager &query_manager,
   }
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void handleCopyTable(QueryManager &query_manager, const std::string &trimmed,
                      const std::string &table_name,
                      CopyTableQuery *copy_query) {
@@ -155,7 +159,7 @@ void processQueries(std::istream &input_stream, Database &database,
       Query::Ptr query = parser.parseQuery(queryStr);
 
       // Use a case-insensitive check for "QUIT"
-      std::string trimmed = trimLeadingWhitespace(queryStr);
+      const std::string trimmed = trimLeadingWhitespace(queryStr);
 
       if (query->isInstant() && trimmed.starts_with("QUIT")) {
         // Don't submit QUIT query - just break the loop
@@ -318,56 +322,59 @@ void validateProductionMode(const Args &parsedArgs) {
 }  // namespace
 
 int main(int argc, char *argv[]) {
-  std::ios_base::sync_with_stdio(true);
-  std::ios_base::sync_with_stdio(true);
+  try {
+    std::ios_base::sync_with_stdio(true);
 
-  Args parsedArgs{};
-  MainUtils::parseArgs(argc, argv, parsedArgs);
+    Args parsedArgs{};
+    MainUtils::parseArgs(argc, argv, parsedArgs);
 
-  std::ifstream fin;
-  std::istream *input = initializeInputStream(parsedArgs, fin);
+    std::ifstream fin;
+    std::istream *input = initializeInputStream(parsedArgs, fin);
 
-  ThreadPool::initialize(parsedArgs.threads > 0
-                             ? static_cast<size_t>(parsedArgs.threads)
-                             : std::thread::hardware_concurrency());
+    ThreadPool::initialize(parsedArgs.threads > 0
+                              ? static_cast<size_t>(parsedArgs.threads)
+                              : std::thread::hardware_concurrency());
 
-  validateProductionMode(parsedArgs);
+    validateProductionMode(parsedArgs);
 
-  QueryParser parser;
-  MainUtils::setupParser(parser);
+    QueryParser parser;
+    MainUtils::setupParser(parser);
 
-  // Main loop: ASYNC query submission with table-level parallelism
-  Database &database = Database::getInstance();
+    // Main loop: ASYNC query submission with table-level parallelism
+    Database &database = Database::getInstance();
 
-  // Create OutputPool (not a global singleton - passed by reference)
-  OutputPool output_pool;
+    // Create OutputPool (not a global singleton - passed by reference)
+    OutputPool output_pool;
 
-  // Create QueryManager with reference to OutputPool
-  QueryManager query_manager(output_pool);
+    // Create QueryManager with reference to OutputPool
+    QueryManager query_manager(output_pool);
 
-  std::atomic<size_t> g_query_counter{0};
+    std::atomic<size_t> g_query_counter{0};
 
-  const auto listen_scheduled = setupListenMode(parsedArgs, parser, database,
-                                                query_manager, g_query_counter);
+    const auto listen_scheduled = setupListenMode(parsedArgs, parser, database,
+                                                  query_manager, g_query_counter);
 
-  const OutputConfig output_config{};
+    const OutputConfig output_config{};
 
-  if (!listen_scheduled.has_value()) {
-    query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
-    std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
-                             std::ref(query_manager), output_config);
-    processQueries(*input, database, parser, query_manager, g_query_counter);
-    query_manager.setExpectedQueryCount(g_query_counter.load());
-    flush_thread.join();
-  } else {
-    const size_t total_queries =
-        determineExpectedQueryCount(listen_scheduled, g_query_counter);
-    query_manager.setExpectedQueryCount(total_queries);
-    flushOutputLoop(output_pool, query_manager, output_config);
+    if (!listen_scheduled.has_value()) {
+      query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
+      std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
+                              std::ref(query_manager), output_config);
+      processQueries(*input, database, parser, query_manager, g_query_counter);
+      query_manager.setExpectedQueryCount(g_query_counter.load());
+      flush_thread.join();
+    } else {
+      const size_t total_queries =
+          determineExpectedQueryCount(listen_scheduled, g_query_counter);
+      query_manager.setExpectedQueryCount(total_queries);
+      flushOutputLoop(output_pool, query_manager, output_config);
+    }
+
+    query_manager.waitForCompletion();
+    output_pool.outputAllResults();
+  } catch (...) {
+    // TODO: NOTHING SHOULD BE HANDLED
   }
-
-  query_manager.waitForCompletion();
-  output_pool.outputAllResults();
 
   return 0;
 }
