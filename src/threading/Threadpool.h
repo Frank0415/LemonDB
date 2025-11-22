@@ -174,7 +174,11 @@ public:
     auto task = std::make_shared<std::packaged_task<return_type()>>(
         [func_cap = std::forward<F>(func),
          ... args_tuple = std::forward<Args>(args)]() mutable {
-          return func_cap(std::forward<Args>(args_tuple)...);
+          try {
+            return func_cap(std::forward<Args>(args_tuple)...);
+          } catch (...) {
+            throw;
+          }
         });
 
     std::future<return_type> ret = task->get_future();
