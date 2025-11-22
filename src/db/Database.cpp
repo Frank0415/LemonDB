@@ -123,6 +123,10 @@ Table &Database::loadTableFromStream(std::istream &input_stream,
   Table::SizeType fieldCount = 0;
   std::deque<Table::KeyType> fields;
 
+  constexpr size_t BUFFER_SIZE = 1024 * 256;
+  std::vector<char> buffer(BUFFER_SIZE);
+  input_stream.rdbuf()->pubsetbuf(buffer.data(), BUFFER_SIZE);
+
   std::string line;
   std::stringstream sstream;
   if (!std::getline(input_stream, line)) [[unlikely]] {

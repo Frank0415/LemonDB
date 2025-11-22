@@ -1,7 +1,10 @@
 #include "QueryParser.h"
 
-#include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <ranges>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "QueryBuilders.h"
@@ -39,11 +42,33 @@ TokenizedQueryString
 QueryParser::tokenizeQueryString(const std::string &queryString) {
   TokenizedQueryString result;
   result.rawQeuryString = queryString;
-  std::stringstream stream;
-  stream.str(queryString);
-  std::string tStr;
-  while (stream >> tStr) [[likely]] {
-    result.token.push_back(tStr);
+  result.token.reserve(16);
+
+  std::string_view sv{queryString};
+  auto is_space = [](char c) {
+    return std::isspace(static_cast<unsigned char>(c)) != 0;
+  };
+
+  size_t start = 0;
+  const size_t len = sv.size();
+
+  while (start < len) {
+    while (start < len && is_space(sv[start])) {
+      ++start;
+    }
+
+    if (start >= len) {
+      break;
+    }
+
+    size_t end = start;
+    while (end < len && !is_space(sv[end])) {
+      ++end;
+    }
+
+    result.token.emplace_back(sv.substr(start, end - start));
+    start = end;
   }
+
   return result;
 }

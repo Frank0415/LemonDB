@@ -19,36 +19,42 @@ void FileStackManager::popFile() {
 }
 
 std::ifstream *FileStackManager::getCurrentStream() {
-  if (file_stack.empty())
+  if (file_stack.empty()) {
     return nullptr;
+  }
   return file_stack.top().get();
 }
 
 std::string FileStackManager::getCurrentFilePath() const {
-  if (file_path_stack.empty())
+  if (file_path_stack.empty()) {
     return "";
+  }
   return file_path_stack.top();
 }
 
 bool FileStackManager::isEmpty() const { return file_stack.empty(); }
 
 std::string FileStackManager::resolvePath(const std::string &filename) const {
-  if (filename.empty())
+  if (filename.empty()) {
     return "";
+  }
 
   // Handle absolute paths
-  if (!filename.empty() && filename[0] == '/')
+  if (!filename.empty() && filename[0] == '/') {
     return filename;
+  }
 
   // No context available
-  if (file_path_stack.empty())
+  if (file_path_stack.empty()) {
     return filename;
+  }
 
   // Relative to current file's directory
   std::string current = file_path_stack.top();
   size_t last_slash = current.rfind('/');
-  if (last_slash == std::string::npos)
+  if (last_slash == std::string::npos) {
     return filename;
+  }
 
   return current.substr(0, last_slash + 1) + filename;
 }
