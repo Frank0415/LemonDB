@@ -4,7 +4,11 @@
 
 #include "QueryResult.h"
 
+#include <sstream>
+#include <string>
 #include <ostream>
+#include <utility>
+#include <vector>
 
 std::ostream &operator<<(std::ostream &out, const QueryResult &table) {
   return table.output(out);
