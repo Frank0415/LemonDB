@@ -2,8 +2,11 @@
 #define LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
 
 #include <cstddef>
+#include <deque>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "db/QueryBase.h"
 #include <atomic>
@@ -19,10 +22,12 @@ class ListenQuery : public Query {
   QueryManager *query_manager = nullptr;
   QueryParser *query_parser = nullptr;
   Database *database = nullptr;
-  std::atomic<size_t> *query_counter = nullptr;  // ADD THIS
+  std::atomic<size_t> *query_counter = nullptr;
+  std::deque<std::unique_ptr<ListenQuery>> *pending_listens = nullptr;
 
   size_t scheduled_query_count = 0;
   bool quit_encountered = false;
+  size_t id = 0;
 
   [[nodiscard]] bool shouldSkipStatement(const std::string &trimmed) const;
   bool processStatement(const std::string &trimmed);
@@ -31,9 +36,13 @@ public:
   explicit ListenQuery(std::string filename)
       : Query("__listen_table"), fileName(std::move(filename)) {}
 
-  void setDependencies(QueryManager *manager, QueryParser *parser,
-                       Database *database_ptr,
-                       std::atomic<size_t> *counter);  // ADD PARAMETER
+  void setId(size_t query_id) { id = query_id; }
+  [[nodiscard]] size_t getId() const { return id; }
+
+  void setDependencies(
+      QueryManager *manager, QueryParser *parser, Database *database_ptr,
+      std::atomic<size_t> *counter,
+      std::deque<std::unique_ptr<ListenQuery>> *pending_queue = nullptr);
 
   [[nodiscard]] size_t getScheduledQueryCount() const {
     return scheduled_query_count;
