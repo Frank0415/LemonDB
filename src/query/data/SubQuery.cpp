@@ -1,8 +1,10 @@
 #include "SubQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -80,11 +82,11 @@ std::string SubQuery::toString() {
 SubQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
-  // cppcheck-suppress useStlAlgorithm
-  for (const auto &operand : this->getOperands()) [[likely]]
-  {
-    indices.push_back(table.getFieldIndex(operand));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(operands.begin(), operands.end(), std::back_inserter(indices),
+                 [&table](const auto &operand) {
+                   return table.getFieldIndex(operand);
+                 });
   return indices;
 }
 
