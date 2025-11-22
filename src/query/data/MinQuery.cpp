@@ -143,17 +143,21 @@ MinQuery::executeMultiThreaded(const Table &table,
 
     futures.push_back(pool.submit([this, fids, chunk_begin, chunk_end,
                                    num_fields]() {
-      std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
-      for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
-      {
-        if (this->evalCondition(*it)) [[likely]] {
-          for (size_t i = 0; i < num_fields; ++i) [[likely]]
-          {
-            local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+      try {
+        std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
+        for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
+        {
+          if (this->evalCondition(*it)) [[likely]] {
+            for (size_t i = 0; i < num_fields; ++i) [[likely]]
+            {
+              local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+            }
           }
         }
+        return local_min;
+      } catch (...) {
+        throw;
       }
-      return local_min;
     }));
   }
   bool any_found = false;
