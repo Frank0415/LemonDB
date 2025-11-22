@@ -39,8 +39,6 @@
 - [Roadmap](#roadmap)
 - [License](#license)
 
----
-
 ## Quick Start
 
 Get LemonDB running in under 30 seconds.
@@ -97,6 +95,10 @@ graph TD
 | **Intra-Query Parallelism** | Automatic data chunking for aggregations (`SUM`, `COUNT`, `MAX`). | Massive latency reduction for large datasets by distributing work across cores. |
 | **Asynchronous Execution** | Non-blocking parsing and scheduling loop. | Maintains high system responsiveness even during heavy workload spikes. |
 | **Custom Thread Pool** | Optimized worker management avoiding OS overhead. | Maximizes CPU utilization and minimizes context switching costs. |
+
+## Performance
+
+*(Benchmark results comparing LemonDB against single-threaded baselines will be added here.)*
 
 ### Reproducing Benchmarks
 
