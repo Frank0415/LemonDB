@@ -101,16 +101,15 @@ SelectQuery::getFieldIndices(const Table &table) const {
   fieldsOrder.reserve(this->getOperands().size() + 1);
   fieldsOrder.emplace_back("KEY");
   const auto &operands = this->getOperands();
-  std::copy_if(operands.begin(), operands.end(), std::back_inserter(fieldsOrder),
+  std::copy_if(operands.begin(), operands.end(),
+               std::back_inserter(fieldsOrder),
                [](const auto &field) { return field != "KEY"; });
 
   std::vector<Table::FieldIndex> fieldIds;
   fieldIds.reserve(fieldsOrder.size() - 1);
-  std::transform(fieldsOrder.begin() + 1, fieldsOrder.end(),
-                 std::back_inserter(fieldIds),
-                 [&table](const auto &field) {
-                   return table.getFieldIndex(field);
-                 });
+  std::transform(
+      fieldsOrder.begin() + 1, fieldsOrder.end(), std::back_inserter(fieldIds),
+      [&table](const auto &field) { return table.getFieldIndex(field); });
   return fieldIds;
 }
 
@@ -133,7 +132,7 @@ SelectQuery::getFieldIndices(const Table &table) const {
 
   // Output in KEY order (already sorted by map)
   std::ostringstream buffer;
-  
+
   // cppcheck-suppress unassignedVariable
   for (const auto &[key, values] : sorted_rows) [[likely]] {
     buffer << "( " << key;
