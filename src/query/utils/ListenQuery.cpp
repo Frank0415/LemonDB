@@ -150,7 +150,7 @@ bool ListenQuery::processStatement(const std::string &trimmed,
 
   if (auto *nested_listen = dynamic_cast<ListenQuery *>(query.get())) {
     if (pending_listens != nullptr) {
-      (void)query.release();
+      (void)query.release(); // NOLINT
       // Assign ID immediately to preserve order
       const size_t nested_id = query_counter->fetch_add(1) + 1;
       nested_listen->setId(nested_id);
