@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -50,12 +51,18 @@ void handleListenQuery(ListenQuery *listen_query, QueryManager &query_manager,
                        std::atomic<size_t> &g_query_counter,
                        QueryParser &parser, Database &database,
                        bool &should_break) {
-  const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
+  std::deque<std::unique_ptr<ListenQuery>> pending_listens;
+
+  listen_query->setDependencies(&query_manager, &parser, &database,
+                                &g_query_counter, &pending_listens);
+
+  size_t listen_query_id = listen_query->getId();
+  if (listen_query_id == 0) {
+    listen_query_id = g_query_counter.fetch_add(1) + 1;
+  }
   // std::cerr << "[CONTROL] Handing control to LISTEN file " <<
   // listen_query->getFileName()
   //           << '\n';
-  listen_query->setDependencies(&query_manager, &parser, &database,
-                                &g_query_counter);
   auto result = listen_query->execute();
   if (result != nullptr) {
     const bool should_display = result->display();
@@ -71,6 +78,31 @@ void handleListenQuery(ListenQuery *listen_query, QueryManager &query_manager,
 
   if (listen_query->hasEncounteredQuit()) {
     should_break = true;
+    return;
+  }
+
+  while (!pending_listens.empty()) {
+    auto next_listen = std::move(pending_listens.front());
+    pending_listens.pop_front();
+
+    next_listen->setDependencies(&query_manager, &parser, &database,
+                                 &g_query_counter, &pending_listens);
+
+    size_t next_id = next_listen->getId();
+    if (next_id == 0) {
+      next_id = g_query_counter.fetch_add(1) + 1;
+    }
+    auto next_result = next_listen->execute();
+    if (next_result && next_result->display()) {
+      std::ostringstream oss;
+      oss << *next_result;
+      query_manager.addImmediateResult(next_id, oss.str());
+    }
+
+    if (next_listen->hasEncounteredQuit()) {
+      should_break = true;
+      return;
+    }
   }
 }
 
@@ -177,25 +209,43 @@ std::optional<size_t> setupListenMode(const Args &args, QueryParser &parser,
     return std::nullopt;
   }
 
-  auto listen_query = std::make_unique<ListenQuery>(args.listen);
-  listen_query->setDependencies(&query_manager, &parser, &database,
-                                &g_query_counter);
+  std::deque<std::unique_ptr<ListenQuery>> pending_listens;
+  pending_listens.push_back(std::make_unique<ListenQuery>(args.listen));
 
-  const size_t listen_query_id = g_query_counter.fetch_add(1) + 1;
+  size_t total_scheduled = 0;
 
-  auto listen_result = listen_query->execute();
-  if (listen_result != nullptr) {
-    const bool should_display = listen_result->display();
-    if (should_display) {
-      std::ostringstream result_stream;
-      result_stream << *listen_result;
-      query_manager.addImmediateResult(listen_query_id, result_stream.str());
+  while (!pending_listens.empty()) {
+    auto listen_query = std::move(pending_listens.front());
+    pending_listens.pop_front();
+
+    listen_query->setDependencies(&query_manager, &parser, &database,
+                                  &g_query_counter, &pending_listens);
+
+    size_t listen_query_id = listen_query->getId();
+    if (listen_query_id == 0) {
+      listen_query_id = g_query_counter.fetch_add(1) + 1;
+    }
+
+    auto listen_result = listen_query->execute();
+    if (listen_result != nullptr) {
+      const bool should_display = listen_result->display();
+      if (should_display) {
+        std::ostringstream result_stream;
+        result_stream << *listen_result;
+        query_manager.addImmediateResult(listen_query_id, result_stream.str());
+      }
+    }
+
+    total_scheduled += listen_query->getScheduledQueryCount() + 1;
+
+    if (listen_query->hasEncounteredQuit()) {
+      break;
     }
   }
 
-  // std::cerr << "Scheduled " << listen_query->getScheduledQueryCount()
+  // std::cerr << "Scheduled " << total_scheduled
   //           << " queries from listen file.\n";
-  return listen_query->getScheduledQueryCount() + 1;
+  return total_scheduled;
 }
 
 size_t
