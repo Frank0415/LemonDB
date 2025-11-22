@@ -1,6 +1,11 @@
 #include "FileStackManager.h"
-#include <iostream>
+
+#include <cstddef>
+#include <fstream>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 void FileStackManager::pushFile(const std::string &filename) {
   auto file = std::make_unique<std::ifstream>(filename);
@@ -50,8 +55,8 @@ std::string FileStackManager::resolvePath(const std::string &filename) const {
   }
 
   // Relative to current file's directory
-  std::string current = file_path_stack.top();
-  size_t last_slash = current.rfind('/');
+  const std::string current = file_path_stack.top();
+  const size_t last_slash = current.rfind('/');
   if (last_slash == std::string::npos) {
     return filename;
   }
