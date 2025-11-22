@@ -1,8 +1,10 @@
 #include "AddQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -86,13 +88,15 @@ std::string AddQuery::toString() {
 AddQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
-  for (const auto &operand : this->getOperands()) [[likely]]
-  {
-    indices.push_back(table.getFieldIndex(operand));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(operands.begin(), operands.end(), std::back_inserter(indices),
+                 [&table](const auto &operand) {
+                   return table.getFieldIndex(operand);
+                 });
   return indices;
 }
 
+// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
 AddQuery::executeSingleThreaded(Table &table,
                                 const std::vector<Table::FieldIndex> &fids) {
@@ -115,6 +119,7 @@ AddQuery::executeSingleThreaded(Table &table,
   return std::make_unique<RecordCountResult>(count);
 }
 
+// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
 AddQuery::executeMultiThreaded(Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
