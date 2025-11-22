@@ -96,7 +96,7 @@ MaxQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-MaxQuery::executeSingleThreaded(Table &table,
+MaxQuery::executeSingleThreaded(const Table &table,
                                 const std::vector<Table::FieldIndex> &fids) {
   bool found = false;
   std::vector<Table::ValueType> maxValue(
@@ -122,7 +122,7 @@ MaxQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-MaxQuery::executeMultiThreaded(Table &table,
+MaxQuery::executeMultiThreaded(const Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
