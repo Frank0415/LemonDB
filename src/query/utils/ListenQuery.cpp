@@ -111,13 +111,15 @@ void handleCopyTable(QueryManager &query_manager, const std::string &trimmed,
 }
 }  // namespace
 
-void ListenQuery::setDependencies(QueryManager *manager, QueryParser *parser,
-                                  Database *database_ptr,
-                                  std::atomic<size_t> *counter) {
+void ListenQuery::setDependencies(
+    QueryManager *manager, QueryParser *parser, Database *database_ptr,
+    std::atomic<size_t> *counter,
+    std::deque<std::unique_ptr<ListenQuery>> *pending_queue) {
   query_manager = manager;
   query_parser = parser;
   database = database_ptr;
   query_counter = counter;
+  pending_listens = pending_queue;
 }
 
 bool ListenQuery::shouldSkipStatement(const std::string &trimmed) const {
@@ -138,6 +140,38 @@ bool ListenQuery::processStatement(const std::string &trimmed) {
   if (startsWithCaseInsensitive(trimmed, "COPYTABLE")) {
     handleCopyTable(*query_manager, trimmed, query->targetTableRef(),
                     dynamic_cast<CopyTableQuery *>(query.get()));
+  }
+
+  if (auto *nested_listen = dynamic_cast<ListenQuery *>(query.get())) {
+    if (pending_listens != nullptr) {
+      query.release();
+      // Assign ID immediately to preserve order
+      const size_t nested_id = query_counter->fetch_add(1) + 1;
+      nested_listen->setId(nested_id);
+      pending_listens->push_back(std::unique_ptr<ListenQuery>(nested_listen));
+      // Increment scheduled count because this nested listen is a query
+      // scheduled by us
+      scheduled_query_count++;
+      return true;
+    }
+
+    nested_listen->setDependencies(query_manager, query_parser, database,
+                                   query_counter);
+    // Execute nested LISTEN immediately to schedule its queries
+    auto result = nested_listen->execute();
+    if (result && result->display()) {
+      std::ostringstream oss;
+      oss << *result;
+      query_manager->addImmediateResult(query_counter->fetch_add(1) + 1,
+                                        oss.str());
+    }
+    // Add the count of queries scheduled by the nested LISTEN
+    scheduled_query_count += nested_listen->getScheduledQueryCount();
+    if (nested_listen->hasEncounteredQuit()) {
+      quit_encountered = true;
+      return false;
+    }
+    return true;
   }
 
   const size_t query_id = query_counter->fetch_add(1) + 1;
