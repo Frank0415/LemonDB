@@ -57,8 +57,8 @@ public:
    * @param key Unique key string.
    * @param datum Rvalue vector of field values (moved).
    */
-  explicit Datum(std::string key, std::vector<int> &&datum) noexcept
-      : key(std::move(key)), datum(std::move(datum)) {}
+  explicit Datum(const std::string &key, std::vector<int> &&datum) noexcept
+      : key(key), datum(std::move(datum)) {}
 
   /**
    * Get const reference to the key.
