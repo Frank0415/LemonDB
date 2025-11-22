@@ -104,7 +104,7 @@ bool ComplexQuery::evalCondition(const Table::ConstObject &object) {
 }
 
 bool ComplexQuery::testKeyCondition(
-    Table &table, // cppcheck-suppress constParameter
+    Table &table,  // cppcheck-suppress constParameter
     const std::function<void(bool, Table::Object::Ptr &&)> &function) {
   auto condResult = initCondition(table);
   if (!condResult.second) [[unlikely]] {
