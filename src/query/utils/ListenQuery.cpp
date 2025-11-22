@@ -1,13 +1,17 @@
 #include "ListenQuery.h"
 
+#include <atomic>
 #include <cctype>
 #include <cstddef>
 #include <cstdio>
+#include <deque>
 #include <exception>
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <memory>
+#include <sstream>
+#include <stack>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -92,6 +96,7 @@ std::string extractNewTableName(const std::string &trimmed) {
   return new_table_name;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void handleCopyTable(QueryManager &query_manager, const std::string &trimmed,
                      const std::string &source_table,
                      CopyTableQuery *copy_query) {
@@ -122,11 +127,12 @@ void ListenQuery::setDependencies(
   pending_listens = pending_queue;
 }
 
-bool ListenQuery::shouldSkipStatement(const std::string &trimmed) const {
+bool ListenQuery::shouldSkipStatement(const std::string &trimmed) {
   return trimmed.empty() || trimmed.front() == '#';
 }
 
-bool ListenQuery::processStatement(const std::string &trimmed) {
+bool ListenQuery::processStatement(const std::string &trimmed,
+                                   std::string *nested_file_out) {
   Query::Ptr query = query_parser->parseQuery(trimmed);
   // std::cerr << "[LISTEN] Parsed query: " << query->toString() << '\n';
 
@@ -144,7 +150,7 @@ bool ListenQuery::processStatement(const std::string &trimmed) {
 
   if (auto *nested_listen = dynamic_cast<ListenQuery *>(query.get())) {
     if (pending_listens != nullptr) {
-      query.release();
+      (void)query.release();
       // Assign ID immediately to preserve order
       const size_t nested_id = query_counter->fetch_add(1) + 1;
       nested_listen->setId(nested_id);
@@ -155,21 +161,8 @@ bool ListenQuery::processStatement(const std::string &trimmed) {
       return true;
     }
 
-    nested_listen->setDependencies(query_manager, query_parser, database,
-                                   query_counter);
-    // Execute nested LISTEN immediately to schedule its queries
-    auto result = nested_listen->execute();
-    if (result && result->display()) {
-      std::ostringstream oss;
-      oss << *result;
-      query_manager->addImmediateResult(query_counter->fetch_add(1) + 1,
-                                        oss.str());
-    }
-    // Add the count of queries scheduled by the nested LISTEN
-    scheduled_query_count += nested_listen->getScheduledQueryCount();
-    if (nested_listen->hasEncounteredQuit()) {
-      quit_encountered = true;
-      return false;
+    if (nested_file_out != nullptr) {
+      *nested_file_out = nested_listen->getFileName();
     }
     return true;
   }
@@ -191,46 +184,80 @@ QueryResult::Ptr ListenQuery::execute() {
     throw std::runtime_error("ListenQuery dependencies are not set");
   }
 
-  // std::cerr << "[CONTROL] LISTEN query starting, taking control from
-  // terminal" << '\n'; std::cerr << "[LISTEN] Opening file: " << fileName <<
-  // '\n';
-  std::ifstream infile(fileName);
-  if (!infile.is_open()) {
-    // std::cerr << "[LISTEN] Failed to open file" << '\n';
+  struct FileContext {
+    std::string name;
+    std::unique_ptr<std::ifstream> stream;
+  };
+
+  std::stack<FileContext> file_stack;
+  auto initial_stream = std::make_unique<std::ifstream>(fileName);
+  if (!initial_stream->is_open()) {
     return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f %
                                                        fileName);
   }
+  file_stack.push({fileName, std::move(initial_stream)});
 
   scheduled_query_count = 0;
   quit_encountered = false;
   std::string raw_statement;
 
-  try {
-    while (readNextStatement(infile, raw_statement)) {
-      std::string trimmed = trimCopy(raw_statement);
+  while (!file_stack.empty()) {
+    auto &current_ctx = file_stack.top();
+
+    try {
+      if (!readNextStatement(*current_ctx.stream, raw_statement)) {
+        if (file_stack.size() > 1) {
+          std::ostringstream oss;
+          oss << ListenResult(current_ctx.name);
+          query_manager->addImmediateResult(query_counter->fetch_add(1) + 1,
+                                            oss.str());
+        }
+        file_stack.pop();
+        continue;
+      }
+
+      const std::string trimmed = trimCopy(raw_statement);
       if (shouldSkipStatement(trimmed)) {
         continue;
       }
 
+      std::string nested_file;
       try {
-        if (!processStatement(trimmed)) {
+        if (!processStatement(trimmed, &nested_file)) {
           break;  // QUIT encountered
         }
       } catch (const std::exception & /*ignored*/) {
         continue;
       }
+
+      if (!nested_file.empty()) {
+        auto nested_stream = std::make_unique<std::ifstream>(nested_file);
+        if (!nested_stream->is_open()) {
+          std::ostringstream oss;
+          oss << ErrorMsgResult(qname, "Cannot open file '?'"_f % nested_file);
+          query_manager->addImmediateResult(query_counter->fetch_add(1) + 1,
+                                            oss.str());
+        } else {
+          file_stack.push({nested_file, std::move(nested_stream)});
+        }
+      }
+    } catch (const std::ios_base::failure &) {
+      if (file_stack.size() == 1) {
+        return std::make_unique<ErrorMsgResult>(
+            qname, "Unexpected EOF in listen file '?'"_f % current_ctx.name);
+      }
+      std::ostringstream oss;
+      oss << ErrorMsgResult(qname, "Unexpected EOF in listen file '?'"_f %
+                                       current_ctx.name);
+      query_manager->addImmediateResult(query_counter->fetch_add(1) + 1,
+                                        oss.str());
+      file_stack.pop();
     }
-  } catch (const std::ios_base::failure &) {
-    return std::make_unique<ErrorMsgResult>(
-        qname, "Unexpected EOF in listen file '?'"_f % fileName);
   }
 
   if (!quit_encountered) {
     // std::cerr << "[LISTEN] Reached end of file for " << fileName << '\n';
   }
-
-  // std::cerr << "[CONTROL] LISTEN query completed, returning control to
-  // caller" << '\n';
 
   return std::make_unique<ListenResult>(fileName);
 }
