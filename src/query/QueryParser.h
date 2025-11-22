@@ -19,7 +19,7 @@ public:
   QueryBuilder &operator=(const QueryBuilder &) = delete;
   QueryBuilder(QueryBuilder &&) = default;
   QueryBuilder &operator=(QueryBuilder &&) = default;
-  
+
   using Ptr = std::unique_ptr<QueryBuilder>;
 
   virtual Query::Ptr tryExtractQuery(TokenizedQueryString &queryString) = 0;
