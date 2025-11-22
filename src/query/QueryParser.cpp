@@ -11,7 +11,7 @@
 #include "utils/uexception.h"
 
 namespace {
-  constexpr size_t kDefaultTokenReserve = 16;
+constexpr size_t kDefaultTokenReserve = 16;
 }
 
 Query::Ptr QueryParser::parseQuery(const std::string &queryString) {
