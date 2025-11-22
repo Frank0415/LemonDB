@@ -332,8 +332,8 @@ int main(int argc, char *argv[]) {
     std::istream *input = initializeInputStream(parsedArgs, fin);
 
     ThreadPool::initialize(parsedArgs.threads > 0
-                              ? static_cast<size_t>(parsedArgs.threads)
-                              : std::thread::hardware_concurrency());
+                               ? static_cast<size_t>(parsedArgs.threads)
+                               : std::thread::hardware_concurrency());
 
     validateProductionMode(parsedArgs);
 
@@ -351,15 +351,15 @@ int main(int argc, char *argv[]) {
 
     std::atomic<size_t> g_query_counter{0};
 
-    const auto listen_scheduled = setupListenMode(parsedArgs, parser, database,
-                                                  query_manager, g_query_counter);
+    const auto listen_scheduled = setupListenMode(
+        parsedArgs, parser, database, query_manager, g_query_counter);
 
     const OutputConfig output_config{};
 
     if (!listen_scheduled.has_value()) {
       query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
       std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
-                              std::ref(query_manager), output_config);
+                               std::ref(query_manager), output_config);
       processQueries(*input, database, parser, query_manager, g_query_counter);
       query_manager.setExpectedQueryCount(g_query_counter.load());
       flush_thread.join();
