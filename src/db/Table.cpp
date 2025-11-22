@@ -173,7 +173,7 @@ void Table::addQuery(Query *query) {
       queryQueueMutex.unlock();
     }
   } else [[unlikely]] {
-    if (queryQueueCounter >= 0 && queryQueue.empty()) [[likely]] {
+    if (queryQueue.empty()) [[likely]] {
       // add a reader and execute it at once if queue is empty
       ++queryQueueCounter;
       queryQueueMutex.unlock();
