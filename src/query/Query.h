@@ -61,6 +61,7 @@ public:
    * @return true if conditions are met
    */
   bool evalCondition(const Table::Object &object);
+  bool evalCondition(const Table::ConstObject &object);
 
   /**
    * This function seems have small effect and causes somme bugs
