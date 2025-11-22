@@ -13,11 +13,9 @@ constexpr const char *qname_tr = "TRUNCATE";
 
 QueryResult::Ptr TruncateTableQuery::execute() {
   try {
-    auto &database = Database::getInstance();
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireWrite(this->targetTableRef());
-    auto &table = database[this->targetTableRef()];
-    table.clear();
+    Database::getInstance()[this->targetTableRef()].clear();
 
     return std::make_unique<NullQueryResult>();  // silent success
   } catch (const TableNameNotFound &) {
