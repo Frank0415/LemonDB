@@ -16,7 +16,7 @@
 QueryResult::Ptr PrintTableQuery::execute() {
   const Database &database = Database::getInstance();
   try {
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     const auto &table = database[this->targetTableRef()];
     std::cout << "================\n";
