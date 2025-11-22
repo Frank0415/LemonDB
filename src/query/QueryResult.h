@@ -26,9 +26,9 @@ public:
   friend std::ostream &operator<<(std::ostream &out, const QueryResult &table);
 
 protected:
-  virtual std::ostream& output(std::ostream& out) const = 0;
-  static std::string buildMessage(std::string&& msg);
-  static std::string buildMessage(const std::vector<int>& results);
+  virtual std::ostream &output(std::ostream &out) const = 0;
+  static std::string buildMessage(std::string &&msg);
+  static std::string buildMessage(const std::vector<int> &results);
 };
 
 class FailedQueryResult : public QueryResult {
@@ -62,10 +62,8 @@ public:
    * @param qname The name of the query that failed
    * @param msg The error message
    */
-  ErrorMsgResult(const char* qname, const std::string& msg)
-  : msg(buildMessage(R"(Query "?" failed : ?)"_f % qname % msg))
-  {
-  }
+  ErrorMsgResult(const char *qname, const std::string &msg)
+      : msg(buildMessage(R"(Query "?" failed : ?)"_f % qname % msg)) {}
 
   /**
    * Construct an error result with query name, table, and message
@@ -73,10 +71,10 @@ public:
    * @param table The name of the table where the error occurred
    * @param msg The error message
    */
-  ErrorMsgResult(const char* qname, const std::string& table, const std::string& msg)
-  : msg(buildMessage(R"(Query "?" failed in Table "?" : ?)"_f % qname % table % msg))
-  {
-  }
+  ErrorMsgResult(const char *qname, const std::string &table,
+                 const std::string &msg)
+      : msg(buildMessage(R"(Query "?" failed in Table "?" : ?)"_f % qname %
+                         table % msg)) {}
 
 protected:
   std::ostream &output(std::ostream &out) const override {
@@ -94,50 +92,37 @@ public:
   /**
    * Construct a success result with a number
    */
-  explicit SuccessMsgResult(const int number, bool debug = true) 
-  : debug_(debug),
-    msg(buildMessage(R"(ANSWER = "?".)"_f % number))
-  {
-  }
+  explicit SuccessMsgResult(const int number, bool debug = true)
+      : debug_(debug), msg(buildMessage(R"(ANSWER = "?".)"_f % number)) {}
 
   /**
    * Construct a success result with a vector of results
    */
-  explicit SuccessMsgResult(const std::vector<int>& results, bool debug = true) 
-  : debug_(debug),
-    msg(buildMessage(results))
-  {
-  }
+  explicit SuccessMsgResult(const std::vector<int> &results, bool debug = true)
+      : debug_(debug), msg(buildMessage(results)) {}
 
   /**
    * Construct a success result with query name
    */
-  explicit SuccessMsgResult(const char* qname, bool debug = false) 
-  : debug_(debug),
-    msg(buildMessage(R"(Query "?" success.)"_f % qname))
-  {
-  }
+  explicit SuccessMsgResult(const char *qname, bool debug = false)
+      : debug_(debug), msg(buildMessage(R"(Query "?" success.)"_f % qname)) {}
 
   /**
    * Construct a success result with query name and message
    */
-  SuccessMsgResult(const char* qname, const std::string& msg, bool debug = false)
-  : debug_(debug),
-    msg(buildMessage(R"(Query "?" success : ?)"_f % qname % msg))
-  {
-  }
+  SuccessMsgResult(const char *qname, const std::string &msg,
+                   bool debug = false)
+      : debug_(debug),
+        msg(buildMessage(R"(Query "?" success : ?)"_f % qname % msg)) {}
 
   /**
    * Construct a success result with query name, table, and message
    */
-  SuccessMsgResult(const char* qname,
-                   const std::string& table,
-                   const std::string& msg,
-                   bool debug = false)
+  SuccessMsgResult(const char *qname, const std::string &table,
+                   const std::string &msg, bool debug = false)
       : debug_(debug),
-        msg(buildMessage(R"(Query "?" success in Table "?" : ?)"_f % qname % table % msg))
-  {
-  }
+        msg(buildMessage(R"(Query "?" success in Table "?" : ?)"_f % qname %
+                         table % msg)) {}
 
 protected:
   std::ostream &output(std::ostream &out) const override {
