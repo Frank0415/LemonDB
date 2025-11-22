@@ -96,7 +96,7 @@ MinQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-MinQuery::executeSingleThreaded(Table &table,
+MinQuery::executeSingleThreaded(const Table &table,
                                 const std::vector<Table::FieldIndex> &fids) {
   bool found = false;
   std::vector<Table::ValueType> minValue(
@@ -122,7 +122,7 @@ MinQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-MinQuery::executeMultiThreaded(Table &table,
+MinQuery::executeMultiThreaded(const Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
