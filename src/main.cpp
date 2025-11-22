@@ -356,8 +356,7 @@ int main(int argc, char *argv[]) {
     query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
     std::thread flush_thread(flushOutputLoop, std::ref(output_pool),
                              std::ref(query_manager), output_config);
-    processQueries(*input, database, parser, query_manager,
-                   g_query_counter);
+    processQueries(*input, database, parser, query_manager, g_query_counter);
     query_manager.setExpectedQueryCount(g_query_counter.load());
     flush_thread.join();
   } else {
