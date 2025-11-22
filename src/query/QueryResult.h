@@ -15,6 +15,12 @@
 
 class QueryResult {
 public:
+  QueryResult() = default;
+  QueryResult(const QueryResult &) = delete;
+  QueryResult &operator=(const QueryResult &) = delete;
+  QueryResult(QueryResult &&) = default;
+  QueryResult &operator=(QueryResult &&) = default;
+
   using Ptr = std::unique_ptr<QueryResult>;
 
   [[nodiscard]] virtual bool success() = 0;
