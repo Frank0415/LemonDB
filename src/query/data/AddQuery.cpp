@@ -96,9 +96,8 @@ AddQuery::getFieldIndices(const Table &table) const {
   return indices;
 }
 
-// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
-AddQuery::executeSingleThreaded(Table &table,
+AddQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
                                 const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
