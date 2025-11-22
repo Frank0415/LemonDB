@@ -3,8 +3,7 @@
 
 #include <chrono>
 
-struct OutputConfig
-{
+struct OutputConfig {
   static constexpr size_t kDefaultThreshold1 = 100;
   static constexpr size_t kDefaultThreshold2 = 1000;
   static constexpr size_t kDefaultThreshold3 = 10000;
@@ -32,6 +31,7 @@ struct OutputConfig
      * @param config Output configuration with thresholds and intervals
      * @return Appropriate interval duration for output flushing
      */
-    calculateOutputInterval(size_t total_output_count, const OutputConfig& config = OutputConfig{});
+    calculateOutputInterval(size_t total_output_count,
+                            const OutputConfig &config = OutputConfig{});
 
-#endif // PROJECT_OUTPUT_CONFIG_H
+#endif  // PROJECT_OUTPUT_CONFIG_H

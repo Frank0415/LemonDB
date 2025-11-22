@@ -10,9 +10,8 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 
-class PrintTableQuery : public Query
-{
-  static constexpr const char* qname = "SHOWTABLE";
+class PrintTableQuery : public Query {
+  static constexpr const char *qname = "SHOWTABLE";
 
 public:
   using Query::Query;
@@ -30,4 +29,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_PRINTTABLEQUERY_H
+#endif  // PROJECT_PRINTTABLEQUERY_H

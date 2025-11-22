@@ -122,17 +122,45 @@ if(ENABLE_MSAN)
         message(FATAL_ERROR "MemorySanitizer (MSAN) requires Clang/LLVM. Re-run CMake with -DCMAKE_CXX_COMPILER=clang++ or disable ENABLE_MSAN.")
     endif()
     message(STATUS "Configuring MSAN build targets")
-    set(LEMONDB_MSAN_FLAGS -fsanitize=memory -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -fsanitize-memory-track-origins)
+    
+    # Path to custom MSAN-instrumented libc++
+    set(MSAN_LIBCXX_PATH "/usr/local/lib/libc++_msan-18")
+    
+    # Check if the path exists
+    if(NOT EXISTS ${MSAN_LIBCXX_PATH})
+        message(FATAL_ERROR "MSAN libc++ not found at ${MSAN_LIBCXX_PATH}. Please ensure it is installed.")
+    endif()
+
+    set(LEMONDB_MSAN_COMPILE_FLAGS 
+        -fsanitize=memory 
+        -fno-omit-frame-pointer 
+        -fno-optimize-sibling-calls 
+        -g 
+        -fsanitize-memory-track-origins
+        -nostdinc++
+        -I${MSAN_LIBCXX_PATH}/include/c++/v1
+        -I${MSAN_LIBCXX_PATH}/include
+        -Wno-error=#warnings
+    )
+
+    set(LEMONDB_MSAN_LINK_FLAGS 
+        -fsanitize=memory 
+        -stdlib=libc++
+        -L${MSAN_LIBCXX_PATH}/lib
+        -Wl,-rpath,${MSAN_LIBCXX_PATH}/lib
+        -lc++abi
+    )
+    
     add_library(lemondb_lib_msan STATIC ${LIB_SOURCES})
     target_include_directories(lemondb_lib_msan PUBLIC ${CMAKE_SOURCE_DIR}/src)
-    target_compile_options(lemondb_lib_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_FLAGS})
+    target_compile_options(lemondb_lib_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_COMPILE_FLAGS})
     # Pass MSAN flags to the linker too (required to link MSAN runtime)
-    target_link_options(lemondb_lib_msan PRIVATE ${LEMONDB_MSAN_FLAGS})
+    target_link_options(lemondb_lib_msan PRIVATE ${LEMONDB_MSAN_LINK_FLAGS})
 
     add_executable(lemondb_msan ${MAIN_SOURCES})
     target_link_libraries(lemondb_msan PRIVATE lemondb_lib_msan)
-    target_compile_options(lemondb_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_FLAGS})
-    target_link_options(lemondb_msan PRIVATE ${LEMONDB_MSAN_FLAGS})
+    target_compile_options(lemondb_msan PRIVATE ${LEMONDB_COMMON_COMPILE_OPTIONS} ${LEMONDB_MSAN_COMPILE_FLAGS})
+    target_link_options(lemondb_msan PRIVATE ${LEMONDB_MSAN_LINK_FLAGS})
 endif()
 
 if(ENABLE_UBSAN)

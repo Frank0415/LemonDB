@@ -13,8 +13,7 @@
 
 #include "../utils/formatter.h"
 
-class QueryResult
-{
+class QueryResult {
 public:
   using Ptr = std::unique_ptr<QueryResult>;
 
@@ -24,7 +23,7 @@ public:
 
   virtual ~QueryResult() = default;
 
-  friend std::ostream& operator<<(std::ostream& out, const QueryResult& table);
+  friend std::ostream &operator<<(std::ostream &out, const QueryResult &table);
 
 protected:
   virtual std::ostream& output(std::ostream& out) const = 0;
@@ -32,48 +31,29 @@ protected:
   static std::string buildMessage(const std::vector<int>& results);
 };
 
-class FailedQueryResult : public QueryResult
-{
+class FailedQueryResult : public QueryResult {
   std::string data;
 
 public:
-  bool success() override
-  {
-    return false;
-  }
+  bool success() override { return false; }
 
-  bool display() override
-  {
-    return false;
-  }
+  bool display() override { return false; }
 };
 
-class SucceededQueryResult : public QueryResult
-{
+class SucceededQueryResult : public QueryResult {
 public:
-  bool success() override
-  {
-    return true;
-  }
+  bool success() override { return true; }
 };
 
-class NullQueryResult : public SucceededQueryResult
-{
+class NullQueryResult : public SucceededQueryResult {
 public:
-  bool display() override
-  {
-    return false;
-  }
+  bool display() override { return false; }
 
 protected:
-  std::ostream& output(std::ostream& out) const override
-  {
-    return out << "\n";
-  }
+  std::ostream &output(std::ostream &out) const override { return out << "\n"; }
 };
 
-class ErrorMsgResult : public FailedQueryResult
-{
+class ErrorMsgResult : public FailedQueryResult {
   std::string msg;
 
 public:
@@ -99,22 +79,17 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& out) const override
-  {
+  std::ostream &output(std::ostream &out) const override {
     return out << msg << "\n";
   }
 };
 
-class SuccessMsgResult : public SucceededQueryResult
-{
+class SuccessMsgResult : public SucceededQueryResult {
   std::string msg;
   bool debug_ = true;
 
 public:
-  bool display() override
-  {
-    return debug_;
-  }
+  bool display() override { return debug_; }
 
   /**
    * Construct a success result with a number
@@ -165,83 +140,62 @@ public:
   }
 
 protected:
-  std::ostream& output(std::ostream& out) const override
-  {
+  std::ostream &output(std::ostream &out) const override {
     return out << msg << "\n";
   }
 };
 
-class RecordCountResult : public SucceededQueryResult
-{
+class RecordCountResult : public SucceededQueryResult {
   int affectedRows;
 
 public:
-  bool display() override
-  {
-    return true;
-  }
+  bool display() override { return true; }
 
   /**
    * Construct a result showing the number of affected rows
    */
-  explicit RecordCountResult(int count) : affectedRows(count)
-  {
-  }
+  explicit RecordCountResult(int count) : affectedRows(count) {}
 
 protected:
-  std::ostream& output(std::ostream& out) const override
-  {
+  std::ostream &output(std::ostream &out) const override {
     return out << "Affected ? rows."_f % affectedRows << "\n";
   }
 };
 
-class TextRowsResult : public SucceededQueryResult
-{
+class TextRowsResult : public SucceededQueryResult {
   std::string payload;
 
 public:
-  bool display() override
-  {
-    return true;
-  }
+  bool display() override { return true; }
 
   /**
    * Construct a result with text payload
    */
-  explicit TextRowsResult(std::string payload_str) : payload(std::move(payload_str))
-  {
-  }
+  explicit TextRowsResult(std::string payload_str)
+      : payload(std::move(payload_str)) {}
 
 protected:
-  std::ostream& output(std::ostream& out) const override
-  {
+  std::ostream &output(std::ostream &out) const override {
     return out << payload;
   }
 };
 
-class ListenResult : public SucceededQueryResult
-{
+class ListenResult : public SucceededQueryResult {
   std::string listen_name;
 
 public:
-  bool display() override
-  {
-    return true;
-  }
+  bool display() override { return true; }
 
   /**
    * Construct a result for LISTEN query with the file name
    */
-  explicit ListenResult(std::string name) : listen_name(std::move(name))
-  {
-  }
+  explicit ListenResult(std::string name) : listen_name(std::move(name)) {}
 
 protected:
-  std::ostream& output(std::ostream& ostring) const override
-  {
+  std::ostream &output(std::ostream &ostring) const override {
     ostring << "ANSWER = ( listening from " << listen_name << " )\n";
     return ostring;
   }
 };
 
-#endif // PROJECT_QUERYRESULT_H
+#endif  // PROJECT_QUERYRESULT_H

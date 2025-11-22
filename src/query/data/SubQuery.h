@@ -6,9 +6,8 @@
 #include "../Query.h"
 #include "../QueryResult.h"
 
-class SubQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "SUB";
+class SubQuery : public ComplexQuery {
+  static constexpr const char *qname = "SUB";
 
 private:
   /**
@@ -22,7 +21,8 @@ private:
    * @param table The table to get field indices from
    * @return Vector of field indices
    */
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex>
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute SUB operation using single-threaded approach
@@ -30,8 +30,9 @@ private:
    * @param fids Field indices for the operation
    * @return QueryResult with operation results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
-                                                       const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeSingleThreaded(Table &table,
+                        const std::vector<Table::FieldIndex> &fids);
 
   /**
    * Execute SUB operation using multi-threaded approach
@@ -39,8 +40,9 @@ private:
    * @param fids Field indices for the operation
    * @return QueryResult with operation results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
-                                                      const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeMultiThreaded(Table &table,
+                       const std::vector<Table::FieldIndex> &fids);
 
 public:
   using ComplexQuery::ComplexQuery;
@@ -49,10 +51,7 @@ public:
 
   std::string toString() override;
 
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
-#endif // PROJECT_SUBQUERY_H
+#endif  // PROJECT_SUBQUERY_H

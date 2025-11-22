@@ -6,8 +6,7 @@
 #include "query/Query.h"
 #include "query/QueryResult.h"
 
-class TruncateTableQuery : public Query
-{
+class TruncateTableQuery : public Query {
 public:
   using Query::Query;
 
@@ -24,4 +23,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_TRUNCATETABLEQUERY_H
+#endif  // PROJECT_TRUNCATETABLEQUERY_H

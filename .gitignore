@@ -4,6 +4,9 @@
 # # Allow Makefile
 # !Makefile
 
+# Allow LICENSE
+!LICENSE
+
 # Allow main.cpp
 !src
 !src/main.cpp
@@ -85,3 +88,4 @@
 !test/gtests
 !test/gtests/
 !test/gtests/*.cpp
+!test/test_multithread_listen.sh

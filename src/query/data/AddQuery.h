@@ -6,9 +6,8 @@
 #include "../Query.h"
 #include "../QueryResult.h"
 
-class AddQuery : public ComplexQuery
-{
-  static constexpr const char* qname = "ADD";
+class AddQuery : public ComplexQuery {
+  static constexpr const char *qname = "ADD";
 
 public:
   /**
@@ -22,7 +21,8 @@ public:
    * @param table The table to get field indices from
    * @return Vector of field indices
    */
-  [[nodiscard]] std::vector<Table::FieldIndex> getFieldIndices(const Table& table) const;
+  [[nodiscard]] std::vector<Table::FieldIndex>
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute ADD operation using single-threaded approach
@@ -30,8 +30,9 @@ public:
    * @param fids Field indices for the operation
    * @return QueryResult with operation results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table,
-                                                       const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeSingleThreaded(Table &table,
+                        const std::vector<Table::FieldIndex> &fids);
 
   /**
    * Execute ADD operation using multi-threaded approach
@@ -39,8 +40,9 @@ public:
    * @param fids Field indices for the operation
    * @return QueryResult with operation results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table,
-                                                      const std::vector<Table::FieldIndex>& fids);
+  [[nodiscard]] QueryResult::Ptr
+  executeMultiThreaded(Table &table,
+                       const std::vector<Table::FieldIndex> &fids);
 
   using ComplexQuery::ComplexQuery;
 
@@ -60,10 +62,7 @@ public:
    * Check if this query modifies data
    * @return Always returns true for ADD queries
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 };
 
 #endif

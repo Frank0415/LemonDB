@@ -16,47 +16,38 @@
 #include "utils/formatter.h"
 #include "utils/uexception.h"
 
-std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
-{
+std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
   static const std::unordered_map<std::string, int> opmap{
       {">", '>'}, {"<", '<'}, {"=", '='}, {">=", 'g'}, {"<=", 'l'},
   };
   std::pair<std::string, bool> result = {"", true};
-  for (auto& cond : condition) [[likely]]
+  for (auto &cond : condition) [[likely]]
   {
-    if (cond.field == "KEY") [[unlikely]]
-    {
-      if (cond.op != "=") [[unlikely]]
-      {
+    if (cond.field == "KEY") [[unlikely]] {
+      if (cond.op != "=") [[unlikely]] {
         throw IllFormedQueryCondition("Can only compare equivalence on KEY");
       }
-      if (result.first.empty()) [[likely]]
-      {
+      if (result.first.empty()) [[likely]] {
         result.first = cond.value;
-      }
-      else if (result.first != cond.value) [[unlikely]]
-      {
+      } else if (result.first != cond.value) [[unlikely]] {
         result.second = false;
         return result;
       }
       cond.fieldId = static_cast<size_t>(-1);
-    }
-    else [[likely]]
-    {
+    } else [[likely]] {
       constexpr int decimal_base = 10;
       cond.fieldId = table.getFieldIndex(cond.field);
-      cond.valueParsed =
-          static_cast<Table::ValueType>(std::strtol(cond.value.c_str(), nullptr, decimal_base));
-      
+      cond.valueParsed = static_cast<Table::ValueType>(
+          std::strtol(cond.value.c_str(), nullptr, decimal_base));
+
       const auto it = opmap.find(cond.op);
-      if (it == opmap.end())
-      {
-        throw IllFormedQueryCondition(R"("?" is not a valid condition operator.)"_f % cond.op);
+      if (it == opmap.end()) {
+        throw IllFormedQueryCondition(
+            R"("?" is not a valid condition operator.)"_f % cond.op);
       }
-      
+
       const int operator_index = it->second;
-      switch (operator_index)
-      {
+      switch (operator_index) {
       case '>':
         cond.comp = std::greater<>();
         break;
@@ -73,28 +64,22 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table& table)
         cond.comp = std::less_equal<>();
         break;
       default:
-        assert(0); // should never be here
+        assert(0);  // should never be here
       }
     }
   }
   return result;
 }
 
-bool ComplexQuery::evalCondition(const Table::Object& object)
-{
-  for (const auto& cond : condition) [[likely]]
+bool ComplexQuery::evalCondition(const Table::Object &object) {
+  for (const auto &cond : condition) [[likely]]
   {
-    if (cond.fieldId == static_cast<size_t>(-1)) [[unlikely]]
-    {
-      if (object.key() != cond.value)
-      {
+    if (cond.fieldId == static_cast<size_t>(-1)) [[unlikely]] {
+      if (object.key() != cond.value) {
         return false;
       }
-    }
-    else [[likely]]
-    {
-      if (!cond.comp(object[cond.fieldId], cond.valueParsed))
-      {
+    } else [[likely]] {
+      if (!cond.comp(object[cond.fieldId], cond.valueParsed)) {
         return false;
       }
     }
@@ -102,24 +87,19 @@ bool ComplexQuery::evalCondition(const Table::Object& object)
   return true;
 }
 
-bool ComplexQuery::testKeyCondition(Table& table,
-                                    const std::function<void(bool, Table::Object::Ptr&&)>& function)
-{
+bool ComplexQuery::testKeyCondition(
+    Table &table,
+    const std::function<void(bool, Table::Object::Ptr &&)> &function) {
   auto condResult = initCondition(table);
-  if (!condResult.second) [[unlikely]]
-  {
+  if (!condResult.second) [[unlikely]] {
     function(false, nullptr);
     return true;
   }
-  if (!condResult.first.empty()) [[unlikely]]
-  {
+  if (!condResult.first.empty()) [[unlikely]] {
     auto object = table[condResult.first];
-    if (object != nullptr && evalCondition(*object)) [[likely]]
-    {
+    if (object != nullptr && evalCondition(*object)) [[likely]] {
       function(true, std::move(object));
-    }
-    else [[unlikely]]
-    {
+    } else [[unlikely]] {
       function(false, nullptr);
     }
     return true;

@@ -2,28 +2,23 @@
 #include <iostream>
 #include <stdexcept>
 
-void FileStackManager::pushFile(const std::string& filename)
-{
+void FileStackManager::pushFile(const std::string &filename) {
   auto file = std::make_unique<std::ifstream>(filename);
-  if (!file || !file->is_open())
-  {
+  if (!file || !file->is_open()) {
     throw std::runtime_error("Cannot open file: " + filename);
   }
   file_stack.push(std::move(file));
   file_path_stack.push(filename);
 }
 
-void FileStackManager::popFile()
-{
-  if (!file_stack.empty())
-  {
+void FileStackManager::popFile() {
+  if (!file_stack.empty()) {
     file_stack.pop();
     file_path_stack.pop();
   }
 }
 
-std::ifstream* FileStackManager::getCurrentStream()
-{
+std::ifstream *FileStackManager::getCurrentStream() {
   if (file_stack.empty())
   {
     return nullptr;
@@ -31,8 +26,7 @@ std::ifstream* FileStackManager::getCurrentStream()
   return file_stack.top().get();
 }
 
-std::string FileStackManager::getCurrentFilePath() const
-{
+std::string FileStackManager::getCurrentFilePath() const {
   if (file_path_stack.empty())
   {
     return "";
@@ -40,13 +34,9 @@ std::string FileStackManager::getCurrentFilePath() const
   return file_path_stack.top();
 }
 
-bool FileStackManager::isEmpty() const
-{
-  return file_stack.empty();
-}
+bool FileStackManager::isEmpty() const { return file_stack.empty(); }
 
-std::string FileStackManager::resolvePath(const std::string& filename) const
-{
+std::string FileStackManager::resolvePath(const std::string &filename) const {
   if (filename.empty())
   {
     return "";

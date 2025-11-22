@@ -15,32 +15,25 @@
 #include "db/Table.h"
 #include "db/types.h"
 
-struct QueryCondition
-{
+struct QueryCondition {
   std::string field;
   size_t fieldId = 0;
   std::string op;
-  std::function<bool(const ValueType&, const ValueType&)> comp;
+  std::function<bool(const ValueType &, const ValueType &)> comp;
   std::string value;
   ValueType valueParsed = 0;
 };
 
-class NopQuery : public Query
-{
+class NopQuery : public Query {
 public:
-  QueryResult::Ptr execute() override
-  {
+  QueryResult::Ptr execute() override {
     return std::make_unique<NullQueryResult>();
   }
 
-  std::string toString() override
-  {
-    return "QUERY = NOOP";
-  }
+  std::string toString() override { return "QUERY = NOOP"; }
 };
 
-class ComplexQuery : public Query
-{
+class ComplexQuery : public Query {
 private:
   /** The field names in the first () */
   std::vector<std::string> operands;
@@ -59,7 +52,7 @@ public:
    * if flag is false, the condition is always false
    * in this situation, the condition may not be fully initialized to save time
    */
-  std::pair<std::string, bool> initCondition(const Table& table);
+  std::pair<std::string, bool> initCondition(const Table &table);
 
   /**
    * skip the evaluation of KEY
@@ -67,7 +60,7 @@ public:
    * @param object The object to evaluate conditions against
    * @return true if conditions are met
    */
-  bool evalCondition(const Table::Object& object);
+  bool evalCondition(const Table::Object &object);
 
   /**
    * This function seems have small effect and causes somme bugs
@@ -76,8 +69,9 @@ public:
    * @param function The function to call with results
    * @return true if key conditions are satisfied
    */
-  bool testKeyCondition(Table& table,
-                        const std::function<void(bool, Table::Object::Ptr&&)>& function);
+  bool testKeyCondition(
+      Table &table,
+      const std::function<void(bool, Table::Object::Ptr &&)> &function);
 
   /**
    * Construct a ComplexQuery with target table, operands, and conditions
@@ -85,25 +79,18 @@ public:
    * @param operands The operands for the query
    * @param condition The conditions for the query
    */
-  ComplexQuery(std::string targetTable,
-               std::vector<std::string> operands,
+  ComplexQuery(std::string targetTable, std::vector<std::string> operands,
                std::vector<QueryCondition> condition)
       : Query(std::move(targetTable)), operands(std::move(operands)),
-        condition(std::move(condition))
-  {
-  }
+        condition(std::move(condition)) {}
 
   /** Get operands in the query */
-  [[nodiscard]] const std::vector<std::string>& getOperands() const
-  {
+  [[nodiscard]] const std::vector<std::string> &getOperands() const {
     return operands;
   }
 
   /** Get condition in the query, seems no use now */
-  const std::vector<QueryCondition>& getCondition()
-  {
-    return condition;
-  }
+  const std::vector<QueryCondition> &getCondition() { return condition; }
 };
 
-#endif // PROJECT_QUERY_H
+#endif  // PROJECT_QUERY_H

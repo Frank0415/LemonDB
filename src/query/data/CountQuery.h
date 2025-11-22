@@ -7,10 +7,9 @@
 #include "../Query.h"
 #include "../QueryResult.h"
 
-class CountQuery : public ComplexQuery
-{
+class CountQuery : public ComplexQuery {
   // Define the query name as a constant
-  static constexpr const char* qname = "COUNT";
+  static constexpr const char *qname = "COUNT";
 
 private:
   /**
@@ -24,14 +23,14 @@ private:
    * @param table The table to count records in
    * @return QueryResult with count results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table &table);
 
   /**
    * Execute COUNT operation using multi-threaded approach
    * @param table The table to count records in
    * @return QueryResult with count results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table &table);
 
 public:
   // Inherit constructors from the ComplexQuery base class
@@ -50,4 +49,4 @@ public:
   std::string toString() override;
 };
 
-#endif // PROJECT_COUNTQUERY_H
+#endif  // PROJECT_COUNTQUERY_H

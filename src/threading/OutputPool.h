@@ -9,12 +9,12 @@
 /**
  * OutputPool: Thread-safe result buffering and ordering
  *
- * - Each thread adds results as they complete: addResult(query_id, result_string)
+ * - Each thread adds results as they complete: addResult(query_id,
+ * result_string)
  * - Results are stored in an ordered map (by query_id)
  * - At the end, call outputAllResults() to print everything in order
  */
-class OutputPool
-{
+class OutputPool {
 private:
   // Ordered map: query_id -> result_string
   std::map<size_t, std::string> results;
@@ -26,10 +26,10 @@ public:
   OutputPool() = default;
 
   // Default copy/move operations allowed
-  OutputPool(const OutputPool&) = delete;
-  OutputPool& operator=(const OutputPool&) = delete;
-  OutputPool(OutputPool&&) = delete;
-  OutputPool& operator=(OutputPool&&) = delete;
+  OutputPool(const OutputPool &) = delete;
+  OutputPool &operator=(const OutputPool &) = delete;
+  OutputPool(OutputPool &&) = delete;
+  OutputPool &operator=(OutputPool &&) = delete;
 
   ~OutputPool() = default;
 
@@ -39,7 +39,7 @@ public:
    * @param query_id The unique identifier for the query result
    * @param result The result string to add to the pool
    */
-  void addResult(size_t query_id, std::string& result);
+  void addResult(size_t query_id, const std::string &result);
 
   /**
    * Flush ready results in order (streaming)
@@ -70,4 +70,4 @@ public:
   [[nodiscard]] size_t getTotalOutputCount() const;
 };
 
-#endif // PROJECT_OUTPUT_POOL_H
+#endif  // PROJECT_OUTPUT_POOL_H

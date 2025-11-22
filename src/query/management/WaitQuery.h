@@ -9,9 +9,8 @@
 #include "query/QueryResult.h"
 #include "threading/QueryManager.h"
 
-class WaitQuery : public Query
-{
-  static constexpr const char* qname = "WAIT";
+class WaitQuery : public Query {
+  static constexpr const char *qname = "WAIT";
   std::shared_ptr<std::counting_semaphore<>> target_sem;
 
 public:
@@ -20,10 +19,9 @@ public:
    * @param sourceTable Name of the table to wait for
    * @param sem Semaphore to wait on for synchronization
    */
-  explicit WaitQuery(std::string sourceTable, std::shared_ptr<std::counting_semaphore<>> sem)
-      : Query(std::move(sourceTable)), target_sem(std::move(sem))
-  {
-  }
+  explicit WaitQuery(std::string sourceTable,
+                     std::shared_ptr<std::counting_semaphore<>> sem)
+      : Query(std::move(sourceTable)), target_sem(std::move(sem)) {}
 
   /**
    * Execute the WAIT query to synchronize on table operations
@@ -41,19 +39,13 @@ public:
    * Check if this query modifies data
    * @return Always returns true for WAIT queries (destructive)
    */
-  [[nodiscard]] bool isWriter() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isWriter() const override { return true; }
 
   /**
    * Check if this query must execute immediately
    * @return Always returns true for WAIT queries
    */
-  [[nodiscard]] bool isInstant() const override
-  {
-    return true;
-  }
+  [[nodiscard]] bool isInstant() const override { return true; }
 };
 
-#endif // WAIT_QUERY_H
+#endif  // WAIT_QUERY_H
