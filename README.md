@@ -14,7 +14,7 @@
 - **Interactive & Batch Modes**: Run queries interactively via standard input or execute batch scripts using `LISTEN`.
 - **Advanced Debugging**: Built-in support for AddressSanitizer (ASan), MemorySanitizer (MSan), ThreadSanitizer (TSan), and UndefinedBehaviorSanitizer (UBSan).
 
-## Getting Started
+## User Guide
 
 ### Prerequisites
 
@@ -37,6 +37,53 @@
     ```
 
     The binary will be created at `build/bin/lemondb`.
+
+### Usage
+
+#### Running the Database
+
+Start the database in interactive mode:
+```bash
+./build/bin/lemondb
+```
+
+Run with a listen file (batch mode):
+```bash
+./build/bin/lemondb --listen path/to/query_file.query
+```
+
+#### Command Line Arguments
+
+-   `--listen <file>` or `-l <file>`: Execute commands from the specified file.
+-   `--threads <num>` or `-t <num>`: Set the number of worker threads (default: hardware concurrency).
+
+#### Query Examples
+
+For a complete reference of supported commands and syntax, please refer to the **[Query Syntax Reference](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Query-Syntax-Reference)** in the Wiki.
+
+```sql
+-- Load a table from a file
+LOAD db/users.tbl;
+
+-- Select specific columns
+SELECT ( id name age ) FROM users WHERE ( age > 18 );
+
+-- Insert data
+INSERT ( 1 "Alice" 25 ) FROM users;
+
+-- Aggregation
+SUM ( salary ) FROM employees;
+
+-- Nested execution
+LISTEN other_queries.query;
+
+-- Exit
+QUIT;
+```
+
+## Developer Guide
+
+For comprehensive development guidelines, coding standards, and contribution rules, please refer to the **[Developer Guidelines](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Developer-Guidelines)** in our Wiki.
 
 ### Building with Sanitizers
 
@@ -71,50 +118,9 @@ For development and debugging, you can build with sanitizers enabled:
     cmake --build build -j$(nproc)
     ```
 
-## Usage
+### Testing & Quality
 
-### Running the Database
-
-Start the database in interactive mode:
-```bash
-./build/bin/lemondb
-```
-
-Run with a listen file (batch mode):
-```bash
-./build/bin/lemondb --listen path/to/query_file.query
-```
-
-### Command Line Arguments
-
--   `--listen <file>` or `-l <file>`: Execute commands from the specified file.
--   `--threads <num>` or `-t <num>`: Set the number of worker threads (default: hardware concurrency).
-
-### Query Examples
-
-```sql
--- Load a table from a file
-LOAD db/users.tbl;
-
--- Select specific columns
-SELECT ( id name age ) FROM users WHERE ( age > 18 );
-
--- Insert data
-INSERT ( 1 "Alice" 25 ) FROM users;
-
--- Aggregation
-SUM ( salary ) FROM employees;
-
--- Nested execution
-LISTEN other_queries.query;
-
--- Exit
-QUIT;
-```
-
-## Testing & Quality
-
-### Running Tests
+#### Running Tests
 
 We use a custom test suite to ensure correctness.
 
@@ -122,7 +128,7 @@ We use a custom test suite to ensure correctness.
 ./test/run.sh
 ```
 
-### Static Analysis
+#### Static Analysis
 
 The project enforces code quality using `clang-format`, `clang-tidy`, and `cppcheck`.
 
@@ -130,7 +136,7 @@ The project enforces code quality using `clang-format`, `clang-tidy`, and `cppch
 ./scripts/run-static-analysis.sh
 ```
 
-## Contributing
+### Contributing
 
 This project uses [conventional commits](https://www.conventionalcommits.org) and adheres to [semantic versioning](https://semver.org).
 
