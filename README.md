@@ -1,150 +1,193 @@
-# LemonDB
+<p align="center">
+  <h1 align="center">LemonDB</h1>
+</p>
 
-![Build Status](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg)
-![Language](https://img.shields.io/badge/language-C%2B%2B20-blue.svg)
-![Build](https://img.shields.io/badge/build-CMake-green.svg)
+<p align="center">
+  <a href="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml">
+    <img src="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg" alt="Build Status">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/language-C%2B%2B20-blue.svg" alt="Language">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/build-CMake-green.svg" alt="Build">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/style-clang--format-green" alt="Code Style">
+  </a>
+</p>
 
-**LemonDB** is a high-performance, in-memory database management system designed for speed and efficiency. It supports a custom SQL-like query language, parallel query execution, and robust error handling.
+<p align="center">
+  <strong>A high-performance, multi-threaded in-memory database engine built for speed and concurrency.</strong>
+</p>
 
-## Features
+<br/>
 
-- **High Performance**: Optimized for in-memory operations with multi-threaded query execution.
-- **Parallel Processing**: Utilizes a custom thread pool and query manager for concurrent table operations.
-- **Robust Query Language**: Supports a wide range of operations including `LOAD`, `DUMP`, `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and aggregations (`SUM`, `MIN`, `MAX`).
-- **Interactive & Batch Modes**: Run queries interactively via standard input or execute batch scripts using `LISTEN`.
-- **Advanced Debugging**: Built-in support for AddressSanitizer (ASan), MemorySanitizer (MSan), ThreadSanitizer (TSan), and UndefinedBehaviorSanitizer (UBSan).
+**LemonDB** is a modern C++20 database management system designed to maximize throughput on modern multi-core architectures. By leveraging table-level parallelism, asynchronous execution, and intra-query parallelization, it delivers exceptional performance for analytical workloads while maintaining a simple, SQL-like interface.
 
-## User Guide
+## Table of Contents
 
-### Prerequisites
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Performance](#performance)
+- [Project Structure](#project-structure)
+- [Features & Functionality](#features--functionality)
+- [Developer Guide](#developer-guide)
+- [Roadmap](#roadmap)
+- [License](#license)
 
-- **C++ Compiler**: Clang 18+ (C++20 support required).
-- **CMake**: Version 3.16 or higher.
-- **Make** or **Ninja**.
+---
 
-### Build Instructions
+## Quick Start
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url> ./lemondb
-    cd lemondb
-    ```
+Get LemonDB running in under 30 seconds.
 
-2.  **Configure and Build:**
-    ```bash
-    cmake -S . -B build
-    cmake --build build -j$(nproc)
-    ```
+### 1. Build
+```bash
+git clone <repository-url> lemondb && cd lemondb
+cmake -S . -B build && cmake --build build -j$(nproc)
+```
 
-    The binary will be created at `build/bin/lemondb`.
-
-### Usage
-
-#### Running the Database
-
-Start the database in interactive mode:
+### 2. Run Interactive Mode
 ```bash
 ./build/bin/lemondb
 ```
 
-Run with a listen file (batch mode):
-```bash
-./build/bin/lemondb --listen path/to/query_file.query
-```
-
-#### Command Line Arguments
-
--   `--listen <file>` or `-l <file>`: Execute commands from the specified file.
--   `--threads <num>` or `-t <num>`: Set the number of worker threads (default: hardware concurrency).
-
-#### Query Examples
-
-For a complete reference of supported commands and syntax, please refer to the **[Query Syntax Reference](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Query-Syntax-Reference)** in the Wiki.
-
+### 3. Execute Your First Query
 ```sql
--- Load a table from a file
-LOAD db/users.tbl;
-
--- Select specific columns
-SELECT ( id name age ) FROM users WHERE ( age > 18 );
-
--- Insert data
-INSERT ( 1 "Alice" 25 ) FROM users;
-
--- Aggregation
-SUM ( salary ) FROM employees;
-
--- Nested execution
-LISTEN other_queries.query;
-
--- Exit
+-- Create a table and insert data
+LOAD data/sample.tbl; 
+-- Run a parallel aggregation
+SELECT ( id salary ) FROM sample WHERE ( id < 100 );
+SUM ( salary ) FROM sample;
 QUIT;
 ```
 
+## Architecture
+
+LemonDB adopts a **shared-nothing architecture** for table management combined with a **work-stealing thread pool** for query execution.
+
+```mermaid
+graph TD
+    Client[Client / Input] --> Parser[Query Parser]
+    Parser --> Scheduler[Async Scheduler]
+    
+    subgraph "Execution Engine"
+        Scheduler -->|Dispatch| TableQueue1[Table A Queue]
+        Scheduler -->|Dispatch| TableQueue2[Table B Queue]
+        
+        TableQueue1 --> Worker1[Worker Thread 1]
+        TableQueue2 --> Worker2[Worker Thread 2]
+        
+        Worker1 -->|Parallel Task| ThreadPool[Global Thread Pool]
+        Worker2 -->|Parallel Task| ThreadPool
+    end
+    
+    ThreadPool -->|Result| Output[Output Buffer]
+```
+
+### Key Architectural Highlights
+
+| Component | Implementation Details | Performance Benefit |
+| :--- | :--- | :--- |
+| **Table-Level Parallelism** | Dedicated execution queues per table. | Queries targeting different tables execute simultaneously without lock contention. |
+| **Intra-Query Parallelism** | Automatic data chunking for aggregations (`SUM`, `COUNT`, `MAX`). | Massive latency reduction for large datasets by distributing work across cores. |
+| **Asynchronous Execution** | Non-blocking parsing and scheduling loop. | Maintains high system responsiveness even during heavy workload spikes. |
+| **Custom Thread Pool** | Optimized worker management avoiding OS overhead. | Maximizes CPU utilization and minimizes context switching costs. |
+
+### Reproducing Benchmarks
+
+To reproduce the performance benchmarks on your local machine:
+
+```bash
+# Generate benchmark data (requires python3)
+./scripts/generate-benchmark-data.sh
+
+# Run the benchmark suite
+./build/bin/lemondb --threads $(nproc) --listen benchmark/query.sql
+```
+
+## Project Structure
+
+```text
+lemondb/
+|-- src/                # Source code
+|   |-- db/             # Database engine core (Table, Database)
+|   |-- query/          # Query parsing and execution logic
+|   |-- threading/      # Thread pool and concurrency management
+|   `-- utils/          # Utility functions and helpers
+|-- include/            # Public headers
+|-- test/               # Integration and unit tests
+|-- scripts/            # Build and utility scripts
+|-- hooks/              # Git hooks for code quality
+`-- CMakeLists.txt      # Build configuration
+```
+
+## Features & Functionality
+
+### Robust Query Support
+
+- **Data Manipulation**: `INSERT`, `UPDATE`, `DELETE`, `SELECT`
+- **Table Management**: `LOAD`, `DUMP`, `TRUNCATE`, `COPYTABLE`, `DROP`
+- **Aggregations**: `SUM`, `MIN`, `MAX`, `COUNT` (Parallelized)
+
+### Flexible Execution Modes
+
+- **Interactive Mode**: Real-time query execution via standard input (not allowed in production mode).
+- **Batch Mode**: Execute complex, multi-step scripts using the `LISTEN` command.
+
+### Advanced Debugging Support
+
+Built-in CMake integration for modern sanitizers ensures code stability and safety:
+
+- **AddressSanitizer (ASan)**: Detects memory corruption and buffer overflows.
+- **MemorySanitizer (MSan)**: Identifies uninitialized memory reads.
+- **ThreadSanitizer (TSan)**: Detects data races in concurrent execution.
+- **UndefinedBehaviorSanitizer (UBSan)**: Catches undefined behavior at runtime.
+
 ## Developer Guide
 
-For comprehensive development guidelines, coding standards, and contribution rules, please refer to the **[Developer Guidelines](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Developer-Guidelines)** in our Wiki.
-
-### Building with Sanitizers
-
-For development and debugging, you can build with sanitizers enabled:
-
--   **AddressSanitizer (ASan):**
-    ```bash
-    cmake -S . -B build -DENABLE_ASAN=ON
-    cmake --build build -j$(nproc)
-    ```
-
--   **MemorySanitizer (MSan):**
-    Requires Clang and an MSan-instrumented `libc++`.
-    
-    **Note:** The project is configured to look for the instrumented `libc++` at `/usr/local/lib/libc++_msan-18`. If your installation is different, you must modify `CMakeLists.txt` or ensure the library is available at that path.
-
-    ```bash
-    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_MSAN=ON
-    cmake --build build -j$(nproc)
-    ```
-
--   **ThreadSanitizer (TSan):**
-    Detects data races in multi-threaded code.
-    ```bash
-    cmake -S . -B build -DENABLE_TSAN=ON
-    cmake --build build -j$(nproc)
-    ```
-
--   **UndefinedBehaviorSanitizer (UBSan):**
-    ```bash
-    cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_UBSAN=ON
-    cmake --build build -j$(nproc)
-    ```
-
-### Testing & Quality
-
-#### Running Tests
-
-We use a custom test suite to ensure correctness.
-
-```bash
-./test/run.sh
-```
-
-#### Static Analysis
-
-The project enforces code quality using `clang-format`, `clang-tidy`, and `cppcheck`.
-
-```bash
-./scripts/run-static-analysis.sh
-```
+We welcome contributions! Please refer to our **[Developer Guidelines](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Developer-Guidelines)** for comprehensive coding standards and contribution rules.
 
 ### Contributing
 
-This project uses [conventional commits](https://www.conventionalcommits.org) and adheres to [semantic versioning](https://semver.org).
+This project adheres to:
+- **[Conventional Commits](https://www.conventionalcommits.org)** for commit messages.
+- **[Semantic Versioning](https://semver.org)** for release management.
 
-> [!warning]
->
-> **For contibutors:**
->
-> Please install the git hooks in `hooks` directory by running `./hooks/install-hooks.sh` to ensure conventional commits and non-ASCII characters are avoided.
+> [!IMPORTANT]
+> **For Contributors:**
+> Please install the git hooks to ensure commit message compliance and code quality:
+> ```bash
+> ./hooks/install-hooks.sh
+> ```
+
+### Building with Sanitizers
+
+```bash
+# AddressSanitizer (ASan)
+cmake -S . -B build -DENABLE_ASAN=ON
+
+# ThreadSanitizer (TSan)
+cmake -S . -B build -DENABLE_TSAN=ON
+```
+
+### Running Tests & Static Analysis
+
+```bash
+./test/run.sh                   # Run test suite
+./scripts/run-static-analysis.sh # Run clang-tidy & cppcheck
+```
+
+## Roadmap
+
+- [x] Core Database Engine (Tables, Pages, Rows)
+- [x] SQL-like Query Parser
+- [x] Multi-threaded Execution Engine
+- [x] Parallel Aggregation Functions
 
 ## License
 
