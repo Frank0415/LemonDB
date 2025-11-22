@@ -23,7 +23,7 @@ private:
    * @return Vector of field indices
    */
   [[nodiscard]] std::vector<Table::FieldIndex>
-  getFieldIndices(Table &table) const;
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute SELECT operation using single-threaded approach
@@ -32,7 +32,7 @@ private:
    * @return QueryResult with selected records
    */
   [[nodiscard]] QueryResult::Ptr
-  executeSingleThreaded(Table &table,
+  executeSingleThreaded(const Table &table,
                         const std::vector<Table::FieldIndex> &fieldIds);
 
   /**
@@ -42,7 +42,7 @@ private:
    * @return QueryResult with selected records
    */
   [[nodiscard]] QueryResult::Ptr
-  executeMultiThreaded(Table &table,
+  executeMultiThreaded(const Table &table,
                        const std::vector<Table::FieldIndex> &fieldIds);
 
 public:
