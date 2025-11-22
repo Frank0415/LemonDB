@@ -84,7 +84,8 @@ std::string CountQuery::toString() {
   return nullptr;
 }
 
-[[nodiscard]] QueryResult::Ptr CountQuery::executeSingleThreaded(const Table &table) {
+[[nodiscard]] QueryResult::Ptr
+CountQuery::executeSingleThreaded(const Table &table) {
   int record_count = 0;
 
   for (auto row : table) [[likely]]
@@ -98,7 +99,8 @@ std::string CountQuery::toString() {
       "ANSWER = " + std::to_string(record_count) + "\n");
 }
 
-[[nodiscard]] QueryResult::Ptr CountQuery::executeMultiThreaded(const Table &table) {
+[[nodiscard]] QueryResult::Ptr
+CountQuery::executeMultiThreaded(const Table &table) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   int total_count = 0;
