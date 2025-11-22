@@ -10,14 +10,10 @@
 #include "db/Database.h"
 #include "query/QueryResult.h"
 
-QueryResult::Ptr ListTableQuery::execute()
-{
-  Database& database = Database::getInstance();
+QueryResult::Ptr ListTableQuery::execute() {
+  Database &database = Database::getInstance();
   database.printAllTable();
   return std::make_unique<SuccessMsgResult>(qname);
 }
 
-std::string ListTableQuery::toString()
-{
-  return "QUERY = LIST";
-}
+std::string ListTableQuery::toString() { return "QUERY = LIST"; }

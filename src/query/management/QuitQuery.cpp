@@ -10,15 +10,11 @@
 #include "db/Database.h"
 #include "query/QueryResult.h"
 
-std::string QuitQuery::toString()
-{
-  return "QUERY = Quit";
-}
+std::string QuitQuery::toString() { return "QUERY = Quit"; }
 
-QueryResult::Ptr QuitQuery::execute()
-{
-  auto& database = Database::getInstance();
-  database.exit(); // Set endInput flag
+QueryResult::Ptr QuitQuery::execute() {
+  auto &database = Database::getInstance();
+  database.exit();  // Set endInput flag
   // Return success message, main() will handle waiting and output
   return std::make_unique<SuccessMsgResult>(qname);
 }

@@ -4,6 +4,9 @@
 # # Allow Makefile
 # !Makefile
 
+# Allow LICENSE
+!LICENSE
+
 # Allow main.cpp
 !src
 !src/main.cpp
@@ -33,6 +36,10 @@
 !src/threading
 !src/threading/*.cpp
 !src/threading/*.h
+
+!src/query/utils
+!src/query/utils/*.cpp
+!src/query/utils/*.h
 
 # Allow README.md
 !README.md
@@ -81,3 +88,4 @@
 !test/gtests
 !test/gtests/
 !test/gtests/*.cpp
+!test/test_multithread_listen.sh

@@ -16,36 +16,32 @@
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
 
-QueryResult::Ptr CopyTableQuery::execute()
-{
-  try
-  {
-    auto& database = Database::getInstance();
-    auto srcLock = TableLockManager::getInstance().acquireRead(this->targetTableRef());
-    auto& src = database[this->targetTableRef()];
+QueryResult::Ptr CopyTableQuery::execute() {
+  try {
+    auto &database = Database::getInstance();
+    auto srcLock =
+        TableLockManager::getInstance().acquireRead(this->targetTableRef());
+    auto &src = database[this->targetTableRef()];
 
     // Validate source table
     auto validation_result = validateSourceTable(src);
-    if (validation_result != nullptr) [[unlikely]]
-    {
+    if (validation_result != nullptr) [[unlikely]] {
       return validation_result;
     }
 
     // Check if target table already exists
-    auto dstLock = TableLockManager::getInstance().acquireWrite(this->newTableName);
+    auto dstLock =
+        TableLockManager::getInstance().acquireWrite(this->newTableName);
     bool targetExists = false;
-    try
-    {
+    try {
       (void)database[this->newTableName];
       targetExists = true;
-    }
-    catch (...)
-    {
+    } catch (...) {
       // Intentionally ignore: table doesn't exist, which is expected
       (void)0;
     }
-    if (targetExists) [[unlikely]]
-    {
+    if (targetExists) [[unlikely]] {
+      wait_sem->release();
       return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                               "Target table name exists");
     }
@@ -55,19 +51,14 @@ QueryResult::Ptr CopyTableQuery::execute()
 
     // Collect data from source table
     std::vector<RowData> collected_rows;
-    if (!ThreadPool::isInitialized()) [[unlikely]]
-    {
+    if (!ThreadPool::isInitialized()) [[unlikely]] {
       collected_rows = collectSingleThreaded(src, fields);
-    }
-    else [[likely]]
-    {
-      const ThreadPool& pool = ThreadPool::getInstance();
-      if (!is_multithreaded || pool.getThreadCount() <= 1 || src.size() < Table::splitsize()) [[unlikely]]
-      {
+    } else [[likely]] {
+      const ThreadPool &pool = ThreadPool::getInstance();
+      if (!is_multithreaded || pool.getThreadCount() <= 1 ||
+          src.size() < Table::splitsize()) [[unlikely]] {
         collected_rows = collectSingleThreaded(src, fields);
-      }
-      else [[likely]]
-      {
+      } else [[likely]] {
         collected_rows = collectMultiThreaded(src, fields);
       }
     }
@@ -75,34 +66,36 @@ QueryResult::Ptr CopyTableQuery::execute()
     // Create target table and insert all collected rows
     auto dup = std::make_unique<Table>(this->newTableName, fields);
 
-    for (auto& [key, row] : collected_rows) [[likely]]
-    {
+    for (auto &[key, row] : collected_rows) [[likely]] {
       dup->insertByIndex(key, std::move(row));
     }
 
+    // Register the new table
     database.registerTable(std::move(dup));
-    return std::make_unique<NullQueryResult>();
-  }
-  catch (const TableNameNotFound&)
-  {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "No such table.");
-  }
-  catch (const std::exception& exc)
-  {
-    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(), "Unknown error");
+
+    // Release the wait semaphore to allow queries on the new table to proceed
+    wait_sem->release();
+
+    return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
+  } catch (const TableNameNotFound &) {
+    wait_sem->release();
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "No such table.");
+  } catch (const std::exception &exc) {
+    wait_sem->release();
+    return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
+                                            "Unknown error");
   }
 }
 
-std::string CopyTableQuery::toString()
-{
-  return "QUERY = COPYTABLE, SOURCE = \"" + this->targetTableRef() + "\", TARGET = \"" +
-         this->newTableName + "\"";
+std::string CopyTableQuery::toString() {
+  return "QUERY = COPYTABLE, SOURCE = \"" + this->targetTableRef() +
+         "\", TARGET = \"" + this->newTableName + "\"";
 }
 
-[[nodiscard]] QueryResult::Ptr CopyTableQuery::validateSourceTable(const Table& src) const
-{
-  if (src.empty()) [[unlikely]]
-  {
+[[nodiscard]] QueryResult::Ptr
+CopyTableQuery::validateSourceTable(const Table &src) const {
+  if (src.empty()) [[unlikely]] {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),
                                             "Source table is empty.");
   }
@@ -110,16 +103,17 @@ std::string CopyTableQuery::toString()
 }
 
 [[nodiscard]] std::vector<CopyTableQuery::RowData>
-CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::string>& fields)
-{
+CopyTableQuery::collectSingleThreaded(const Table &src,
+                                      const std::vector<std::string> &fields) {
   std::vector<RowData> results;
   results.reserve(src.size());
 
-  for (const auto& obj : src) [[likely]]
+  for (const auto &obj : src) [[likely]]
   {
     std::vector<Table::ValueType> row;
     row.reserve(fields.size());
-    for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx) [[likely]]
+    for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx)
+        [[likely]]
     {
       row.push_back(obj[field_idx]);
     }
@@ -130,10 +124,10 @@ CopyTableQuery::collectSingleThreaded(const Table& src, const std::vector<std::s
 }
 
 [[nodiscard]] std::vector<CopyTableQuery::RowData>
-CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::string>& fields)
-{
+CopyTableQuery::collectMultiThreaded(const Table &src,
+                                     const std::vector<std::string> &fields) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
-  const ThreadPool& pool = ThreadPool::getInstance();
+  const ThreadPool &pool = ThreadPool::getInstance();
   std::vector<RowData> results;
 
   // Create chunks and submit tasks
@@ -142,41 +136,39 @@ CopyTableQuery::collectMultiThreaded(const Table& src, const std::vector<std::st
 
   auto iterator = src.begin();
   size_t chunk_index = 0;
-  while (iterator != src.end()) [[likely]]
-  {
+  while (iterator != src.end()) [[likely]] {
     auto chunk_begin = iterator;
     size_t count = 0;
-    while (iterator != src.end() && count < CHUNK_SIZE) [[likely]]
-    {
+    while (iterator != src.end() && count < CHUNK_SIZE) [[likely]] {
       ++iterator;
       ++count;
     }
     auto chunk_end = iterator;
 
-    tasks.emplace_back(chunk_index, pool.submit(
-                                        [chunk_begin, chunk_end, &fields]()
-                                        {
-                                          std::vector<RowData> local_results;
-                                          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
-                                          {
-                                            std::vector<Table::ValueType> row;
-                                            row.reserve(fields.size());
-                                            for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx) [[likely]]
-                                            {
-                                              row.push_back((*iter)[field_idx]);
-                                            }
-                                            local_results.emplace_back(iter->key(), std::move(row));
-                                          }
-                                          return local_results;
-                                        }));
+    tasks.emplace_back(
+        chunk_index, pool.submit([chunk_begin, chunk_end, &fields]() {
+          std::vector<RowData> local_results;
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
+          {
+            std::vector<Table::ValueType> row;
+            row.reserve(fields.size());
+            for (size_t field_idx = 0; field_idx < fields.size(); ++field_idx)
+                [[likely]]
+            {
+              row.push_back((*iter)[field_idx]);
+            }
+            local_results.emplace_back(iter->key(), std::move(row));
+          }
+          return local_results;
+        }));
     ++chunk_index;
   }
 
   // Collect results in order by chunk_index
-  for (auto& [idx, future] : tasks) [[likely]]
-  {
+  for (auto &[idx, future] : tasks) [[likely]] {
     auto local_results = future.get();
-    results.insert(results.end(), std::make_move_iterator(local_results.begin()),
+    results.insert(results.end(),
+                   std::make_move_iterator(local_results.begin()),
                    std::make_move_iterator(local_results.end()));
   }
 
