@@ -93,16 +93,15 @@ SumQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
   const auto &operands = this->getOperands();
-  std::transform(operands.begin(), operands.end(), std::back_inserter(fids),
-                 [&table](const auto &field) {
-                   return table.getFieldIndex(field);
-                 });
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(fids),
+      [&table](const auto &field) { return table.getFieldIndex(field); });
   return fids;
 }
 
-[[nodiscard]] QueryResult::Ptr
-SumQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SumQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 
@@ -118,9 +117,9 @@ SumQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParamete
   return std::make_unique<SuccessMsgResult>(sums);
 }
 
-[[nodiscard]] QueryResult::Ptr
-SumQuery::executeMultiThreaded(Table &table, // cppcheck-suppress constParameter
-                               const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SumQuery::executeMultiThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
