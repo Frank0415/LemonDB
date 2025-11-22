@@ -29,7 +29,7 @@ QueryResult::Ptr CountQuery::execute() {
     auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     // Access the target table using the table name
-    Table &table = database[this->targetTableRef()];
+    const Table &table = database[this->targetTableRef()];
 
     // Initialize the WHERE clause condition. The 'second' member of the
     // returned pair is a flag indicating if the condition can ever be true.
