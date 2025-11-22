@@ -83,16 +83,15 @@ SubQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
   const auto &operands = this->getOperands();
-  std::transform(operands.begin(), operands.end(), std::back_inserter(indices),
-                 [&table](const auto &operand) {
-                   return table.getFieldIndex(operand);
-                 });
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(indices),
+      [&table](const auto &operand) { return table.getFieldIndex(operand); });
   return indices;
 }
 
-[[nodiscard]] QueryResult::Ptr
-SubQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParameter
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SubQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
   for (auto row : table) [[likely]]
@@ -112,9 +111,9 @@ SubQuery::executeSingleThreaded(Table &table, // cppcheck-suppress constParamete
   return std::make_unique<RecordCountResult>(count);
 }
 
-[[nodiscard]] QueryResult::Ptr
-SubQuery::executeMultiThreaded(Table &table, // cppcheck-suppress constParameter
-                               const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SubQuery::executeMultiThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   std::vector<std::future<int>> futures;
