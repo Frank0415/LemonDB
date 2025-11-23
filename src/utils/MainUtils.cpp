@@ -86,13 +86,13 @@ bool checkSmallWorkload(const std::string &filepath) {
   constexpr std::string_view listen_token = "LISTEN";
   while (std::getline(file, line)) {
     // Treat LISTEN directives as large workloads since they nest more queries
-    const auto it = std::search(line.begin(), line.end(), listen_token.begin(),
+    const auto index = std::search(line.begin(), line.end(), listen_token.begin(),
                                 listen_token.end(),
                                 [](unsigned char lhs, unsigned char rhs) {
                                   return static_cast<char>(std::tolower(lhs)) ==
                                          static_cast<char>(std::tolower(rhs));
                                 });
-    if (it != line.end()) {
+    if (index != line.end()) {
       return false;
     }
 
