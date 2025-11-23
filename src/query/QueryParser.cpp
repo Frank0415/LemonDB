@@ -6,8 +6,8 @@
 #include <string_view>
 #include <utility>
 
-#include "./db/QueryBase.h"
-#include "./utils/uexception.h"
+#include "../db/QueryBase.h"
+#include "../utils/uexception.h"
 #include "QueryBuilders.h"
 
 namespace {
