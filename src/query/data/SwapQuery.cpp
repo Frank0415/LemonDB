@@ -10,12 +10,12 @@
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
 #include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "../../db/Table.h"
-#include "../../threading/Threadpool.h"
 
 QueryResult::Ptr SwapQuery::execute() {
   try {
