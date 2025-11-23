@@ -140,22 +140,19 @@ SumQuery::getFieldIndices(const Table &table) const {
     auto chunk_end = iterator;
 
     futures.push_back(
-        pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
-          try {
-            std::vector<Table::ValueType> local_sums(num_fields, 0);
-            for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
-            {
-              if (this->evalCondition(*iter)) [[likely]] {
-                for (size_t i = 0; i < num_fields; ++i) [[likely]]
-                {
-                  local_sums[i] += (*iter)[fids[i]];
-                }
+        pool.submit([this, fids, chunk_begin, chunk_end,
+                     num_fields]() {  // NOLINT(bugprone-exception-escape)
+          std::vector<Table::ValueType> local_sums(num_fields, 0);
+          for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
+          {
+            if (this->evalCondition(*iter)) [[likely]] {
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
+              {
+                local_sums[i] += (*iter)[fids[i]];
               }
             }
-            return local_sums;
-          } catch (...) {
-            throw;
           }
+          return local_sums;
         }));
   }
 
