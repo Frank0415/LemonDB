@@ -21,8 +21,8 @@
 
 #include "Datum.h"
 #include "QueryBase.h"
-#include "utils/formatter.h"
-#include "utils/uexception.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 class Table {
 public:
