@@ -1,8 +1,10 @@
 #ifndef PROJECT_DB_DATUM_H
 #define PROJECT_DB_DATUM_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
+#include <utility>
 
 /**
  * Represents a single record (datum) consisting of a unique string key and
