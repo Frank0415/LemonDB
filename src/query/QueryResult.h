@@ -6,8 +6,8 @@
 #define PROJECT_QUERYRESULT_H
 
 #include <memory>
-#include <sstream>
 #include <string>
+#include <iostream>
 #include <utility>
 #include <vector>
 
