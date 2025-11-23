@@ -168,8 +168,8 @@ public:
    * @return std::future holding the callable's return value.
    */
   template <typename F, typename... Args>
-  auto submit(F &&func, Args &&...args) const
-      -> std::future<decltype(func(args...))> {
+  auto submit(F &&func,
+              Args &&...args) const -> std::future<decltype(func(args...))> {
     using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
