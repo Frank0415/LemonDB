@@ -1,10 +1,14 @@
 #include "MainUtils.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 
 #include "../query/QueryBuilders.h"
 #include "../query/QueryParser.h"
@@ -64,5 +68,40 @@ void setupParser(QueryParser &parser) {
   parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
+}
+
+bool checkSmallWorkload(const std::string &filepath) {
+  constexpr size_t SMALL_WORKLOAD_THRESHOLD = 100;
+
+  if (filepath.empty()) {
+    return false;
+  }
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  size_t line_count = 0;
+  std::string line;
+  constexpr std::string_view listen_token = "LISTEN";
+  while (std::getline(file, line)) {
+    // Treat LISTEN directives as large workloads since they nest more queries
+    const auto index = std::search(line.begin(), line.end(), listen_token.begin(),
+                                listen_token.end(),
+                                [](unsigned char lhs, unsigned char rhs) {
+                                  return static_cast<char>(std::tolower(lhs)) ==
+                                         static_cast<char>(std::tolower(rhs));
+                                });
+    if (index != line.end()) {
+      return false;
+    }
+
+    line_count++;
+    if (line_count >= SMALL_WORKLOAD_THRESHOLD) {
+      return false;
+    }
+  }
+
+  return true;
 }
 }  // namespace MainUtils

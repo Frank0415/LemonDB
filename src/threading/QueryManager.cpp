@@ -50,6 +50,11 @@ void QueryManager::addQuery(size_t query_id, const std::string &table_name,
   // Update query counter
   query_counter.fetch_add(1);
 
+  if (single_threaded_mode) {
+    executeAndStoreResult({query_id, query_ptr});
+    return;
+  }
+
   {
     const std::scoped_lock lock(table_map_mutex);
 
