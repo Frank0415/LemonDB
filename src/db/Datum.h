@@ -3,8 +3,8 @@
 
 #include <cstddef>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 /**
  * Represents a single record (datum) consisting of a unique string key and
