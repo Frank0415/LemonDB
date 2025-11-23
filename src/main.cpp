@@ -67,14 +67,17 @@ int main(int argc, char *argv[]) {
 
     if (!listen_scheduled.has_value()) {
       query_manager.setExpectedQueryCount(std::numeric_limits<size_t>::max());
-      std::thread flush_thread(MainIOHelpers::flushOutputLoop, std::ref(output_pool),
-                               std::ref(query_manager), output_config);
-      MainQueryHelpers::processQueries(*input, database, parser, query_manager, g_query_counter);
+      std::thread flush_thread(MainIOHelpers::flushOutputLoop,
+                               std::ref(output_pool), std::ref(query_manager),
+                               output_config);
+      MainQueryHelpers::processQueries(*input, database, parser, query_manager,
+                                       g_query_counter);
       query_manager.setExpectedQueryCount(g_query_counter.load());
       flush_thread.join();
     } else {
       const size_t total_queries =
-          MainQueryHelpers::determineExpectedQueryCount(listen_scheduled, g_query_counter);
+          MainQueryHelpers::determineExpectedQueryCount(listen_scheduled,
+                                                        g_query_counter);
       query_manager.setExpectedQueryCount(total_queries);
       MainIOHelpers::flushOutputLoop(output_pool, query_manager, output_config);
     }
