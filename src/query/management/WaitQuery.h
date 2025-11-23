@@ -5,9 +5,9 @@
 #include <string>
 #include <utility>
 
+#include "../../threading/QueryManager.h"
 #include "../Query.h"
 #include "../QueryResult.h"
-#include "../../threading/QueryManager.h"
 
 class WaitQuery : public Query {
   static constexpr const char *qname = "WAIT";
