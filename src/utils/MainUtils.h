@@ -2,6 +2,7 @@
 #define PROJECT_MAIN_UTILS_H
 
 #include <string>
+#include <cstdint>
 
 #include "../query/QueryParser.h"
 
