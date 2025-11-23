@@ -129,8 +129,8 @@ SubQuery::getFieldIndices(const Table &table) const {
     }
     auto chunk_end = iterator;
     futures.push_back(
-        pool.submit([this, chunk_start, chunk_end,
-                     fids]() {  // NOLINT(bugprone-exception-escape)
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, chunk_start, chunk_end, fids]() {
           int local_count = 0;
           for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
           {
