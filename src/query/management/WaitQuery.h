@@ -2,11 +2,12 @@
 #define WAIT_QUERY_H
 
 #include <memory>
+#include <semaphore>
 #include <string>
 #include <utility>
 
 #include "../../threading/QueryManager.h"
-#include "../Query.h"
+#include "../../db/QueryBase.h"
 #include "../QueryResult.h"
 
 class WaitQuery : public Query {
