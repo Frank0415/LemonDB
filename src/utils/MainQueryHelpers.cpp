@@ -239,8 +239,9 @@ std::optional<size_t> setupListenMode(const Args &args, QueryParser &parser,
   return total_scheduled;
 }
 
-size_t determineExpectedQueryCount(const std::optional<size_t> &listen_scheduled,
-                                   const std::atomic<size_t> &g_query_counter) {
+size_t
+determineExpectedQueryCount(const std::optional<size_t> &listen_scheduled,
+                            const std::atomic<size_t> &g_query_counter) {
   if (listen_scheduled.has_value()) {
     return listen_scheduled.value();
   }
