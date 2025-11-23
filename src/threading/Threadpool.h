@@ -95,6 +95,7 @@ private:
    */
   explicit ThreadPool(size_t num_threads)
       : done(false), idleThreadNum(0), total_threads(num_threads) {
+    pool_vector.reserve(num_threads);
     for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
