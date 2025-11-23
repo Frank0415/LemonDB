@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "../Query.h"
+#include "../../db/QueryBase.h"
 #include "../QueryResult.h"
 
 class TruncateTableQuery : public Query {
