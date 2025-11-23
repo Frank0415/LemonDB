@@ -15,14 +15,15 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
-#include "db/Database.h"
-#include "query/QueryParser.h"
-#include "query/QueryResult.h"
-#include "query/management/CopyTableQuery.h"
-#include "query/management/WaitQuery.h"
-#include "threading/QueryManager.h"
-#include "utils/formatter.h"
+#include "./db/Database.h"
+#include "./query/QueryParser.h"
+#include "./query/QueryResult.h"
+#include "./query/management/CopyTableQuery.h"
+#include "./query/management/WaitQuery.h"
+#include "./threading/QueryManager.h"
+#include "./utils/formatter.h"
 
 namespace {
 std::string trimCopy(std::string_view input) {
@@ -178,6 +179,7 @@ bool ListenQuery::processStatement(const std::string &trimmed,
   return true;  // Continue processing
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 QueryResult::Ptr ListenQuery::execute() {
   if (query_manager == nullptr || query_parser == nullptr ||
       database == nullptr || query_counter == nullptr) {
