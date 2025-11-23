@@ -38,6 +38,13 @@ void parseArgs(int argc, char **argv, Args &args);
  * @param parser QueryParser instance to initialize.
  */
 void setupParser(QueryParser &parser);
+
+/**
+ * Check if the workload is small enough to run in single-threaded mode.
+ * @param filepath Path to the listen file.
+ * @return True if the workload is small, false otherwise.
+ */
+bool checkSmallWorkload(const std::string &filepath);
 }  // namespace MainUtils
 
 #endif  // PROJECT_MAIN_UTILS_H

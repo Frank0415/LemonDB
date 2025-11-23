@@ -19,6 +19,9 @@ and this project adheres to milestone versioning.
 - **Optimizations**:
   - Implemented short-circuit evaluation for query conditions.
   - Optimized 'Key' string comparisons to improve query performance.
+  - **Small Workload Optimization**:
+    - Added automatic detection for small workloads (low line count, no nested `LISTEN`).
+    - Bypasses thread pool initialization for small tasks to reduce startup overhead.
 - **Documentation & Build**:
   - Modernized `README.md` with badges and clearer instructions.
   - Added comprehensive documentation for core header files (`MainUtils.h`, `Datum.h`, `TableLockManager.h`, etc.).

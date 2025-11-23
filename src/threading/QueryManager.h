@@ -62,6 +62,7 @@ private:
   // Reference to OutputPool (passed in constructor, not owned)
   OutputPool &output_pool;
   size_t printed_count{0};
+  bool single_threaded_mode{false};
 
   void createTableStructures(const std::string &table_name);
   void releaseSemaphores();
@@ -101,6 +102,12 @@ public:
   QueryManager &operator=(QueryManager &&) = delete;
 
   ~QueryManager();
+
+  /**
+   * Set single threaded mode
+   * @param enable Whether to enable single threaded mode
+   */
+  void setSingleThreaded(bool enable) { single_threaded_mode = enable; }
 
   /**
    * Submit a query to the appropriate table queue

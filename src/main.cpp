@@ -28,12 +28,17 @@ int main(int argc, char *argv[]) {
     Args parsedArgs{};
     MainUtils::parseArgs(argc, argv, parsedArgs);
 
+    const bool is_small_workload =
+        MainUtils::checkSmallWorkload(parsedArgs.listen);
+
     std::ifstream fin;
     std::istream *input = MainIOHelpers::initializeInputStream(parsedArgs, fin);
 
-    ThreadPool::initialize(parsedArgs.threads > 0
-                               ? static_cast<size_t>(parsedArgs.threads)
-                               : std::thread::hardware_concurrency());
+    if (!is_small_workload) {
+      ThreadPool::initialize(parsedArgs.threads > 0
+                                 ? static_cast<size_t>(parsedArgs.threads)
+                                 : std::thread::hardware_concurrency());
+    }
 
     MainIOHelpers::validateProductionMode(parsedArgs);
 
@@ -48,6 +53,11 @@ int main(int argc, char *argv[]) {
 
     // Create QueryManager with reference to OutputPool
     QueryManager query_manager(output_pool);
+
+    // Check for small workload optimization
+    if (is_small_workload) {
+      query_manager.setSingleThreaded(true);
+    }
 
     std::atomic<size_t> g_query_counter{0};
 
