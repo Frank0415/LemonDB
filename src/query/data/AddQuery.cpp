@@ -15,7 +15,7 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "threading/Threadpool.h"
+#include "./threading/Threadpool.h"
 
 [[nodiscard]] QueryResult::Ptr AddQuery::execute() {
   try {
@@ -135,24 +135,27 @@ AddQuery::executeMultiThreaded(Table &table,
       ++count;
     }
     auto chunk_end = iterator;
-    futures.push_back(pool.submit([this, chunk_start, chunk_end, fids]() {
-      int local_count = 0;
-      for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
-      {
-        if (!this->evalCondition(*it)) [[unlikely]] {
-          continue;
-        }
-        // perform ADD operation
-        int sum = 0;
-        for (size_t i = 0; i < this->getOperands().size() - 1; ++i) [[likely]]
-        {
-          sum += (*it)[fids[i]];
-        }
-        (*it)[fids.back()] = sum;
-        local_count++;
-      }
-      return local_count;
-    }));
+    futures.push_back(
+        pool.submit([this, chunk_start, chunk_end,
+                     fids]() {  // NOLINT(bugprone-exception-escape)
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
+          {
+            if (!this->evalCondition(*it)) [[unlikely]] {
+              continue;
+            }
+            // perform ADD operation
+            int sum = 0;
+            for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
+                [[likely]]
+            {
+              sum += (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = sum;
+            local_count++;
+          }
+          return local_count;
+        }));
   }
 
   // Wait for all tasks to complete and aggregate results
