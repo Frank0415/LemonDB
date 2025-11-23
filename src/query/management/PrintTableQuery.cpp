@@ -10,8 +10,8 @@
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
-#include "../QueryResult.h"
 #include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr PrintTableQuery::execute() {
   const Database &database = Database::getInstance();
