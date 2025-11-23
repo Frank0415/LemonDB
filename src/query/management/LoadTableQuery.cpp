@@ -9,10 +9,10 @@
 #include <memory>
 #include <string>
 
-#include "./db/Database.h"
-#include "./db/TableLockManager.h"
-#include "./query/QueryResult.h"
-#include "./utils/formatter.h"
+#include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../QueryResult.h"
+#include "../../utils/formatter.h"
 
 QueryResult::Ptr LoadTableQuery::execute() {
   try {
