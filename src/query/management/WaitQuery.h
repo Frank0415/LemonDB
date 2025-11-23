@@ -6,8 +6,8 @@
 #include <string>
 #include <utility>
 
-#include "../../threading/QueryManager.h"
 #include "../../db/QueryBase.h"
+#include "../../threading/QueryManager.h"
 #include "../QueryResult.h"
 
 class WaitQuery : public Query {
