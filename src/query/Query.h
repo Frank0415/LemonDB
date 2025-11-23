@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "QueryResult.h"
-#include "db/Table.h"
-#include "db/types.h"
+#include "../db/Table.h"
+#include "../db/types.h"
 
 struct QueryCondition {
   std::string field;
