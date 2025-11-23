@@ -2,8 +2,11 @@
 #define PROJECT_MINQUERY_H
 
 #include <string>
+#include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class MinQuery : public ComplexQuery {
   static constexpr const char *qname = "MIN";
