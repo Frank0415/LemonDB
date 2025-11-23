@@ -7,9 +7,9 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class QueryManager;
 class QueryParser;
