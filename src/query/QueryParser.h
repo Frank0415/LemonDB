@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "Query.h"
+#include "../db/QueryBase.h"
 
 struct TokenizedQueryString {
   std::vector<std::string> token;
