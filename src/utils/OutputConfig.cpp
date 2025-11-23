@@ -1,4 +1,4 @@
-#include "./utils/OutputConfig.h"
+#include "OutputConfig.h"
 
 #include <chrono>
 #include <cstddef>
