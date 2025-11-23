@@ -17,13 +17,13 @@
 #include <string_view>
 #include <utility>
 
-#include "./db/Database.h"
-#include "./query/QueryParser.h"
-#include "./query/QueryResult.h"
-#include "./query/management/CopyTableQuery.h"
-#include "./query/management/WaitQuery.h"
-#include "./threading/QueryManager.h"
-#include "./utils/formatter.h"
+#include "../../db/Database.h"
+#include "../QueryParser.h"
+#include "../QueryResult.h"
+#include "../management/CopyTableQuery.h"
+#include "../management/WaitQuery.h"
+#include "../../threading/QueryManager.h"
+#include "../../utils/formatter.h"
 
 namespace {
 std::string trimCopy(std::string_view input) {
