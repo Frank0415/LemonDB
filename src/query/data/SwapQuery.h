@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "../Query.h"
 #include "../../db/Table.h"
+#include "../Query.h"
 
 class SwapQuery : public ComplexQuery {
   static constexpr const char *qname = "SWAP";
