@@ -13,8 +13,8 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
+#include "./threading/Threadpool.h"
 #include "DeleteQuery.h"
-#include "threading/Threadpool.h"
 
 [[nodiscard]] QueryResult::Ptr DeleteQuery::execute() {
   if (!this->getOperands().empty()) [[unlikely]] {
