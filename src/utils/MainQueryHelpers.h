@@ -23,8 +23,7 @@ void handleListenQuery(ListenQuery *listen_query, QueryManager &query_manager,
                        QueryParser &parser, Database &database,
                        bool &should_break);
 void handleCopyTable(QueryManager &query_manager, const std::string &trimmed,
-                     const std::string &table_name,
-                     CopyTableQuery *copy_query);
+                     const std::string &table_name, CopyTableQuery *copy_query);
 void processQueries(std::istream &input_stream, Database &database,
                     QueryParser &parser, QueryManager &query_manager,
                     std::atomic<size_t> &g_query_counter);
@@ -32,8 +31,9 @@ std::optional<size_t> setupListenMode(const Args &args, QueryParser &parser,
                                       Database &database,
                                       QueryManager &query_manager,
                                       std::atomic<size_t> &g_query_counter);
-size_t determineExpectedQueryCount(const std::optional<size_t> &listen_scheduled,
-                                   const std::atomic<size_t> &g_query_counter);
+size_t
+determineExpectedQueryCount(const std::optional<size_t> &listen_scheduled,
+                            const std::atomic<size_t> &g_query_counter);
 }  // namespace MainQueryHelpers
 
 #endif  // PROJECT_MAIN_QUERY_HELPERS_H
