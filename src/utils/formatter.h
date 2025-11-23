@@ -5,8 +5,8 @@
 #include <numeric>
 #include <string>
 #include <string_view>
-#include <vector>
 #include <utility>
+#include <vector>
 
 /**
  * Convert a string to string (identity)
