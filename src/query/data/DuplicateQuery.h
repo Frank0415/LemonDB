@@ -1,5 +1,5 @@
 #ifndef PROJECT_DUPLICATEQUERY_H
-#define PROJECT_DUPLICATEQUERY_H\
+#define PROJECT_DUPLICATEQUERY_H
 
 #include <string>
 #include <utility>
