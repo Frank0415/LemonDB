@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <span>
 #include <string>
@@ -64,5 +65,28 @@ void setupParser(QueryParser &parser) {
   parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
+}
+
+bool checkSmallWorkload(const std::string &filepath) {
+  constexpr size_t SMALL_WORKLOAD_THRESHOLD = 100;
+
+  if (filepath.empty()) {
+    return false;
+  }
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  size_t line_count = 0;
+  std::string line;
+  while (std::getline(file, line)) {
+    line_count++;
+    if (line_count >= SMALL_WORKLOAD_THRESHOLD) {
+      return false;
+    }
+  }
+
+  return true;
 }
 }  // namespace MainUtils
