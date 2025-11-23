@@ -3,24 +3,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <deque>
-#include <exception>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <limits>
-#include <memory>
 #include <optional>
-#include <sstream>
-#include <string>
 #include <thread>
-#include <utility>
 
 #include "db/Database.h"
-#include "db/QueryBase.h"
 #include "query/QueryParser.h"
-#include "query/management/CopyTableQuery.h"
-#include "query/management/WaitQuery.h"
 #include "query/utils/ListenQuery.h"
 #include "threading/OutputPool.h"
 #include "threading/QueryManager.h"
