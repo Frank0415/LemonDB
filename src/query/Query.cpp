@@ -13,9 +13,9 @@
 #include <utility>
 #include <vector>
 
-#include "./db/Table.h"
-#include "./utils/formatter.h"
-#include "./utils/uexception.h"
+#include "../db/Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
   static const std::unordered_map<std::string, int> opmap{
