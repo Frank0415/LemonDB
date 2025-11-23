@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "../Query.h"
-#include "db/Table.h"
+#include "../../db/Table.h"
 
 class DuplicateQuery : public ComplexQuery {
   static constexpr const char *qname = "DUPLICATE";
