@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "../Query.h"
+#include "../../db/QueryBase.h"
 #include "../QueryResult.h"
 
 class LoadTableQuery : public Query {
