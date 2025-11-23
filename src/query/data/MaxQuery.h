@@ -2,8 +2,11 @@
 #define PROJECT_MAXQUERY_H
 
 #include <string>
+#include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class MaxQuery : public ComplexQuery {
   static constexpr const char *qname = "MAX";
