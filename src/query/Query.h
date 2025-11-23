@@ -12,9 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include "../db/QueryBase.h"
 #include "../db/Table.h"
 #include "../db/types.h"
-#include "../db/QueryBase.h"
 #include "QueryResult.h"
 
 struct QueryCondition {
