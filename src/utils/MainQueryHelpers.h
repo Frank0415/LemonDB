@@ -2,13 +2,12 @@
 #define PROJECT_MAIN_QUERY_HELPERS_H
 
 #include <atomic>
-#include <deque>
-#include <memory>
+#include <istream>
 #include <optional>
 #include <string>
+#include <cstddef>
 
 #include "../db/Database.h"
-#include "../db/QueryBase.h"
 #include "../query/QueryParser.h"
 #include "../query/management/CopyTableQuery.h"
 #include "../query/utils/ListenQuery.h"
