@@ -49,6 +49,11 @@ int main(int argc, char *argv[]) {
     // Create QueryManager with reference to OutputPool
     QueryManager query_manager(output_pool);
 
+    // Check for small workload optimization
+    if (MainUtils::checkSmallWorkload(parsedArgs.listen)) {
+      query_manager.setSingleThreaded(true);
+    }
+
     std::atomic<size_t> g_query_counter{0};
 
     const auto listen_scheduled = MainQueryHelpers::setupListenMode(
