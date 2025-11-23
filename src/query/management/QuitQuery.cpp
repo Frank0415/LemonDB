@@ -7,8 +7,8 @@
 #include <memory>
 #include <string>
 
-#include "db/Database.h"
-#include "query/QueryResult.h"
+#include "./db/Database.h"
+#include "./query/QueryResult.h"
 
 std::string QuitQuery::toString() { return "QUERY = Quit"; }
 
