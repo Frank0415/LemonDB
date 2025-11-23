@@ -5,6 +5,7 @@
 #ifndef PROJECT_QUERY_H
 #define PROJECT_QUERY_H
 
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
@@ -13,6 +14,7 @@
 
 #include "../db/Table.h"
 #include "../db/types.h"
+#include "../db/QueryBase.h"
 #include "QueryResult.h"
 
 struct QueryCondition {
