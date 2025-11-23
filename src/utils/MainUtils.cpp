@@ -1,11 +1,14 @@
 #include "MainUtils.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 
 #include "../query/QueryBuilders.h"
 #include "../query/QueryParser.h"
@@ -80,7 +83,19 @@ bool checkSmallWorkload(const std::string &filepath) {
 
   size_t line_count = 0;
   std::string line;
+  constexpr std::string_view listen_token = "LISTEN";
   while (std::getline(file, line)) {
+    // Treat LISTEN directives as large workloads since they nest more queries
+    const auto it = std::search(line.begin(), line.end(), listen_token.begin(),
+                                listen_token.end(),
+                                [](unsigned char lhs, unsigned char rhs) {
+                                  return static_cast<char>(std::tolower(lhs)) ==
+                                         static_cast<char>(std::tolower(rhs));
+                                });
+    if (it != line.end()) {
+      return false;
+    }
+
     line_count++;
     if (line_count >= SMALL_WORKLOAD_THRESHOLD) {
       return false;
