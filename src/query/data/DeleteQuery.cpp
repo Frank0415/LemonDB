@@ -13,7 +13,7 @@
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "./threading/Threadpool.h"
+#include "../../threading/Threadpool.h"
 #include "DeleteQuery.h"
 
 [[nodiscard]] QueryResult::Ptr DeleteQuery::execute() {
