@@ -38,17 +38,18 @@ QueryResult::Ptr DuplicateQuery::execute() {
     // Decide between single-threaded and multi-threaded execution
     std::vector<RecordPair> recordsToDuplicate;
 
-    if (!ThreadPool::isInitialized()) [[unlikely]] {
-      recordsToDuplicate = executeSingleThreaded(table);
-    } else [[likely]] {
+    bool useMultiThreading = ThreadPool::isInitialized();
+    if (useMultiThreading) {
       const ThreadPool &pool = ThreadPool::getInstance();
-      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize())
-          [[unlikely]] {
-        recordsToDuplicate = executeSingleThreaded(table);
-      } else [[likely]] {
-        recordsToDuplicate = executeMultiThreaded(table);
+      if (pool.getThreadCount() <= 1 || table.size() < Table::splitsize()) {
+        useMultiThreading = false;
       }
     }
+
+    const auto execFn = useMultiThreading
+                            ? &DuplicateQuery::executeMultiThreaded
+                            : &DuplicateQuery::executeSingleThreaded;
+    recordsToDuplicate = (this->*execFn)(table);
 
     // Insert all duplicated records (in order preserved by helpers)
     Table::SizeType counter = 0;

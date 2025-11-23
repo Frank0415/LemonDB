@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "Query.h"
+#include "../db/QueryBase.h"
 
 struct TokenizedQueryString {
   std::vector<std::string> token;
@@ -14,6 +14,12 @@ struct TokenizedQueryString {
 
 class QueryBuilder {
 public:
+  QueryBuilder() = default;
+  QueryBuilder(const QueryBuilder &) = delete;
+  QueryBuilder &operator=(const QueryBuilder &) = delete;
+  QueryBuilder(QueryBuilder &&) = default;
+  QueryBuilder &operator=(QueryBuilder &&) = default;
+
   using Ptr = std::unique_ptr<QueryBuilder>;
 
   virtual Query::Ptr tryExtractQuery(TokenizedQueryString &queryString) = 0;
@@ -31,6 +37,12 @@ class QueryParser {
   tokenizeQueryString(const std::string &queryString);
 
 public:
+  QueryParser() = default;
+  QueryParser(const QueryParser &) = delete;
+  QueryParser &operator=(const QueryParser &) = delete;
+  QueryParser(QueryParser &&) = default;
+  QueryParser &operator=(QueryParser &&) = default;
+
   /**
    * Parse a query string into a Query object
    * @param queryString The query string to parse
@@ -43,11 +55,6 @@ public:
    * @param qBuilder The query builder to register
    */
   void registerQueryBuilder(QueryBuilder::Ptr &&qBuilder);
-
-  /**
-   * Construct a QueryParser
-   */
-  QueryParser();
 
   /**
    * Destruct a QueryParser

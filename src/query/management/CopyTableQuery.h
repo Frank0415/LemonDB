@@ -7,13 +7,14 @@
 #include <utility>
 #include <vector>
 
-#include "db/Table.h"
-#include "query/QueryResult.h"
+#include "../../db/QueryBase.h"
+#include "../../db/Table.h"
+#include "../QueryResult.h"
 
 class CopyTableQuery : public Query {
   static constexpr const char *qname = "COPYTABLE";
   std::string newTableName;
-  constexpr static bool is_multithreaded = false;
+  constexpr static bool is_multithreaded = true;
   std::shared_ptr<std::counting_semaphore<>> wait_sem;
 
 private:

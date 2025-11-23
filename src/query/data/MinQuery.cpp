@@ -96,7 +96,7 @@ MinQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-MinQuery::executeSingleThreaded(Table &table,
+MinQuery::executeSingleThreaded(const Table &table,
                                 const std::vector<Table::FieldIndex> &fids) {
   bool found = false;
   std::vector<Table::ValueType> minValue(
@@ -122,7 +122,8 @@ MinQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-MinQuery::executeMultiThreaded(Table &table,
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+MinQuery::executeMultiThreaded(const Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
@@ -141,20 +142,22 @@ MinQuery::executeMultiThreaded(Table &table,
     }
     auto chunk_end = iterator;
 
-    futures.push_back(pool.submit([this, fids, chunk_begin, chunk_end,
-                                   num_fields]() {
-      std::vector<Table::ValueType> local_min(num_fields, Table::ValueTypeMax);
-      for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
-      {
-        if (this->evalCondition(*it)) [[likely]] {
-          for (size_t i = 0; i < num_fields; ++i) [[likely]]
+    futures.push_back(
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
+          std::vector<Table::ValueType> local_min(num_fields,
+                                                  Table::ValueTypeMax);
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
           {
-            local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+            if (this->evalCondition(*it)) [[likely]] {
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
+              {
+                local_min[i] = std::min(local_min[i], (*it)[fids[i]]);
+              }
+            }
           }
-        }
-      }
-      return local_min;
-    }));
+          return local_min;
+        }));
   }
   bool any_found = false;
   for (auto &future : futures) [[likely]]

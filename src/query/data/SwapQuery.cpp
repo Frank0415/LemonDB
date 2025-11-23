@@ -10,12 +10,12 @@
 #include <vector>
 
 #include "../../db/Database.h"
+#include "../../db/Table.h"
 #include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "db/Table.h"
-#include "threading/Threadpool.h"
 
 QueryResult::Ptr SwapQuery::execute() {
   try {
@@ -97,7 +97,7 @@ std::string SwapQuery::toString() {
 }
 
 [[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
-SwapQuery::getFieldIndices(Table &table) const {
+SwapQuery::getFieldIndices(const Table &table) const {
   if (getOperands()[0] == "KEY" || getOperands()[1] == "KEY") [[unlikely]] {
     throw std::make_unique<ErrorMsgResult>(
         qname, this->targetTableRef(),
@@ -107,6 +107,7 @@ SwapQuery::getFieldIndices(Table &table) const {
           table.getFieldIndex(getOperands()[1])};
 }
 
+// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
 SwapQuery::executeSingleThreaded(Table &table,
                                  const Table::FieldIndex &field_index_1,
@@ -125,6 +126,7 @@ SwapQuery::executeSingleThreaded(Table &table,
   return std::make_unique<RecordCountResult>(static_cast<int>(counter));
 }
 
+// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
 SwapQuery::executeMultiThreaded(Table &table,
                                 const Table::FieldIndex &field_index_1,

@@ -10,11 +10,18 @@
 #include <utility>
 #include <vector>
 
+#include "../db/QueryBase.h"
+#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryParser.h"
 
 class FailedQueryBuilder : public QueryBuilder {
 public:
+  FailedQueryBuilder() = default;
+  FailedQueryBuilder(const FailedQueryBuilder &) = delete;
+  FailedQueryBuilder &operator=(const FailedQueryBuilder &) = delete;
+  FailedQueryBuilder(FailedQueryBuilder &&) = default;
+  FailedQueryBuilder &operator=(FailedQueryBuilder &&) = default;
   /**
    * Get the default failed query builder instance
    * @return Unique pointer to FailedQueryBuilder
@@ -76,6 +83,10 @@ public:
    * Constructor - initializes with default failed builder
    */
   BasicQueryBuilder() : nextBuilder(FailedQueryBuilder::getDefault()) {}
+  BasicQueryBuilder(const BasicQueryBuilder &) = delete;
+  BasicQueryBuilder &operator=(const BasicQueryBuilder &) = delete;
+  BasicQueryBuilder(BasicQueryBuilder &&) = default;
+  BasicQueryBuilder &operator=(BasicQueryBuilder &&) = default;
 
   /**
    * Clear the next builder's state

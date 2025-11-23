@@ -14,11 +14,10 @@
 #include "../QueryResult.h"
 
 QueryResult::Ptr DropTableQuery::execute() {
-  Database &database = Database::getInstance();
   try {
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireWrite(this->targetTableRef());
-    database.dropTable(this->targetTableRef());
+    Database::getInstance().dropTable(this->targetTableRef());
     return std::make_unique<SuccessMsgResult>(qname);
   } catch (const TableNameNotFound &exc) {
     return std::make_unique<ErrorMsgResult>(qname, this->targetTableRef(),

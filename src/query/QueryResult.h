@@ -5,8 +5,8 @@
 #ifndef PROJECT_QUERYRESULT_H
 #define PROJECT_QUERYRESULT_H
 
+#include <iostream>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -15,6 +15,12 @@
 
 class QueryResult {
 public:
+  QueryResult() = default;
+  QueryResult(const QueryResult &) = delete;
+  QueryResult &operator=(const QueryResult &) = delete;
+  QueryResult(QueryResult &&) = default;
+  QueryResult &operator=(QueryResult &&) = default;
+
   using Ptr = std::unique_ptr<QueryResult>;
 
   [[nodiscard]] virtual bool success() = 0;

@@ -1,11 +1,13 @@
 #ifndef PROJECT_DUPLICATEQUERY_H
 #define PROJECT_DUPLICATEQUERY_H
+
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
-#include "db/Table.h"
+#include "../QueryResult.h"
 
 class DuplicateQuery : public ComplexQuery {
   static constexpr const char *qname = "DUPLICATE";

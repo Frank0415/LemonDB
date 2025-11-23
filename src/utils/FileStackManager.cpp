@@ -1,10 +1,15 @@
 #include "FileStackManager.h"
-#include <iostream>
+
+#include <cstddef>
+#include <fstream>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 void FileStackManager::pushFile(const std::string &filename) {
   auto file = std::make_unique<std::ifstream>(filename);
-  if (!file || !file->is_open()) {
+  if (!file->is_open()) {
     throw std::runtime_error("Cannot open file: " + filename);
   }
   file_stack.push(std::move(file));
@@ -40,7 +45,7 @@ std::string FileStackManager::resolvePath(const std::string &filename) const {
   }
 
   // Handle absolute paths
-  if (!filename.empty() && filename[0] == '/') {
+  if (filename[0] == '/') {
     return filename;
   }
 
@@ -50,8 +55,8 @@ std::string FileStackManager::resolvePath(const std::string &filename) const {
   }
 
   // Relative to current file's directory
-  std::string current = file_path_stack.top();
-  size_t last_slash = current.rfind('/');
+  const std::string current = file_path_stack.top();
+  const size_t last_slash = current.rfind('/');
   if (last_slash == std::string::npos) {
     return filename;
   }

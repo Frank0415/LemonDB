@@ -1,13 +1,17 @@
 #include "MainUtils.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 
-#include "query/QueryBuilders.h"
-#include "query/QueryParser.h"
+#include "../query/QueryBuilders.h"
+#include "../query/QueryParser.h"
 
 namespace MainUtils {
 void parseArgs(int argc, char **argv, Args &args) {
@@ -35,20 +39,28 @@ void parseArgs(int argc, char **argv, Args &args) {
     };
 
     // Handle --listen=<value> or --listen <value>
-    if (arg.starts_with("--listen=")) {
-      args.listen = arg.substr(listen_prefix_len);
-    } else if (arg == "--listen" || arg == "-l") {
-      args.listen = getNextArg();
+    if (arg.starts_with("--listen=") || arg == "--listen" || arg == "-l") {
+      if (arg.starts_with("--listen=")) {
+        args.listen = arg.substr(listen_prefix_len);
+      } else {
+        args.listen = getNextArg();
+      }
+      continue;
     }
+
     // Handle --threads=<value> or --threads <value>
-    else if (arg.starts_with("--threads=")) {
-      args.threads = std::strtol(arg.substr(threads_prefix_len).c_str(),
-                                 nullptr, decimal_base);
-    } else if (arg == "--threads" || arg == "-t") {
-      args.threads = std::strtol(getNextArg().c_str(), nullptr, decimal_base);
-    } else {
-      (void)arg;
+    if (arg.starts_with("--threads=") || arg == "--threads" || arg == "-t") {
+      std::string value;
+      if (arg.starts_with("--threads=")) {
+        value = arg.substr(threads_prefix_len);
+      } else {
+        value = getNextArg();
+      }
+      args.threads = std::strtol(value.c_str(), nullptr, decimal_base);
+      continue;
     }
+
+    (void)arg;
   }
 }
 
@@ -56,5 +68,40 @@ void setupParser(QueryParser &parser) {
   parser.registerQueryBuilder(std::make_unique<DebugQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ManageTableQueryBuilder>());
   parser.registerQueryBuilder(std::make_unique<ComplexQueryBuilder>());
+}
+
+bool checkSmallWorkload(const std::string &filepath) {
+  constexpr size_t SMALL_WORKLOAD_THRESHOLD = 100;
+
+  if (filepath.empty()) {
+    return false;
+  }
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    return false;
+  }
+
+  size_t line_count = 0;
+  std::string line;
+  constexpr std::string_view listen_token = "LISTEN";
+  while (std::getline(file, line)) {
+    // Treat LISTEN directives as large workloads since they nest more queries
+    const auto index = std::search(line.begin(), line.end(), listen_token.begin(),
+                                listen_token.end(),
+                                [](unsigned char lhs, unsigned char rhs) {
+                                  return static_cast<char>(std::tolower(lhs)) ==
+                                         static_cast<char>(std::tolower(rhs));
+                                });
+    if (index != line.end()) {
+      return false;
+    }
+
+    line_count++;
+    if (line_count >= SMALL_WORKLOAD_THRESHOLD) {
+      return false;
+    }
+  }
+
+  return true;
 }
 }  // namespace MainUtils

@@ -1,17 +1,18 @@
 #include "QueryParser.h"
 
-#include <algorithm>
 #include <cctype>
-#include <ranges>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <utility>
 
+#include "../db/QueryBase.h"
+#include "../utils/uexception.h"
 #include "QueryBuilders.h"
-#include "db/QueryBase.h"
-#include "utils/uexception.h"
 
-QueryParser::QueryParser() = default;
+namespace {
+constexpr size_t kDefaultTokenReserve = 16;
+}
 
 Query::Ptr QueryParser::parseQuery(const std::string &queryString) {
   if (first == nullptr) [[unlikely]] {
@@ -42,18 +43,18 @@ TokenizedQueryString
 QueryParser::tokenizeQueryString(const std::string &queryString) {
   TokenizedQueryString result;
   result.rawQeuryString = queryString;
-  result.token.reserve(16);
+  result.token.reserve(kDefaultTokenReserve);
 
-  std::string_view sv{queryString};
-  auto is_space = [](char c) {
-    return std::isspace(static_cast<unsigned char>(c)) != 0;
+  const std::string_view view{queryString};
+  auto is_space = [](char character) {
+    return std::isspace(static_cast<unsigned char>(character)) != 0;
   };
 
   size_t start = 0;
-  const size_t len = sv.size();
+  const size_t len = view.size();
 
   while (start < len) {
-    while (start < len && is_space(sv[start])) {
+    while (start < len && is_space(view[start])) {
       ++start;
     }
 
@@ -62,11 +63,11 @@ QueryParser::tokenizeQueryString(const std::string &queryString) {
     }
 
     size_t end = start;
-    while (end < len && !is_space(sv[end])) {
+    while (end < len && !is_space(view[end])) {
       ++end;
     }
 
-    result.token.emplace_back(sv.substr(start, end - start));
+    result.token.emplace_back(view.substr(start, end - start));
     start = end;
   }
 

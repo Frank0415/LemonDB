@@ -2,6 +2,7 @@
 #define PROJECT_OUTPUT_POOL_H
 
 #include <atomic>
+#include <cstddef>
 #include <map>
 #include <mutex>
 #include <string>

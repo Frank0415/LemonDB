@@ -5,17 +5,17 @@
 #include <cstddef>
 #include <deque>
 #include <exception>
-#include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <sstream>
 #include <string>
 #include <thread>
 
+#include "../db/QueryBase.h"
+#include "../query/QueryResult.h"
 #include "OutputPool.h"
-#include "db/QueryBase.h"
-#include "query/QueryResult.h"
 
 namespace {
 bool isWaitQueryException(const std::exception &exc) {
@@ -49,6 +49,11 @@ void QueryManager::addQuery(size_t query_id, const std::string &table_name,
   // std::cerr << "Adding query for number " << query_counter << "\n";
   // Update query counter
   query_counter.fetch_add(1);
+
+  if (single_threaded_mode) {
+    executeAndStoreResult({query_id, query_ptr});
+    return;
+  }
 
   {
     const std::scoped_lock lock(table_map_mutex);
@@ -182,7 +187,7 @@ void QueryManager::executeAndStoreResult(const QueryEntry &query_entry) {
   bool is_wait_query = false;
 
   try {
-    QueryResult::Ptr result = query_ptr->execute();
+    const QueryResult::Ptr result = query_ptr->execute();
     result_str = formatQueryResult(result);
   } catch (const std::exception &exc) {
     if (isWaitQueryException(exc)) {

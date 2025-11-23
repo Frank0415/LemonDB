@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -91,16 +92,16 @@
 SumQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> fids;
   fids.reserve(this->getOperands().size());
-  for (const auto &field : this->getOperands()) [[likely]]
-  {
-    fids.emplace_back(table.getFieldIndex(field));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(fids),
+      [&table](const auto &field) { return table.getFieldIndex(field); });
   return fids;
 }
 
-[[nodiscard]] QueryResult::Ptr
-SumQuery::executeSingleThreaded(Table &table,
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SumQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   const size_t num_fields = fids.size();
   std::vector<Table::ValueType> sums(num_fields, 0);
 
@@ -116,9 +117,9 @@ SumQuery::executeSingleThreaded(Table &table,
   return std::make_unique<SuccessMsgResult>(sums);
 }
 
-[[nodiscard]] QueryResult::Ptr
-SumQuery::executeMultiThreaded(Table &table,
-                               const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SumQuery::executeMultiThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   const size_t num_fields = fids.size();
@@ -139,6 +140,7 @@ SumQuery::executeMultiThreaded(Table &table,
     auto chunk_end = iterator;
 
     futures.push_back(
+        // NOLINTNEXTLINE(bugprone-exception-escape)
         pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
           std::vector<Table::ValueType> local_sums(num_fields, 0);
           for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]

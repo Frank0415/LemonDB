@@ -2,9 +2,12 @@
 #define PROJECT_SWAPQUERY_H
 
 #include <string>
+#include <utility>
 
+#include "../../db/Table.h"
 #include "../Query.h"
-#include "db/Table.h"
+#include "../QueryResult.h"
+
 class SwapQuery : public ComplexQuery {
   static constexpr const char *qname = "SWAP";
 
@@ -21,7 +24,7 @@ public:
    * @return Pair of field indices for the two columns
    */
   [[nodiscard]] std::pair<const Table::FieldIndex, const Table::FieldIndex>
-  getFieldIndices(Table &table) const;
+  getFieldIndices(const Table &table) const;
 
   /**
    * Execute SWAP operation using single-threaded approach

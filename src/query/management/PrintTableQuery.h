@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "query/Query.h"
-#include "query/QueryResult.h"
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class PrintTableQuery : public Query {
   static constexpr const char *qname = "SHOWTABLE";

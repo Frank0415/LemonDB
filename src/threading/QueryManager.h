@@ -37,8 +37,8 @@ class QueryManager {
 private:
   // Single entry in query queue
   struct QueryEntry {
-    size_t query_id;
-    Query *query_ptr;  // Raw pointer, owned by deque
+    size_t query_id;   // NOLINT
+    Query *query_ptr;  // NOLINT
   };
 
   // Map: table_name -> queue of (query_id, query_ptr)
@@ -62,6 +62,7 @@ private:
   // Reference to OutputPool (passed in constructor, not owned)
   OutputPool &output_pool;
   size_t printed_count{0};
+  bool single_threaded_mode{false};
 
   void createTableStructures(const std::string &table_name);
   void releaseSemaphores();
@@ -101,6 +102,12 @@ public:
   QueryManager &operator=(QueryManager &&) = delete;
 
   ~QueryManager();
+
+  /**
+   * Set single threaded mode
+   * @param enable Whether to enable single threaded mode
+   */
+  void setSingleThreaded(bool enable) { single_threaded_mode = enable; }
 
   /**
    * Submit a query to the appropriate table queue

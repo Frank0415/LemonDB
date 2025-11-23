@@ -5,6 +5,10 @@
 #include "QueryResult.h"
 
 #include <ostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 std::ostream &operator<<(std::ostream &out, const QueryResult &table) {
   return table.output(out);

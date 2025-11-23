@@ -9,15 +9,15 @@
 #include <memory>
 #include <string>
 
-#include "db/Database.h"
-#include "db/TableLockManager.h"
-#include "query/QueryResult.h"
-#include "utils/formatter.h"
+#include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../../utils/formatter.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr DumpTableQuery::execute() {
   const auto &database = Database::getInstance();
   try {
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     std::ofstream outfile(this->fileName);
     if (!outfile.is_open()) [[unlikely]] {

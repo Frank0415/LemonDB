@@ -1,15 +1,15 @@
 #ifndef LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
 #define LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
 
+#include <atomic>
 #include <cstddef>
 #include <deque>
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
-#include "db/QueryBase.h"
-#include <atomic>
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class QueryManager;
 class QueryParser;
@@ -29,8 +29,9 @@ class ListenQuery : public Query {
   bool quit_encountered = false;
   size_t id = 0;
 
-  [[nodiscard]] bool shouldSkipStatement(const std::string &trimmed) const;
-  bool processStatement(const std::string &trimmed);
+  static bool shouldSkipStatement(const std::string &trimmed);
+  bool processStatement(const std::string &trimmed,
+                        std::string *nested_file_out = nullptr);
 
 public:
   explicit ListenQuery(std::string filename)

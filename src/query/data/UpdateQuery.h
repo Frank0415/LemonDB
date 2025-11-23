@@ -9,7 +9,9 @@
 #include <utility>
 #include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class UpdateQuery : public ComplexQuery {
   static constexpr const char *qname = "UPDATE";
