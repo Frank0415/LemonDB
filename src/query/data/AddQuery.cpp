@@ -12,10 +12,10 @@
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "../../threading/Threadpool.h"
 
 [[nodiscard]] QueryResult::Ptr AddQuery::execute() {
   try {
