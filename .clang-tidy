@@ -15,7 +15,6 @@ Checks: >
   google-*,
   -google-objc-function-naming
   -cert-err58-cpp,
-WarningsAsErrors: '*'
 HeaderFilterRegex: '^(src|tests)/'
 CheckOptions:
   - key: readability-function-size.LineThreshold

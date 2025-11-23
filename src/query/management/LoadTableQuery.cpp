@@ -9,33 +9,29 @@
 #include <memory>
 #include <string>
 
-#include "db/Database.h"
-#include "db/TableLockManager.h"
-#include "utils/formatter.h"
-#include "query/QueryResult.h"
+#include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../../utils/formatter.h"
+#include "../QueryResult.h"
 
-QueryResult::Ptr LoadTableQuery::execute()
-{
-  try
-  {
+QueryResult::Ptr LoadTableQuery::execute() {
+  try {
     // LOAD creates a new table, so we acquire write lock for the new table name
-    auto lock = TableLockManager::getInstance().acquireWrite(this->targetTableRef());
+    const auto lock =
+        TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     std::ifstream infile(this->fileName);
-    if (!infile.is_open()) [[unlikely]]
-    {
-      return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f % this->fileName);
+    if (!infile.is_open()) [[unlikely]] {
+      return std::make_unique<ErrorMsgResult>(qname, "Cannot open file '?'"_f %
+                                                         this->fileName);
     }
     Database::loadTableFromStream(infile, this->fileName);
     infile.close();
     return std::make_unique<SuccessMsgResult>(qname, this->targetTableRef());
-  }
-  catch (const std::exception& exc)
-  {
+  } catch (const std::exception &exc) {
     return std::make_unique<ErrorMsgResult>(qname, exc.what());
   }
 }
 
-std::string LoadTableQuery::toString()
-{
+std::string LoadTableQuery::toString() {
   return "QUERY = Load TABLE, FILE = \"" + this->fileName + "\"";
 }

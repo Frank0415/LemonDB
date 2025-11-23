@@ -7,28 +7,46 @@
 #include "../Query.h"
 #include "../QueryResult.h"
 
-class CountQuery : public ComplexQuery
-{
+class CountQuery : public ComplexQuery {
   // Define the query name as a constant
-  static constexpr const char* qname = "COUNT";
+  static constexpr const char *qname = "COUNT";
 
 private:
-  // Helper methods to reduce complexity
+  /**
+   * Validate operands for COUNT query
+   * @return QueryResult indicating validation success or failure
+   */
   [[nodiscard]] QueryResult::Ptr validateOperands() const;
 
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table& table);
+  /**
+   * Execute COUNT operation using single-threaded approach
+   * @param table The table to count records in
+   * @return QueryResult with count results
+   */
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(const Table &table);
 
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table& table);
+  /**
+   * Execute COUNT operation using multi-threaded approach
+   * @param table The table to count records in
+   * @return QueryResult with count results
+   */
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(const Table &table);
 
 public:
   // Inherit constructors from the ComplexQuery base class
   using ComplexQuery::ComplexQuery;
 
-  // Override the execute method to implement the COUNT logic
+  /**
+   * Execute the COUNT query
+   * @return QueryResult with count of matching records
+   */
   QueryResult::Ptr execute() override;
 
-  // Override the toString method for debugging and logging
+  /**
+   * Convert query to string representation
+   * @return String representation of the COUNT query
+   */
   std::string toString() override;
 };
 
-#endif // PROJECT_COUNTQUERY_H
+#endif  // PROJECT_COUNTQUERY_H

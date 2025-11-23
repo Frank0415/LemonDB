@@ -7,16 +7,24 @@
 
 #include <string>
 
-#include "query/Query.h"
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
-class ListTableQuery : public Query
-{
-  static constexpr const char* qname = "LIST";
+class ListTableQuery : public Query {
+  static constexpr const char *qname = "LIST";
 
 public:
+  /**
+   * Execute the LIST query to show available tables
+   * @return QueryResult with list of tables
+   */
   QueryResult::Ptr execute() override;
 
+  /**
+   * Convert query to string representation
+   * @return String representation of the LIST query
+   */
   std::string toString() override;
 };
 
-#endif // PROJECT_LISTTABLEQUERY_H
+#endif  // PROJECT_LISTTABLEQUERY_H

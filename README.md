@@ -1,130 +1,196 @@
-# LemonDB
+<p align="center">
+  <h1 align="center">LemonDB</h1>
+</p>
 
-![Build Status](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg)
+<p align="center">
+  <a href="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml">
+    <img src="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg" alt="Build Status">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/language-C%2B%2B20-blue.svg" alt="Language">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/build-CMake-green.svg" alt="Build">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/style-clang--format-green" alt="Code Style">
+  </a>
+</p>
 
-## Build
+<p align="center">
+  <strong>A high-performance, multi-threaded in-memory database engine built for speed and concurrency.</strong>
+</p>
 
-Currently the project uses `CMake` for building and `GoogleTest` for testing. Run the following commands to build:
+<br/>
+
+**LemonDB** is a modern C++20 database management system designed to maximize throughput on modern multi-core architectures. By leveraging table-level parallelism, asynchronous execution, and intra-query parallelization, it delivers exceptional performance for analytical workloads while maintaining a simple, SQL-like interface.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Architecture](#architecture)
+- [Performance](#performance)
+- [Project Structure](#project-structure)
+- [Features & Functionality](#features--functionality)
+- [Developer Guide](#developer-guide)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+## Quick Start
+
+Get LemonDB running in under 30 seconds.
+
+### 1. Build
+```bash
+git clone <repository-url> lemondb && cd lemondb
+cmake -S . -B build && cmake --build build -j$(nproc)
+```
+
+### 2. Run Interactive Mode
+```bash
+./build/bin/lemondb
+```
+
+### 3. Execute Your First Query
+```sql
+-- Create a table and insert data
+LOAD data/sample.tbl; 
+-- Run a parallel aggregation
+SELECT ( id salary ) FROM sample WHERE ( id < 100 );
+SUM ( salary ) FROM sample;
+QUIT;
+```
+
+## Architecture
+
+LemonDB adopts a **shared-nothing architecture** for table management combined with a **work-stealing thread pool** for query execution.
+
+```mermaid
+graph TD
+    Client[Client / Input] --> Parser[Query Parser]
+    Parser --> Scheduler[Async Scheduler]
+    
+    subgraph "Execution Engine"
+        Scheduler -->|Dispatch| TableQueue1[Table A Queue]
+        Scheduler -->|Dispatch| TableQueue2[Table B Queue]
+        
+        TableQueue1 --> Worker1[Worker Thread 1]
+        TableQueue2 --> Worker2[Worker Thread 2]
+        
+        Worker1 -->|Parallel Task| ThreadPool[Global Thread Pool]
+        Worker2 -->|Parallel Task| ThreadPool
+    end
+    
+    ThreadPool -->|Result| Output[Output Buffer]
+```
+
+### Key Architectural Highlights
+
+| Component | Implementation Details | Performance Benefit |
+| :--- | :--- | :--- |
+| **Table-Level Parallelism** | Dedicated execution queues per table. | Queries targeting different tables execute simultaneously without lock contention. |
+| **Intra-Query Parallelism** | Automatic data chunking for aggregations (`SUM`, `COUNT`, `MAX`). | Massive latency reduction for large datasets by distributing work across cores. |
+| **Asynchronous Execution** | Non-blocking parsing and scheduling loop. | Maintains high system responsiveness even during heavy workload spikes. |
+| **Custom Thread Pool** | Optimized worker management avoiding OS overhead. | Maximizes CPU utilization and minimizes context switching costs. |
+
+## Performance
+
+*(Benchmark results comparing LemonDB against single-threaded baselines will be added here.)*
+
+### Reproducing Benchmarks
+
+To reproduce the performance benchmarks on your local machine:
 
 ```bash
-# configure then build in separate 
-cmake -S . -B build
-#-j4 means you assign 4 cpu cores to the compiler. 
-#Change the number as you want 
-#Or use -j$(nproc) to use as many as cores.
-#(-j0 if you use ninja instead of make) 
-cmake --build build -j8
-```
-or
-```bash
-# configure and build together 
-cmake -S . -B build && cmake --build build -j8
-```
-> 'Reconfigure only when CMake files or target lists change (or when **using `GLOB` without `CONFIGURE_DEPENDS` and you add/remove sources**). Editing existing sources only needs a build.'
+# Generate benchmark data (requires python3)
+./scripts/generate-benchmark-data.sh
 
-The binary will be located in the `bin` directory, i.e., `bin/lemondb` for the database and `bin/lemondb_tests` for the tests.
+# Run the benchmark suite
+./build/bin/lemondb --threads $(nproc) --listen benchmark/query.sql
+```
+
+## Project Structure
+
+```text
+lemondb/
+|-- src/                # Source code
+|   |-- db/             # Database engine core (Table, Database)
+|   |-- query/          # Query parsing and execution logic
+|   |-- threading/      # Thread pool and concurrency management
+|   `-- utils/          # Utility functions and helpers
+|-- include/            # Public headers
+|-- test/               # Integration and unit tests
+|-- scripts/            # Build and utility scripts
+|-- hooks/              # Git hooks for code quality
+`-- CMakeLists.txt      # Build configuration
+```
+
+## Features & Functionality
+
+### Robust Query Support
+
+- **Data Manipulation**: `INSERT`, `UPDATE`, `DELETE`, `SELECT`
+- **Table Management**: `LOAD`, `DUMP`, `TRUNCATE`, `COPYTABLE`, `DROP`
+- **Aggregations**: `SUM`, `MIN`, `MAX`, `COUNT` (Parallelized)
+
+### Flexible Execution Modes
+
+- **Interactive Mode**: Real-time query execution via standard input (not allowed in production mode).
+- **Batch Mode**: Execute complex, multi-step scripts using the `LISTEN` command.
+
+### Advanced Debugging Support
+
+Built-in CMake integration for modern sanitizers ensures code stability and safety:
+
+- **AddressSanitizer (ASan)**: Detects memory corruption and buffer overflows.
+- **MemorySanitizer (MSan)**: Identifies uninitialized memory reads.
+- **ThreadSanitizer (TSan)**: Detects data races in concurrent execution.
+- **UndefinedBehaviorSanitizer (UBSan)**: Catches undefined behavior at runtime.
+
+## Developer Guide
+
+We welcome contributions! Please refer to our **[Developer Guidelines](https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/wiki/Developer-Guidelines)** for comprehensive coding standards and contribution rules.
+
+### Contributing
+
+This project adheres to:
+- **[Conventional Commits](https://www.conventionalcommits.org)** for commit messages.
+- **[Semantic Versioning](https://semver.org)** for release management.
+
+> [!IMPORTANT]
+> **For Contributors:**
+> Please install the git hooks to ensure commit message compliance and code quality:
+> ```bash
+> ./hooks/install-hooks.sh
+> ```
 
 ### Building with Sanitizers
 
-The project supports building with various sanitizers for debugging and finding bugs:
-
-#### AddressSanitizer (ASan)
-
-Detects memory errors such as use-after-free, buffer overflows, and memory leaks.
-
 ```bash
+# AddressSanitizer (ASan)
 cmake -S . -B build -DENABLE_ASAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_asan
+
+# ThreadSanitizer (TSan)
+cmake -S . -B build -DENABLE_TSAN=ON
 ```
 
-**Compatible with:** GCC and Clang
-
-#### MemorySanitizer (MSan)
-
-Detects uninitialized memory reads.
+### Running Tests & Static Analysis
 
 ```bash
-# MSan requires Clang
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_MSAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_msan
+./test/run.sh                   # Run test suite
+./scripts/run-static-analysis.sh # Run clang-tidy & cppcheck
 ```
 
-**Requirements:**
-- Clang compiler required
-- All dependencies must be built with MSan instrumentation
-- May require custom-built standard library
+## Roadmap
 
-**Compatible with:** Clang only
+- [x] Core Database Engine (Tables, Pages, Rows)
+- [x] SQL-like Query Parser
+- [x] Multi-threaded Execution Engine
+- [x] Parallel Aggregation Functions
 
-#### UndefinedBehaviorSanitizer (UBSan)
+## License
 
-Detects undefined behavior such as integer overflow, invalid shifts, and null pointer dereferences.
-
-```bash
-# UBSan requires Clang for full feature support
-cmake -S . -B build -DCMAKE_CXX_COMPILER=clang++ -DENABLE_UBSAN=ON
-cmake --build build -j$(nproc)
-./build/bin/lemondb_ubsan
-```
-
-**Compatible with:** Clang only (this project uses subsanitizers that require Clang)
-
-#### Important Notes
-
-- Sanitizers can be combined (e.g., ASan + UBSan) but some combinations are incompatible (e.g., ASan + MSan)
-- Sanitized builds are significantly slower and use more memory
-- Use sanitizers primarily for debugging and testing, not for production builds
-- The standard (non-sanitized) binary `lemondb` is always built alongside sanitized variants
-
-## Static Analysis
-
-Every push runs clang-format, clang-tidy, cppcheck, and cpplint in CI.
-A comprehensive static analysis tool is automatically run on every commit and pull request via Gitea Actions, using the `./test/run.sh` script.
-
-Make sure the script's dependencies (`cmake`, `clang-format`, `clang-tidy`, `cppcheck`, and the Python `cpplint` package) are installed and on your `PATH`.
-
-## Performance Benchmarking
-
-### Single-threaded Benchmarking 
-
-```bash
-Test: single_read completed in 29.259891043 seconds
-PASS: single_read
-Test: single_read_dup completed in 32.502383623 seconds
-PASS: single_read_dup
-Test: single_read_update completed in 26.000829756 seconds
-PASS: single_read_update
-Test: single_insert_delete completed in 21.017652290 seconds
-PASS: single_insert_delete
-Test: few_read completed in 17.914737771 seconds
-PASS: few_read
-Test: few_read_dup completed in 82.905387144 seconds
-PASS: few_read_dup
-Test: few_read_update completed in 17.895444505 seconds
-PASS: few_read_update
-Test: few_insert_delete completed in 13.260974489 seconds
-PASS: few_insert_delete
-Test: many_read completed in 17.690794110 seconds
-PASS: many_read
-Test: many_read_dup completed in 22.463446368 seconds
-PASS: many_read_dup
-Test: many_read_update completed in 19.056095016 seconds
-PASS: many_read_update
-Test: many_insert_delete completed in 17.194186674 seconds
-PASS: many_insert_delete
-Test: test completed in 1.816182835 seconds
-PASS: test
-```
-
-
-## Contributing
-
-This project uses [conventional commits](https://www.conventionalcommits.org) and adheres to [semantic versioning](https://semver.org).
-
-> [!warning]
->
-> **For contibutors:**
->
-> Please install the git hooks in `hooks` directory by running `./hooks/install-hooks.sh` to ensure conventional commits and non-ASCII characters are avoided.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
