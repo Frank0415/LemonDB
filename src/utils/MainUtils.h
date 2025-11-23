@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "query/QueryParser.h"
+#include "../query/QueryParser.h"
 
 /**
  * Command line argument bundle for main program.
