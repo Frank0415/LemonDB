@@ -6,8 +6,8 @@
 #include <span>
 #include <string>
 
-#include "./query/QueryBuilders.h"
-#include "./query/QueryParser.h"
+#include "query/QueryBuilders.h"
+#include "query/QueryParser.h"
 
 namespace MainUtils {
 void parseArgs(int argc, char **argv, Args &args) {
