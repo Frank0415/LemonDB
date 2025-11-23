@@ -13,8 +13,8 @@
 #include <string>
 #include <thread>
 
-#include "./db/QueryBase.h"
-#include "./query/QueryResult.h"
+#include "../db/QueryBase.h"
+#include "../query/QueryResult.h"
 #include "OutputPool.h"
 
 namespace {
