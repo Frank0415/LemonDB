@@ -1,12 +1,17 @@
 #ifndef PROJECT_THREADPOOL_H
 #define PROJECT_THREADPOOL_H
 
+#include <atomic>
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
