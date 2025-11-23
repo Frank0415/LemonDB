@@ -5,9 +5,9 @@
 #ifndef PROJECT_QUERYRESULT_H
 #define PROJECT_QUERYRESULT_H
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 #include <utility>
 #include <vector>
 
