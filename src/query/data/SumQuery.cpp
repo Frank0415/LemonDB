@@ -140,8 +140,8 @@ SumQuery::getFieldIndices(const Table &table) const {
     auto chunk_end = iterator;
 
     futures.push_back(
-        pool.submit([this, fids, chunk_begin, chunk_end,
-                     num_fields]() {  // NOLINT(bugprone-exception-escape)
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
           std::vector<Table::ValueType> local_sums(num_fields, 0);
           for (auto iter = chunk_begin; iter != chunk_end; ++iter) [[likely]]
           {
