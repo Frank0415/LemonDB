@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "query/Query.h"
+#include "../Query.h"
 
 class ListTableQuery : public Query {
   static constexpr const char *qname = "LIST";
