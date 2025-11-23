@@ -7,7 +7,8 @@
 
 #include <string>
 
-#include "../Query.h"
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class ListTableQuery : public Query {
   static constexpr const char *qname = "LIST";
