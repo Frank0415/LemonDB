@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
 #include "../QueryResult.h"
 
