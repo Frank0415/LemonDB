@@ -1,8 +1,8 @@
 #ifndef PROJECT_MAIN_UTILS_H
 #define PROJECT_MAIN_UTILS_H
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 #include "../query/QueryParser.h"
 
