@@ -1,10 +1,12 @@
 #ifndef SRC_FORMATTER_H
 #define SRC_FORMATTER_H
 
+#include <cstddef>
 #include <numeric>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <utility>
 
 /**
  * Convert a string to string (identity)
