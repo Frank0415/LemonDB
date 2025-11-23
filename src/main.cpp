@@ -16,17 +16,17 @@
 #include <thread>
 #include <utility>
 
-#include "db/Database.h"
-#include "db/QueryBase.h"
-#include "query/QueryParser.h"
-#include "query/management/CopyTableQuery.h"
-#include "query/management/WaitQuery.h"
-#include "query/utils/ListenQuery.h"
-#include "threading/OutputPool.h"
-#include "threading/QueryManager.h"
-#include "threading/Threadpool.h"
-#include "utils/MainUtils.h"
-#include "utils/OutputConfig.h"
+#include "./db/Database.h"
+#include "./db/QueryBase.h"
+#include "./query/QueryParser.h"
+#include "./query/management/CopyTableQuery.h"
+#include "./query/management/WaitQuery.h"
+#include "./query/utils/ListenQuery.h"
+#include "./threading/OutputPool.h"
+#include "./threading/QueryManager.h"
+#include "./threading/Threadpool.h"
+#include "./utils/MainUtils.h"
+#include "./utils/OutputConfig.h"
 
 namespace {
 std::string extractQueryString(std::istream &input_stream) {
@@ -374,6 +374,7 @@ int main(int argc, char *argv[]) {
     output_pool.outputAllResults();
   } catch (...) {
     // TODO: NOTHING SHOULD BE HANDLED
+    return -1;
   }
 
   return 0;
