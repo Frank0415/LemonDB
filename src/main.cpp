@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     std::ifstream fin;
     std::istream *input = MainIOHelpers::initializeInputStream(parsedArgs, fin);
 
-    if (is_small_workload) {
+    if (!is_small_workload) {
       ThreadPool::initialize(parsedArgs.threads > 0
                                  ? static_cast<size_t>(parsedArgs.threads)
                                  : std::thread::hardware_concurrency());
