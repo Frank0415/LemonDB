@@ -18,12 +18,12 @@
 #include <utility>
 
 #include "../../db/Database.h"
+#include "../../threading/QueryManager.h"
+#include "../../utils/formatter.h"
 #include "../QueryParser.h"
 #include "../QueryResult.h"
 #include "../management/CopyTableQuery.h"
 #include "../management/WaitQuery.h"
-#include "../../threading/QueryManager.h"
-#include "../../utils/formatter.h"
 
 namespace {
 std::string trimCopy(std::string_view input) {
