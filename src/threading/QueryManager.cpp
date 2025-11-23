@@ -13,9 +13,9 @@
 #include <string>
 #include <thread>
 
+#include "./db/QueryBase.h"
+#include "./query/QueryResult.h"
 #include "OutputPool.h"
-#include "db/QueryBase.h"
-#include "query/QueryResult.h"
 
 namespace {
 bool isWaitQueryException(const std::exception &exc) {
