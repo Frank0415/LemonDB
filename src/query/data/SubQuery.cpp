@@ -128,28 +128,27 @@ SubQuery::getFieldIndices(const Table &table) const {
       ++count;
     }
     auto chunk_end = iterator;
-    futures.push_back(pool.submit([this, chunk_start, chunk_end, fids]() {
-      try {
-        int local_count = 0;
-        for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
-        {
-          if (!this->evalCondition(*it)) [[unlikely]] {
-            continue;
-          }
-          // perform SUB operation
-          int diff = (*it)[fids[0]];
-          for (size_t i = 1; i < this->getOperands().size() - 1; ++i) [[likely]]
+    futures.push_back(
+        pool.submit([this, chunk_start, chunk_end,
+                     fids]() {  // NOLINT(bugprone-exception-escape)
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
           {
-            diff -= (*it)[fids[i]];
+            if (!this->evalCondition(*it)) [[unlikely]] {
+              continue;
+            }
+            // perform SUB operation
+            int diff = (*it)[fids[0]];
+            for (size_t i = 1; i < this->getOperands().size() - 1; ++i)
+                [[likely]]
+            {
+              diff -= (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = diff;
+            local_count++;
           }
-          (*it)[fids.back()] = diff;
-          local_count++;
-        }
-        return local_count;
-      } catch (...) {
-        throw;
-      }
-    }));
+          return local_count;
+        }));
   }
 
   // Wait for all tasks to complete and aggregate results
