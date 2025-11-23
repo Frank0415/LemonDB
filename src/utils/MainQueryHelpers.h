@@ -2,10 +2,10 @@
 #define PROJECT_MAIN_QUERY_HELPERS_H
 
 #include <atomic>
+#include <cstddef>
 #include <istream>
 #include <optional>
 #include <string>
-#include <cstddef>
 
 #include "../db/Database.h"
 #include "../query/QueryParser.h"
