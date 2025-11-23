@@ -143,8 +143,8 @@ MinQuery::executeMultiThreaded(const Table &table,
     auto chunk_end = iterator;
 
     futures.push_back(
-        pool.submit([this, fids, chunk_begin, chunk_end,
-                     num_fields]() {  // NOLINT(bugprone-exception-escape)
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
           std::vector<Table::ValueType> local_min(num_fields,
                                                   Table::ValueTypeMax);
           for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
