@@ -1,7 +1,15 @@
 #include "MainIOHelpers.h"
 
+#include <cstddef>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <thread>
+
+#include "../threading/OutputPool.h"
+#include "../threading/QueryManager.h"
+#include "MainUtils.h"
+#include "OutputConfig.h"
 
 namespace MainIOHelpers {
 std::istream *initializeInputStream(const Args &parsedArgs,
