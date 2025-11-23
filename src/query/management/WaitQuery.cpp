@@ -1,8 +1,8 @@
 #include <exception>
 #include <string>
 
+#include "./query/QueryResult.h"
 #include "WaitQuery.h"
-#include "query/QueryResult.h"
 
 // Custom exception for WaitQuery completion
 class WaitQueryCompleted : public std::exception {
