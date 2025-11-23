@@ -18,7 +18,7 @@
 #include "../threading/Threadpool.h"
 #include "../utils/formatter.h"
 #include "../utils/uexception.h"
-#include "db/QueryBase.h"
+#include "./db/QueryBase.h"
 
 Table::FieldIndex
 Table::getFieldIndex(const Table::FieldNameType &field) const {
