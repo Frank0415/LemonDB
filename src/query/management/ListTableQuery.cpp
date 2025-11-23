@@ -7,8 +7,8 @@
 #include <memory>
 #include <string>
 
-#include "./db/Database.h"
-#include "./query/QueryResult.h"
+#include "../../db/Database.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr ListTableQuery::execute() {
   Database::getInstance().printAllTable();
