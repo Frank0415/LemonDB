@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "query/Query.h"
-#include "query/QueryResult.h"
+#include "../Query.h"
+#include "../QueryResult.h"
 
 class DropTableQuery : public Query {
   static constexpr const char *qname = "DROP";
