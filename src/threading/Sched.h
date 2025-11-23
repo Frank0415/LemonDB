@@ -4,6 +4,7 @@
 #include <atomic>
 #include <functional>
 #include <thread>
+#include <utility>
 
 /**
  * Lightweight task completion tracker with optional completion callback.
