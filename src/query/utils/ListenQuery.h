@@ -1,6 +1,7 @@
 #ifndef LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
 #define LEMONDB_SRC_QUERY_DATA_LISTENQUERY_H
 
+#include <atomic>
 #include <cstddef>
 #include <deque>
 #include <memory>
@@ -8,8 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "db/QueryBase.h"
-#include <atomic>
+#include "../../db/QueryBase.h"
 
 class QueryManager;
 class QueryParser;
