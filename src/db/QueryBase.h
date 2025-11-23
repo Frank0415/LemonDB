@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "query/QueryResult.h"
+#include "../query/QueryResult.h"
 
 class Query {
   // private:
