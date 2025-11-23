@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <istream>
-#include <string>
 
 #include "../threading/OutputPool.h"
 #include "../threading/QueryManager.h"
