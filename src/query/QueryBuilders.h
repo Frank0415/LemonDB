@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "../db/QueryBase.h"
+#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryParser.h"
 
