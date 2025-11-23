@@ -2,9 +2,11 @@
 #define PROJECT_SWAPQUERY_H
 
 #include <string>
+#include <utility>
 
 #include "../../db/Table.h"
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class SwapQuery : public ComplexQuery {
   static constexpr const char *qname = "SWAP";
