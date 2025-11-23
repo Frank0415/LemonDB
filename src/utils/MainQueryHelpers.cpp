@@ -1,10 +1,25 @@
 #include "MainQueryHelpers.h"
 
+#include <atomic>
+#include <cstddef>
+#include <cstdio>
+#include <deque>
 #include <exception>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
+#include "../db/Database.h"
+#include "../db/QueryBase.h"
+#include "../query/QueryParser.h"
+#include "../query/management/CopyTableQuery.h"
 #include "../query/management/WaitQuery.h"
+#include "../query/utils/ListenQuery.h"
+#include "../threading/QueryManager.h"
+#include "MainUtils.h"
 
 namespace MainQueryHelpers {
 std::string extractQueryString(std::istream &input_stream) {
