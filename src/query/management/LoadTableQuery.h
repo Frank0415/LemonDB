@@ -8,8 +8,8 @@
 #include <string>
 #include <utility>
 
-#include "query/Query.h"
-#include "query/QueryResult.h"
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class LoadTableQuery : public Query {
   static constexpr const char *qname = "LOAD";

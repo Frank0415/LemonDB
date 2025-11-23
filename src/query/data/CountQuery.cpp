@@ -29,7 +29,7 @@ QueryResult::Ptr CountQuery::execute() {
     auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     // Access the target table using the table name
-    Table &table = database[this->targetTableRef()];
+    const Table &table = database[this->targetTableRef()];
 
     // Initialize the WHERE clause condition. The 'second' member of the
     // returned pair is a flag indicating if the condition can ever be true.
@@ -84,7 +84,8 @@ std::string CountQuery::toString() {
   return nullptr;
 }
 
-[[nodiscard]] QueryResult::Ptr CountQuery::executeSingleThreaded(Table &table) {
+[[nodiscard]] QueryResult::Ptr
+CountQuery::executeSingleThreaded(const Table &table) {
   int record_count = 0;
 
   for (auto row : table) [[likely]]
@@ -98,7 +99,8 @@ std::string CountQuery::toString() {
       "ANSWER = " + std::to_string(record_count) + "\n");
 }
 
-[[nodiscard]] QueryResult::Ptr CountQuery::executeMultiThreaded(Table &table) {
+[[nodiscard]] QueryResult::Ptr
+CountQuery::executeMultiThreaded(const Table &table) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   int total_count = 0;

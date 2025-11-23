@@ -1,8 +1,10 @@
 #include "SubQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -80,16 +82,16 @@ std::string SubQuery::toString() {
 SubQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
-  for (const auto &operand : this->getOperands()) [[likely]]
-  {
-    indices.push_back(table.getFieldIndex(operand));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(indices),
+      [&table](const auto &operand) { return table.getFieldIndex(operand); });
   return indices;
 }
 
-[[nodiscard]] QueryResult::Ptr
-SubQuery::executeSingleThreaded(Table &table,
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SubQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
   for (auto row : table) [[likely]]
@@ -109,9 +111,9 @@ SubQuery::executeSingleThreaded(Table &table,
   return std::make_unique<RecordCountResult>(count);
 }
 
-[[nodiscard]] QueryResult::Ptr
-SubQuery::executeMultiThreaded(Table &table,
-                               const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr SubQuery::executeMultiThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   std::vector<std::future<int>> futures;
@@ -126,24 +128,27 @@ SubQuery::executeMultiThreaded(Table &table,
       ++count;
     }
     auto chunk_end = iterator;
-    futures.push_back(pool.submit([this, chunk_start, chunk_end, fids]() {
-      int local_count = 0;
-      for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
-      {
-        if (!this->evalCondition(*it)) [[unlikely]] {
-          continue;
-        }
-        // perform SUB operation
-        int diff = (*it)[fids[0]];
-        for (size_t i = 1; i < this->getOperands().size() - 1; ++i) [[likely]]
-        {
-          diff -= (*it)[fids[i]];
-        }
-        (*it)[fids.back()] = diff;
-        local_count++;
-      }
-      return local_count;
-    }));
+    futures.push_back(
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, chunk_start, chunk_end, fids]() {
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
+          {
+            if (!this->evalCondition(*it)) [[unlikely]] {
+              continue;
+            }
+            // perform SUB operation
+            int diff = (*it)[fids[0]];
+            for (size_t i = 1; i < this->getOperands().size() - 1; ++i)
+                [[likely]]
+            {
+              diff -= (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = diff;
+            local_count++;
+          }
+          return local_count;
+        }));
   }
 
   // Wait for all tasks to complete and aggregate results

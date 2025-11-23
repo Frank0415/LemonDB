@@ -7,8 +7,9 @@
 #include <utility>
 #include <vector>
 
-#include "db/Table.h"
-#include "query/QueryResult.h"
+#include "../../db/QueryBase.h"
+#include "../../db/Table.h"
+#include "../QueryResult.h"
 
 class CopyTableQuery : public Query {
   static constexpr const char *qname = "COPYTABLE";

@@ -5,15 +5,17 @@
 #ifndef PROJECT_QUERY_H
 #define PROJECT_QUERY_H
 
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "../db/QueryBase.h"
+#include "../db/Table.h"
+#include "../db/types.h"
 #include "QueryResult.h"
-#include "db/Table.h"
-#include "db/types.h"
 
 struct QueryCondition {
   std::string field;
@@ -61,6 +63,7 @@ public:
    * @return true if conditions are met
    */
   bool evalCondition(const Table::Object &object);
+  bool evalCondition(const Table::ConstObject &object);
 
   /**
    * This function seems have small effect and causes somme bugs

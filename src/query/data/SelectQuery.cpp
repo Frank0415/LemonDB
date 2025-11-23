@@ -1,8 +1,10 @@
 #include "SelectQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -94,28 +96,25 @@ std::string SelectQuery::toString() {
 }
 
 [[nodiscard]] std::vector<Table::FieldIndex>
-SelectQuery::getFieldIndices(Table &table) const {
+SelectQuery::getFieldIndices(const Table &table) const {
   std::vector<std::string> fieldsOrder;
   fieldsOrder.reserve(this->getOperands().size() + 1);
   fieldsOrder.emplace_back("KEY");
-  for (const auto &field : this->getOperands()) [[likely]]
-  {
-    if (field != "KEY") [[likely]] {
-      fieldsOrder.emplace_back(field);
-    }
-  }
+  const auto &operands = this->getOperands();
+  std::copy_if(operands.begin(), operands.end(),
+               std::back_inserter(fieldsOrder),
+               [](const auto &field) { return field != "KEY"; });
 
   std::vector<Table::FieldIndex> fieldIds;
   fieldIds.reserve(fieldsOrder.size() - 1);
-  for (size_t i = 1; i < fieldsOrder.size(); ++i) [[likely]]
-  {
-    fieldIds.emplace_back(table.getFieldIndex(fieldsOrder[i]));
-  }
+  std::transform(
+      fieldsOrder.begin() + 1, fieldsOrder.end(), std::back_inserter(fieldIds),
+      [&table](const auto &field) { return table.getFieldIndex(field); });
   return fieldIds;
 }
 
 [[nodiscard]] QueryResult::Ptr SelectQuery::executeSingleThreaded(
-    Table &table, const std::vector<Table::FieldIndex> &fieldIds) {
+    const Table &table, const std::vector<Table::FieldIndex> &fieldIds) {
   // Collect matching rows as pairs of (key, values)
   std::map<std::string, std::vector<Table::ValueType>> sorted_rows;
 
@@ -124,16 +123,17 @@ SelectQuery::getFieldIndices(Table &table) const {
     if (this->evalCondition(*it)) [[likely]] {
       std::vector<Table::ValueType> values;
       values.reserve(fieldIds.size());
-      for (const auto &field_id : fieldIds) [[likely]]
-      {
-        values.emplace_back((*it)[field_id]);
-      }
+      std::transform(fieldIds.begin(), fieldIds.end(),
+                     std::back_inserter(values),
+                     [&it](const auto &field_id) { return (*it)[field_id]; });
       sorted_rows.emplace(it->key(), std::move(values));
     }
   }
 
   // Output in KEY order (already sorted by map)
   std::ostringstream buffer;
+
+  // cppcheck-suppress unassignedVariable
   for (const auto &[key, values] : sorted_rows) [[likely]] {
     buffer << "( " << key;
     for (const auto &value : values) [[likely]]
@@ -147,7 +147,7 @@ SelectQuery::getFieldIndices(Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr SelectQuery::executeMultiThreaded(
-    Table &table, const std::vector<Table::FieldIndex> &fieldIds) {
+    const Table &table, const std::vector<Table::FieldIndex> &fieldIds) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
   std::vector<std::future<std::map<std::string, std::vector<Table::ValueType>>>>
@@ -171,10 +171,9 @@ SelectQuery::getFieldIndices(Table &table) const {
         if (this->evalCondition(*iter)) [[likely]] {
           std::vector<Table::ValueType> values;
           values.reserve(fieldIds.size());
-          for (const auto &field_id : fieldIds) [[likely]]
-          {
-            values.emplace_back((*iter)[field_id]);
-          }
+          std::transform(
+              fieldIds.begin(), fieldIds.end(), std::back_inserter(values),
+              [&iter](const auto &field_id) { return (*iter)[field_id]; });
           local_rows.emplace(iter->key(), std::move(values));
         }
       }

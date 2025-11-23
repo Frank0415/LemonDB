@@ -9,15 +9,15 @@
 #include <memory>
 #include <string>
 
-#include "db/Database.h"
-#include "db/TableLockManager.h"
-#include "query/QueryResult.h"
-#include "utils/formatter.h"
+#include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../../utils/formatter.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr LoadTableQuery::execute() {
   try {
     // LOAD creates a new table, so we acquire write lock for the new table name
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireWrite(this->targetTableRef());
     std::ifstream infile(this->fileName);
     if (!infile.is_open()) [[unlikely]] {

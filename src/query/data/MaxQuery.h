@@ -2,8 +2,11 @@
 #define PROJECT_MAXQUERY_H
 
 #include <string>
+#include <vector>
 
+#include "../../db/Table.h"
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class MaxQuery : public ComplexQuery {
   static constexpr const char *qname = "MAX";
@@ -32,7 +35,7 @@ public:
    * @return QueryResult with max results
    */
   [[nodiscard]] QueryResult::Ptr
-  executeSingleThreaded(Table &table,
+  executeSingleThreaded(const Table &table,
                         const std::vector<Table::FieldIndex> &fids);
 
   /**
@@ -42,7 +45,7 @@ public:
    * @return QueryResult with max results
    */
   [[nodiscard]] QueryResult::Ptr
-  executeMultiThreaded(Table &table,
+  executeMultiThreaded(const Table &table,
                        const std::vector<Table::FieldIndex> &fids);
 
   QueryResult::Ptr execute() override;

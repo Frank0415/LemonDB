@@ -1,12 +1,17 @@
 #ifndef PROJECT_THREADPOOL_H
 #define PROJECT_THREADPOOL_H
 
+#include <atomic>
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <thread>
+#include <utility>
 #include <vector>
 
 /**
@@ -95,6 +100,7 @@ private:
    */
   explicit ThreadPool(size_t num_threads)
       : done(false), idleThreadNum(0), total_threads(num_threads) {
+    pool_vector.reserve(num_threads);
     for (size_t i = 0; i < num_threads; ++i) {
       pool_vector.emplace_back(&ThreadPool::thread_manager, this);
       idleThreadNum++;
@@ -167,12 +173,12 @@ public:
    * @return std::future holding the callable's return value.
    */
   template <typename F, typename... Args>
-  auto submit(F &&func, Args &&...args) const
-      -> std::future<decltype(func(args...))> {
+  auto submit(F &&func,
+              Args &&...args) const -> std::future<decltype(func(args...))> {
     using return_type = decltype(func(args...));
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
-        [func_cap = std::forward<F>(func),
+        [func_cap = std::forward<F>(func),  // NOLINT(bugprone-exception-escape)
          ... args_tuple = std::forward<Args>(args)]() mutable {
           return func_cap(std::forward<Args>(args_tuple)...);
         });

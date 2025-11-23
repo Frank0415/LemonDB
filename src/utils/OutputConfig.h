@@ -2,6 +2,7 @@
 #define PROJECT_OUTPUT_CONFIG_H
 
 #include <chrono>
+#include <cstddef>
 
 struct OutputConfig {
   static constexpr size_t kDefaultThreshold1 = 100;

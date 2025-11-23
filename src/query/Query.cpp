@@ -4,17 +4,18 @@
 
 #include "Query.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <functional>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "db/Table.h"
-#include "utils/formatter.h"
-#include "utils/uexception.h"
+#include "../db/Table.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 
 std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
   static const std::unordered_map<std::string, int> opmap{
@@ -40,13 +41,13 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
       cond.valueParsed = static_cast<Table::ValueType>(
           std::strtol(cond.value.c_str(), nullptr, decimal_base));
 
-      const auto it = opmap.find(cond.op);
-      if (it == opmap.end()) {
+      const auto index = opmap.find(cond.op);
+      if (index == opmap.end()) {
         throw IllFormedQueryCondition(
             R"("?" is not a valid condition operator.)"_f % cond.op);
       }
 
-      const int operator_index = it->second;
+      const int operator_index = index->second;
       switch (operator_index) {
       case '>':
         cond.comp = std::greater<>();
@@ -72,23 +73,27 @@ std::pair<std::string, bool> ComplexQuery::initCondition(const Table &table) {
 }
 
 bool ComplexQuery::evalCondition(const Table::Object &object) {
-  for (const auto &cond : condition) [[likely]]
-  {
-    if (cond.fieldId == static_cast<size_t>(-1)) [[unlikely]] {
-      if (object.key() != cond.value) {
-        return false;
-      }
-    } else [[likely]] {
-      if (!cond.comp(object[cond.fieldId], cond.valueParsed)) {
-        return false;
-      }
-    }
-  }
-  return true;
+  return std::all_of(condition.begin(), condition.end(),
+                     [&object](const auto &cond) {
+                       if (cond.fieldId == static_cast<size_t>(-1)) {
+                         return object.key() == cond.value;
+                       }
+                       return cond.comp(object[cond.fieldId], cond.valueParsed);
+                     });
+}
+
+bool ComplexQuery::evalCondition(const Table::ConstObject &object) {
+  return std::all_of(condition.begin(), condition.end(),
+                     [&object](const auto &cond) {
+                       if (cond.fieldId == static_cast<size_t>(-1)) {
+                         return object.key() == cond.value;
+                       }
+                       return cond.comp(object[cond.fieldId], cond.valueParsed);
+                     });
 }
 
 bool ComplexQuery::testKeyCondition(
-    Table &table,
+    Table &table,  // cppcheck-suppress constParameter
     const std::function<void(bool, Table::Object::Ptr &&)> &function) {
   auto condResult = initCondition(table);
   if (!condResult.second) [[unlikely]] {

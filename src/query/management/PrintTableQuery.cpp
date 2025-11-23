@@ -8,15 +8,15 @@
 #include <memory>
 #include <string>
 
-#include "db/Database.h"
-#include "db/TableLockManager.h"
-#include "query/QueryResult.h"
-#include "utils/uexception.h"
+#include "../../db/Database.h"
+#include "../../db/TableLockManager.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr PrintTableQuery::execute() {
   const Database &database = Database::getInstance();
   try {
-    auto lock =
+    const auto lock =
         TableLockManager::getInstance().acquireRead(this->targetTableRef());
     const auto &table = database[this->targetTableRef()];
     std::cout << "================\n";

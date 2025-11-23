@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 
-#include "db/Database.h"
-#include "db/Table.h"
-#include "db/TableLockManager.h"
-#include "query/QueryResult.h"
-#include "threading/Threadpool.h"
-#include "utils/formatter.h"
-#include "utils/uexception.h"
+#include "../../db/Database.h"
+#include "../../db/Table.h"
+#include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
+#include "../../utils/formatter.h"
+#include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 QueryResult::Ptr MaxQuery::execute() {
   try {
@@ -96,7 +96,7 @@ MaxQuery::getFieldIndices(const Table &table) const {
 }
 
 [[nodiscard]] QueryResult::Ptr
-MaxQuery::executeSingleThreaded(Table &table,
+MaxQuery::executeSingleThreaded(const Table &table,
                                 const std::vector<Table::FieldIndex> &fids) {
   bool found = false;
   std::vector<Table::ValueType> maxValue(
@@ -122,7 +122,8 @@ MaxQuery::executeSingleThreaded(Table &table,
 }
 
 [[nodiscard]] QueryResult::Ptr
-MaxQuery::executeMultiThreaded(Table &table,
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+MaxQuery::executeMultiThreaded(const Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
   constexpr size_t CHUNK_SIZE = Table::splitsize();
   const ThreadPool &pool = ThreadPool::getInstance();
@@ -141,20 +142,22 @@ MaxQuery::executeMultiThreaded(Table &table,
     }
     auto chunk_end = iterator;
 
-    futures.push_back(pool.submit([this, fids, chunk_begin, chunk_end,
-                                   num_fields]() {
-      std::vector<Table::ValueType> local_max(num_fields, Table::ValueTypeMin);
-      for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
-      {
-        if (this->evalCondition(*it)) [[likely]] {
-          for (size_t i = 0; i < num_fields; ++i) [[likely]]
+    futures.push_back(
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, fids, chunk_begin, chunk_end, num_fields]() {
+          std::vector<Table::ValueType> local_max(num_fields,
+                                                  Table::ValueTypeMin);
+          for (auto it = chunk_begin; it != chunk_end; ++it) [[likely]]
           {
-            local_max[i] = std::max(local_max[i], (*it)[fids[i]]);
+            if (this->evalCondition(*it)) [[likely]] {
+              for (size_t i = 0; i < num_fields; ++i) [[likely]]
+              {
+                local_max[i] = std::max(local_max[i], (*it)[fids[i]]);
+              }
+            }
           }
-        }
-      }
-      return local_max;
-    }));
+          return local_max;
+        }));
   }
   bool any_found = false;
   for (auto &future : futures) [[likely]]

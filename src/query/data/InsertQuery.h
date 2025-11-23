@@ -8,6 +8,7 @@
 #include <string>
 
 #include "../Query.h"
+#include "../QueryResult.h"
 
 class InsertQuery : public ComplexQuery {
   static constexpr const char *qname = "INSERT";

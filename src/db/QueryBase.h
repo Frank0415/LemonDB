@@ -3,8 +3,9 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
-#include "query/QueryResult.h"
+#include "../query/QueryResult.h"
 
 class Query {
   // private:
@@ -37,6 +38,11 @@ public:
   virtual std::string toString() = 0;
 
   virtual ~Query() = default;
+
+  Query(const Query &) = delete;
+  Query &operator=(const Query &) = delete;
+  Query(Query &&) = default;
+  Query &operator=(Query &&) = default;
 
   // For thread safety: indicate if this query modifies data
   [[nodiscard]] virtual bool isWriter() const { return false; }

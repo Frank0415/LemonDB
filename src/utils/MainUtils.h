@@ -1,9 +1,10 @@
 #ifndef PROJECT_MAIN_UTILS_H
 #define PROJECT_MAIN_UTILS_H
 
+#include <cstdint>
 #include <string>
 
-#include "query/QueryParser.h"
+#include "../query/QueryParser.h"
 
 /**
  * Command line argument bundle for main program.

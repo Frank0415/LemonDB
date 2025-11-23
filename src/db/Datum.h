@@ -1,7 +1,9 @@
 #ifndef PROJECT_DB_DATUM_H
 #define PROJECT_DB_DATUM_H
 
+#include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 /**

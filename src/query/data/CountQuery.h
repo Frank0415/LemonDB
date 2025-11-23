@@ -23,14 +23,14 @@ private:
    * @param table The table to count records in
    * @return QueryResult with count results
    */
-  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(Table &table);
+  [[nodiscard]] QueryResult::Ptr executeSingleThreaded(const Table &table);
 
   /**
    * Execute COUNT operation using multi-threaded approach
    * @param table The table to count records in
    * @return QueryResult with count results
    */
-  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(Table &table);
+  [[nodiscard]] QueryResult::Ptr executeMultiThreaded(const Table &table);
 
 public:
   // Inherit constructors from the ComplexQuery base class

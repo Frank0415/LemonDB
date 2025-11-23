@@ -1,4 +1,8 @@
 #include "QueryBuilders.h"
+#include "../db/Database.h"
+#include "../db/QueryBase.h"
+#include "../utils/formatter.h"
+#include "../utils/uexception.h"
 #include "Query.h"
 #include "QueryParser.h"
 #include "data/AddQuery.h"
@@ -13,8 +17,6 @@
 #include "data/SumQuery.h"
 #include "data/SwapQuery.h"
 #include "data/UpdateQuery.h"
-#include "db/Database.h"
-#include "db/QueryBase.h"
 #include "management/CopyTableQuery.h"
 #include "management/DropTableQuery.h"
 #include "management/DumpTableQuery.h"
@@ -24,8 +26,7 @@
 #include "management/QuitQuery.h"
 #include "management/TruncateTableQuery.h"
 #include "utils/ListenQuery.h"
-#include "utils/formatter.h"
-#include "utils/uexception.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,6 +39,22 @@ void Throwhelper(std::vector<std::string>::const_iterator iterator,
     throw IllFormedQuery(message);
   }
 }
+
+std::string ExtractListenFilename(const TokenizedQueryString &query) {
+  std::string filename;
+
+  if (query.token.size() >= 3 && query.token[1] == "(") {
+    filename = query.token[2];
+  } else if (query.token.size() >= 2) {
+    filename = query.token[1];
+  }
+
+  if (!filename.empty() && filename.back() == ')') {
+    filename.pop_back();
+  }
+
+  return filename;
+}
 }  // namespace
 
 Query::Ptr
@@ -45,25 +62,7 @@ ManageTableQueryBuilder::tryExtractQuery(TokenizedQueryString &query) {
   if (query.token.size() >= 2) [[likely]] {
     if (query.token.front() == "LISTEN") [[unlikely]] {
       // Handle: LISTEN ( filename ) or LISTEN filename
-      std::string filename;
-
-      if (query.token.size() >= 3 && query.token[1] == "(") {
-        // Format: LISTEN ( filename )
-        filename = query.token[2];
-        // Remove trailing ) if present
-        if (!filename.empty() && filename.back() == ')') {
-          filename.pop_back();
-        }
-      } else {
-        // Format: LISTEN filename
-        filename = query.token[1];
-        // Remove trailing ) if present
-        if (!filename.empty() && filename.back() == ')') {
-          filename.pop_back();
-        }
-      }
-
-      return std::make_unique<ListenQuery>(filename);
+      return std::make_unique<ListenQuery>(ExtractListenFilename(query));
     }
     if (query.token.front() == "LOAD") [[unlikely]] {
       auto &database = Database::getInstance();

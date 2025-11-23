@@ -58,13 +58,13 @@ public:
    * Get the path of the current (top) file.
    * @return File path string or empty string if stack is empty.
    */
-  std::string getCurrentFilePath() const;
+  [[nodiscard]] std::string getCurrentFilePath() const;
 
   /**
    * Check whether there are no active file streams.
    * @return true if stack is empty, false otherwise.
    */
-  bool isEmpty() const;
+  [[nodiscard]] bool isEmpty() const;
 
   /**
    * Resolve a file name to an absolute / canonical path for opening.
@@ -73,7 +73,7 @@ public:
    * @param filename Raw file name provided by caller (relative or absolute).
    * @return Resolved path string suitable for std::ifstream opening.
    */
-  std::string resolvePath(const std::string &filename) const;
+  [[nodiscard]] std::string resolvePath(const std::string &filename) const;
 };
 
 #endif

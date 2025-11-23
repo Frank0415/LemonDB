@@ -8,7 +8,8 @@
 #include <string>
 #include <utility>
 
-#include "query/Query.h"
+#include "../../db/QueryBase.h"
+#include "../QueryResult.h"
 
 class DumpTableQuery : public Query {
   static constexpr const char *qname = "DUMP";

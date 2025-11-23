@@ -2,12 +2,13 @@
 #define WAIT_QUERY_H
 
 #include <memory>
+#include <semaphore>
 #include <string>
 #include <utility>
 
-#include "query/Query.h"
-#include "query/QueryResult.h"
-#include "threading/QueryManager.h"
+#include "../../db/QueryBase.h"
+#include "../../threading/QueryManager.h"
+#include "../QueryResult.h"
 
 class WaitQuery : public Query {
   static constexpr const char *qname = "WAIT";

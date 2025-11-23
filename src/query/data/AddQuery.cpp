@@ -1,8 +1,10 @@
 #include "AddQuery.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
 #include <future>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -10,10 +12,10 @@
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
+#include "../../threading/Threadpool.h"
 #include "../../utils/formatter.h"
 #include "../../utils/uexception.h"
 #include "../QueryResult.h"
-#include "threading/Threadpool.h"
 
 [[nodiscard]] QueryResult::Ptr AddQuery::execute() {
   try {
@@ -86,16 +88,16 @@ std::string AddQuery::toString() {
 AddQuery::getFieldIndices(const Table &table) const {
   std::vector<Table::FieldIndex> indices;
   indices.reserve(this->getOperands().size());
-  for (const auto &operand : this->getOperands()) [[likely]]
-  {
-    indices.push_back(table.getFieldIndex(operand));
-  }
+  const auto &operands = this->getOperands();
+  std::transform(
+      operands.begin(), operands.end(), std::back_inserter(indices),
+      [&table](const auto &operand) { return table.getFieldIndex(operand); });
   return indices;
 }
 
-[[nodiscard]] QueryResult::Ptr
-AddQuery::executeSingleThreaded(Table &table,
-                                const std::vector<Table::FieldIndex> &fids) {
+[[nodiscard]] QueryResult::Ptr AddQuery::executeSingleThreaded(
+    Table &table,  // cppcheck-suppress constParameter
+    const std::vector<Table::FieldIndex> &fids) {
   int count = 0;
 
   for (auto row : table) [[likely]]
@@ -115,6 +117,7 @@ AddQuery::executeSingleThreaded(Table &table,
   return std::make_unique<RecordCountResult>(count);
 }
 
+// cppcheck-suppress constParameter
 [[nodiscard]] QueryResult::Ptr
 AddQuery::executeMultiThreaded(Table &table,
                                const std::vector<Table::FieldIndex> &fids) {
@@ -132,24 +135,27 @@ AddQuery::executeMultiThreaded(Table &table,
       ++count;
     }
     auto chunk_end = iterator;
-    futures.push_back(pool.submit([this, chunk_start, chunk_end, fids]() {
-      int local_count = 0;
-      for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
-      {
-        if (!this->evalCondition(*it)) [[unlikely]] {
-          continue;
-        }
-        // perform ADD operation
-        int sum = 0;
-        for (size_t i = 0; i < this->getOperands().size() - 1; ++i) [[likely]]
-        {
-          sum += (*it)[fids[i]];
-        }
-        (*it)[fids.back()] = sum;
-        local_count++;
-      }
-      return local_count;
-    }));
+    futures.push_back(
+        // NOLINTNEXTLINE(bugprone-exception-escape)
+        pool.submit([this, chunk_start, chunk_end, fids]() {
+          int local_count = 0;
+          for (auto it = chunk_start; it != chunk_end; ++it) [[likely]]
+          {
+            if (!this->evalCondition(*it)) [[unlikely]] {
+              continue;
+            }
+            // perform ADD operation
+            int sum = 0;
+            for (size_t i = 0; i < this->getOperands().size() - 1; ++i)
+                [[likely]]
+            {
+              sum += (*it)[fids[i]];
+            }
+            (*it)[fids.back()] = sum;
+            local_count++;
+          }
+          return local_count;
+        }));
   }
 
   // Wait for all tasks to complete and aggregate results
