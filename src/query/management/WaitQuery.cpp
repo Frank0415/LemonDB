@@ -1,7 +1,7 @@
 #include <exception>
 #include <string>
 
-#include "./query/QueryResult.h"
+#include "../QueryResult.h"
 #include "WaitQuery.h"
 
 // Custom exception for WaitQuery completion
