@@ -6,8 +6,8 @@
 
 #include "../../db/Database.h"
 #include "../../db/TableLockManager.h"
-#include "../QueryResult.h"
 #include "../../utils/uexception.h"
+#include "../QueryResult.h"
 
 constexpr const char *qname_tr = "TRUNCATE";
 
