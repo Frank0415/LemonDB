@@ -3,9 +3,6 @@
 </p>
 
 <p align="center">
-  <a href="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml">
-    <img src="https://focs.ji.sjtu.edu.cn/git/ece482/p2team01/actions/workflows/push.yaml/badge.svg" alt="Build Status">
-  </a>
   <a href="#">
     <img src="https://img.shields.io/badge/language-C%2B%2B20-blue.svg" alt="Language">
   </a>
