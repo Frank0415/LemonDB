@@ -5,6 +5,19 @@
 >
 > Although these fixes are not really related to the well-functioning of this database at macro-scale, it does **strongly** affect 482 grades. So please, do not copy the code.
 
+> [!NOTE]  
+> For future ECE482 Students:
+>
+> The initial provided codebase is flawed in CQ. Fix codequality (or at least keep CQ in mind) rather then implmenting features on startup.
+>
+> You may find some of my other repos a good starting point if the professor does not provide you with CI/CD.
+>
+> RAII is important concept, wrap resources and locks in RAII wrappers/smart pointers.
+>
+> Sanitizers are helpful: Thread Sanitizers joined with what you met in p1 will help you a lot.
+>
+> Do not only think about huge tables, think about mini tables where the main overhead comes from threading.
+
 # Disclaimer: The author team are exempted from all Honor Code responsibilities. Anyone reads this repo should be fully aware of and be fully responsible for the result of any type of honor code violations. DO NOT copy any code from this repo without permission from the author team, and DO NOT use this repo as a reference for your own project. This repo is only for the purpose of showcasing the work of the author team, and is not intended to be used as a reference for any other project.
 
 <p align="center">
