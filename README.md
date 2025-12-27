@@ -1,3 +1,10 @@
+> [!CAUTION]
+> For anyone looking at this repo:
+>
+> This code is not guaranteed to work. We applied insignificant fixes after this to make this work. We strongly advise any ECE482 students not to follow any part of the codebase.
+>
+> Although these fixes are not really related to the well-functioning of this database at macro-scale, it does **strongly** affect 482 grades. So please, do not copy the code.
+
 # Disclaimer: The author team are exempted from all Honor Code responsibilities. Anyone reads this repo should be fully aware of and be fully responsible for the result of any type of honor code violations. DO NOT copy any code from this repo without permission from the author team, and DO NOT use this repo as a reference for your own project. This repo is only for the purpose of showcasing the work of the author team, and is not intended to be used as a reference for any other project.
 
 <p align="center">
